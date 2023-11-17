@@ -1,0 +1,93 @@
+include:
+  - project: 'AgileFactory/Witboost.Mesh/witboost.Mesh.CI'
+    ref: 'main'
+    file: 'common/witboost.helm.gitlab-ci.yml'
+
+image: registry.gitlab.com/agilefactory/witboost.mesh/provisioning/cdp/cicd/scala-sbt
+
+stages:
+  - setup
+  - check
+  - test
+  - build
+  - deploy
+
+variables:
+  SBT_OPTS: "-Dsbt.global.base=sbt-cache/sbtboot -Dsbt.boot.directory=sbt-cache/boot -Dsbt.ivy.home=sbt-cache/ivy"
+
+cache:
+  untracked: true
+  paths:
+    - "sbt-cache/ivy/cache"
+    - "sbt-cache/boot"
+    - "sbt-cache/sbtboot"
+    - "sbt-cache/target"
+
+default:
+  before_script:
+    - export GITLAB_ARTIFACT_HOST="https://gitlab.com/api/v4/projects/51107980/packages/maven"
+    - export GITLAB_ARTIFACT_USER="gitlab-ci-token"
+    - export GITLAB_ARTIFACT_TOKEN=${CI_JOB_TOKEN}
+
+setup:
+  stage: setup
+  extends: .witboost.helm.base-job
+  cache: []
+  before_script: []
+  script:
+    - !reference [.witboost.helm.clone-scripts, script]
+    - !reference [.witboost.helm.get-version, script]
+    - echo "VERSION=${VERSION}" >> vars.env
+  artifacts:
+    reports:
+      dotenv: vars.env
+
+check:
+  stage: check
+  script:
+    - sbt scalafmtSbtCheck scalafmtCheckAll ${SBT_OPTS}
+
+test:
+  stage: test
+  script:
+    - sbt clean coverage test coverageAggregate ${SBT_OPTS}
+  coverage: '/Statement coverage[A-Za-z\.*]\s*:\s*([^%]+)/'
+  artifacts:
+    paths:
+      - target/scala-2.13/scoverage-report/*
+      - target/scala-2.13/coverage-report/*
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: target/scala-2.13/coverage-report/cobertura.xml
+      junit:
+        - error-handler/test-reports/TEST-*.xml
+        - core/target/test-reports/TEST-*.xml
+        - service/target/test-reports/TEST-*.xml
+        - api/target/test-reports/TEST-*.xml
+
+#JarBuild:
+#  stage: build
+#  script:
+#    - sbt 'set test in assembly := {}' clean assembly ${SBT_OPTS}
+#  artifacts:
+#    paths:
+#      - api/target/scala-2.13/*.jar
+#      - service/target/scala-2.13/*.jar
+#      - error-handler/target/scala-2.13/*.jar
+
+build:
+  services:
+    - docker:19.03.12-dind
+  stage: build
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+  script: |
+    apt-get install -yqq curl
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable" |  tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update -yqq
+    apt-get install -yqq docker-ce-cli
+    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    echo "VERSION: $VERSION"
+    sbt clean compile k8tyGitlabCIPublish docker:publish ${SBT_OPTS}

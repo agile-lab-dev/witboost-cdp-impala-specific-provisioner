@@ -1,0 +1,51 @@
+package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
+
+import cats.implicits._
+import it.agilelab.provisioning.commons.audit.Audit
+import it.agilelab.provisioning.mesh.self.service.core.gateway.{
+  ComponentGateway,
+  ComponentGatewayError
+}
+import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
+import io.circe.Json
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaCdw,
+  ImpalaTableOutputPortResource
+}
+
+class ImpalaTableOutputPortGatewayWithAudit(
+    componentGateway: ComponentGateway[Json, ImpalaCdw, ImpalaTableOutputPortResource],
+    audit: Audit
+) extends ComponentGateway[Json, ImpalaCdw, ImpalaTableOutputPortResource] {
+  private val INFO_MSG = "Executing %s"
+
+  override def create(
+      command: ProvisionCommand[Json, ImpalaCdw]
+  ): Either[ComponentGatewayError, ImpalaTableOutputPortResource] = {
+    val action = s"Create($command)"
+    audit.info(INFO_MSG.format(action))
+    val result = componentGateway.create(command)
+    auditWithinResult(result, action)
+    result
+  }
+
+  override def destroy(
+      command: ProvisionCommand[Json, ImpalaCdw]
+  ): Either[ComponentGatewayError, ImpalaTableOutputPortResource] = {
+    val action = s"Destroy($command)"
+    audit.info(INFO_MSG.format(action))
+    val result = componentGateway.destroy(command)
+    auditWithinResult(result, action)
+    result
+  }
+
+  private def auditWithinResult[D](
+      result: Either[ComponentGatewayError, D],
+      action: String
+  ): Unit =
+    result match {
+      case Right(_) => audit.info(show"$action completed successfully")
+      case Left(l)  => audit.error(s"$action failed. Details: ${l.error}")
+    }
+
+}

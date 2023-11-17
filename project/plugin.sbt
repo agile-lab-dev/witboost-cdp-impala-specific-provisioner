@@ -1,0 +1,8 @@
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "2.4.15")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
+//addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.9")
+addSbtPlugin("dev.guardrail" % "sbt-guardrail" % "0.75.1")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.11")
+addSbtPlugin("app.k8ty" % "gitlab-plugin" % "0.0.8")
+//addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
