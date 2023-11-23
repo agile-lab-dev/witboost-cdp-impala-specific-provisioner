@@ -8,6 +8,14 @@ import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{
 import org.scalatest.funsuite.AnyFunSuite
 
 class SchemaValidatorTest extends AnyFunSuite {
+  test("nonEmptySchema return true when not empty") {
+    assert(SchemaValidator.nonEmptySchema(Seq(getC("column", ColumnDataType.INT))))
+  }
+
+  test("nonEmptySchema return false when empty") {
+    assert(!SchemaValidator.nonEmptySchema(Seq.empty[Column]))
+  }
+
   test("isValidSchema return false when empty") {
     assert(!SchemaValidator.isValidSchema(Seq.empty[Column]))
   }

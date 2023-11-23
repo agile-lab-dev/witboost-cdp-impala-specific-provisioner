@@ -31,8 +31,10 @@ class RoleConfigRepository extends Repository[Role, String, Unit] {
 
   lazy val provisionerConfig: Config = ConfigFactory.load().getConfig(ROLE_CONFIG)
 
+  private def dumpString(s: String): String = s""" "$s" """.trim
+
   override def findById(id: String): Either[RepositoryError, Option[Role]] = Try {
-    provisionerConfig.getConfig(id)
+    provisionerConfig.getConfig(dumpString(id))
   }.toOption
     .traverse(createRole)
     .left

@@ -110,7 +110,33 @@ We added additional compilation rules using the wartRemover library, so if any e
 
 ## Running
 
-To run the server locally, you need to set up the necessary environment variables and then execute:
+To run the server, you need to set up the necessary environment variables to access CDP and the AWS environment. This Specific Provisioner uses the followings SDK:
+
+- **CDP SDK**: please refer to the [official documentation](https://docs.cloudera.com/cdp-public-cloud/cloud/sdk/topics/mc-overview-of-the-cdp-sdk-for-java.html) to setup the access credentials
+- **AWS SDK**: please refer to the [official documentation](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/setup-basics.html) to setup the access credentials
+
+For example, for local execution you need to set the following environment variables:
+
+```
+export AWS_REGION=<aws_region>
+export AWS_ACCESS_KEY_ID=<aws_access_key_id>
+export AWS_SECRET_ACCESS_KEY=<aws_secret_access_key>
+export AWS_SESSION_TOKEN=<aws_session_token>
+
+export CDP_DEPLOY_ROLE_USER=<cdp_user>
+export CDP_DEPLOY_ROLE_PASSWORD=<cdp_password>
+export CDP_ACCESS_KEY_ID=<cdp_user_access_key_id>
+export CDP_PRIVATE_KEY=<cdp_user_private_key>
+```
+
+The CDP user needs to have at least the following roles:
+- DWAdmin
+- DWUser
+- EnvironmentAdmin
+- EnvironmentUser
+
+
+After this, execute:
 
 ```bash
 sbt compile run
@@ -147,89 +173,87 @@ The current implementation of the project will map the received `acl.owners` and
 
 Simple table:
 ```
-descriptor: 
-   dataProduct:
-       id: urn:dmb:dp:platform:demo-dp:0
-       name: demo-dp
-       domain: platform
-       environment: dev
-       version: 0.0.1
-       dataProductOwner: dataProductOwner
-       specific: {}
-   component:
-       id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
-       name: witboost_table_impala
-       description: description
-       version: 0.0.1
-       dataContract:
-           schema:
-           - name: id
-             dataType: STRING
-           - name: name
-             dataType: STRING
-           - name: surname
-             dataType: STRING
-       specific: 
-           databaseName: platform_demo_dp_0
-           tableName: platform_demo_dp_0_witboost_table_impala_poc
-           cdpEnvironment: sdp-aw-d-ir-env1
-           cdwVirtualWarehouse: sdpawdir-sfs-i
-           format: CSV
-           location: s3a://bucket/path/to/folder/
-           acl:
-               owners:
-               - platform-team-role
-               users:
-               - platform-user-role
+id: urn:dmb:dp:platform:demo-dp:0
+name: demo-dp
+domain: platform
+environment: dev
+version: 0.0.1
+dataProductOwner: dataProductOwner
+specific: {}
+components:
+- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
+  name: witboost_table_impala
+  description: description
+  version: 0.0.1
+  dataContract:
+    schema:
+    - name: id
+      dataType: STRING
+    - name: name
+      dataType: STRING
+    - name: surname
+      dataType: STRING
+  specific: 
+    databaseName: platform_demo_dp_0
+    tableName: platform_demo_dp_0_witboost_table_impala_poc
+    cdpEnvironment: sdp-aw-d-ir-env1
+    cdwVirtualWarehouse: sdpawdir-sfs-i
+    format: CSV
+    location: s3a://bucket/path/to/folder/
+    acl:
+      owners:
+      - platform-team-role
+      users:
+      - platform-user-role
 ```
 
 Partitions are defined as a list of column names to be used as partitions. These columns must exist in the `dataContract.schema` field and will be validated before deploying any resource.
 
 Partitioned table:
 ```
-descriptor: 
-   dataProduct:
-       id: urn:dmb:dp:platform:demo-dp:0
-       name: demo-dp
-       domain: platform
-       environment: dev
-       version: 0.0.1
-       dataProductOwner: dataProductOwner
-       specific: {}
-   component:
-       id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
-       name: witboost_table_impala
-       description: description
-       version: 0.0.1
-       dataContract:
-           schema:
-           - name: part1
-             dataType: STRING
-           - name: name
-             dataType: STRING
-           - name: part2
-             dataType: STRING
-       specific: 
-           databaseName: platform_demo_dp_0
-           tableName: platform_demo_dp_0_witboost_table_impala_poc
-           cdpEnvironment: sdp-aw-d-ir-env1
-           cdwVirtualWarehouse: sdpawdir-sfs-i
-           format: CSV
-           location: s3a://bucket/path/to/folder/
-           acl:
-               owners:
-               - platform-team-role
-               users:
-               - platform-user-role
-           partitions:
-               - part1
-               - part2
+id: urn:dmb:dp:platform:demo-dp:0
+name: demo-dp
+domain: platform
+environment: dev
+version: 0.0.1
+dataProductOwner: dataProductOwner
+specific: {}
+components:
+- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
+  name: witboost_table_impala
+  description: description
+  version: 0.0.1
+  dataContract:
+    schema:
+    - name: id
+      dataType: STRING
+    - name: name
+      dataType: STRING
+    - name: country
+      dataType: STRING
+  specific: 
+    databaseName: platform_demo_dp_0
+    tableName: platform_demo_dp_0_witboost_table_impala_poc
+    cdpEnvironment: sdp-aw-d-ir-env1
+    cdwVirtualWarehouse: sdpawdir-sfs-i
+    format: CSV
+    location: s3a://bucket/path/to/folder/
+    acl:
+      owners:
+      - platform-team-role
+      users:
+      - platform-user-role
+    partitions:
+      - country
 ```
 
 ## Limitations
 
 * Only PARQUET and CSV are supported as `format`
-* Location need to be expressed as `s3a://`    
+  * CSV files must NOT start with a header row
+* `location` need to be expressed as `s3a://` and always ending with a slash `/`.
+  * Each Data Product data must be located in a different bucket 
+* Schema data types only support primitive types TINYINT, SMALLINT, INT, BIGINT, DOUBLE, DECIMAL, TIMESTAMP, DATE, STRING, CHAR, VARCHAR and BOOLEAN, and ARRAY, MAP and STRUCT with these types
 
 ## Tech debt
 

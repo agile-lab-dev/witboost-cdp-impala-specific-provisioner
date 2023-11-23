@@ -59,6 +59,14 @@ object ImpalaCdwValidator {
       .rule(
         {
           case ProvisionRequest(_, Some(c: OutputPort[ImpalaCdw])) =>
+            SchemaValidator.nonEmptySchema(c.dataContract.schema)
+          case _ => false
+        },
+        _ => s"Schema is empty"
+      )
+      .rule(
+        {
+          case ProvisionRequest(_, Some(c: OutputPort[ImpalaCdw])) =>
             SchemaValidator.validateColumnNames(c.dataContract.schema)
           case _ => false
         },

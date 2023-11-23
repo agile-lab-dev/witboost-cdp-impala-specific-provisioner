@@ -12,7 +12,7 @@ class RoleConfigRepositoryTest extends AnyFunSuite {
     assert(roles.isRight)
     roles.foreach { roles =>
       // see src/test/resources/application.conf
-      assert(roles.length == 2)
+      assert(roles.length == 3)
     }
   }
 
@@ -23,6 +23,25 @@ class RoleConfigRepositoryTest extends AnyFunSuite {
       iamRole = "",
       iamRoleArn = "",
       cdpRole = "cdp:role:test:platform-team-role",
+      cdpRoleCrn = "")
+
+    val maybeRole = roleConfigRepo.findById(expectedRole.name)
+    assert(maybeRole.isRight)
+    maybeRole.foreach { optionRole =>
+      assert(optionRole.nonEmpty)
+      optionRole.foreach { role =>
+        assert(role.equals(expectedRole))
+      }
+    }
+  }
+
+  test("load a role with special characters in it from config") {
+    val expectedRole = Role(
+      name = "user:sergio.mejia_agilelab.it",
+      domain = "",
+      iamRole = "",
+      iamRoleArn = "",
+      cdpRole = "cdp:role:test:sergio-role",
       cdpRoleCrn = "")
 
     val maybeRole = roleConfigRepo.findById(expectedRole.name)

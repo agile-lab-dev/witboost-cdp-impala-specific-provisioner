@@ -1,10 +1,8 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl
 
 import cats.implicits._
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, Field }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.{ Csv, Parquet }
-
-import java.util.Locale
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, Field }
 
 class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvider {
 

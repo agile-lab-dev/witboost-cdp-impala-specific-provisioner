@@ -1,6 +1,11 @@
 package it.agilelab.provisioning.impala.table.provisioner.app
 import cats.effect.{ ExitCode, IO, IOApp }
 import com.comcast.ip4s.{ Host, Port }
+import com.typesafe.scalalogging.StrictLogging
+import it.agilelab.provisioning.aws.s3.gateway.S3GatewayError.S3GatewayInitError
+import it.agilelab.provisioning.commons.client.cdp.dl.CdpDlClientError.CdpDlClientInitErr
+import it.agilelab.provisioning.commons.client.cdp.dw.CdpDwClientError.CdpDwClientInitClientError
+import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClientError.CdpEnvClientInitError
 import it.agilelab.provisioning.commons.config.Conf
 import it.agilelab.provisioning.impala.table.provisioner.app.config.{
   ApplicationConfiguration,
@@ -13,14 +18,27 @@ import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
 }
 import org.http4s.ember.server.EmberServerBuilder
 
-object Main extends IOApp {
+object Main extends IOApp with StrictLogging {
+
+  private def logThrowableError(throwable: Throwable): Unit =
+    throwable match {
+      case err: S3GatewayInitError         => logger.error("S3GatewayInitError", err.error)
+      case err: CdpDlClientInitErr         => logger.error("CdpDlClientInitErr", err.error)
+      case err: CdpEnvClientInitError      => logger.error("CdpEnvClientInitError", err.error)
+      case err: CdpDwClientInitClientError => logger.error("CdpDwClientInitClientError", err.error)
+      case th                              => logger.error("Generic throwable error", th)
+    }
 
   val conf: Conf = Conf.envWithAudit()
   override def run(args: List[String]): IO[ExitCode] = for {
     provisionerController <- ImpalaProvisionerController(conf) match {
-      case Left(error: ClientError)        => IO.raiseError(error.throwable)
-      case Left(error: ConfigurationError) => IO.raiseError(error.error)
-      case Right(value)                    => IO.pure(value)
+      case Left(error: ClientError) =>
+        logThrowableError(error.throwable)
+        IO.raiseError(error.throwable)
+      case Left(error: ConfigurationError) =>
+        logThrowableError(error.error)
+        IO.raiseError(error.error)
+      case Right(value) => IO.pure(value)
     }
     frameworkDependencies <- IO.pure(new FrameworkDependencies(provisionerController))
     interface <- IO.fromOption(

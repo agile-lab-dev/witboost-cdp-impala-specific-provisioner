@@ -150,8 +150,12 @@ class RangerPolicyGateway(
         .sequence
     } yield pl
 
-  private def rolesGroup(roles: Seq[String]): Either[RepositoryError, Seq[Option[Role]]] =
-    roles.traverse(roleRepository.findById)
+  private def rolesGroup(roles: Seq[String]): Either[RepositoryError, Seq[Option[Role]]] = {
+    val mappedRoles = for {
+      role <- roles
+    } yield roleRepository.findById(role)
+    mappedRoles.sequence
+  }
 
   private def getSafeZoneName(z: Option[String]): Option[String] = z match {
     case Some("") => None

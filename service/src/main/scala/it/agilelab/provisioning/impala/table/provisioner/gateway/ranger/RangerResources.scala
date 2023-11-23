@@ -44,11 +44,10 @@ object RangerResources {
           "database" -> database,
           "column"   -> column,
           "table"    -> table
-        ),
+        ).filter { case (_, seq) => seq.nonEmpty },
         Map(
           "url" -> url
-        )
-      )
+        ).filter { case (_, seq) => seq.nonEmpty }
+      ).filter(_.nonEmpty)
     )
-
 }

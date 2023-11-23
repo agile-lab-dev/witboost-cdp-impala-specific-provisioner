@@ -253,9 +253,6 @@ class RangerSecurityZoneGeneratorTest extends AnyFunSuite {
               "database" -> Seq("db_*"),
               "column"   -> Seq("*"),
               "table"    -> Seq("*")
-            ),
-            Map(
-              "url" -> Seq.empty[String]
             )
           )
         )),
@@ -312,9 +309,6 @@ class RangerSecurityZoneGeneratorTest extends AnyFunSuite {
                 "database" -> Seq("db_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
-              ),
-              Map(
-                "url" -> Seq.empty[String]
               )
             )
           ),

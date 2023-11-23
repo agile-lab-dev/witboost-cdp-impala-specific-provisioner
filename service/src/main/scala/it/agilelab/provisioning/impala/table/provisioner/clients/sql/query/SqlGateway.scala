@@ -4,10 +4,6 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
   ConnectionConfig,
   ConnectionProvider
 }
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.{
-  ConnectionConfig,
-  ConnectionProvider
-}
 
 trait SqlGateway {
 

@@ -12,10 +12,10 @@ import it.agilelab.provisioning.commons.client.ranger.model.{
   RangerService
 }
 import it.agilelab.provisioning.commons.http.HttpErrors.ConnectionErr
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.{
   FindSecurityZoneOwnerErr,
-  FindServiceErr,
-  UpsertSecurityZoneErr
+  FindServiceErr
 }
 import it.agilelab.provisioning.mesh.repository.Repository
 import it.agilelab.provisioning.mesh.repository.RepositoryError.{
@@ -23,7 +23,6 @@ import it.agilelab.provisioning.mesh.repository.RepositoryError.{
   FindEntityByIdErr
 }
 import it.agilelab.provisioning.mesh.self.service.lambda.core.model.{ Domain, Role }
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -190,9 +189,6 @@ class RangerSecurityZoneGatewayTest
                 "database" -> Seq("plt_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
-              ),
-              Map(
-                "url" -> Seq.empty[String]
               )
             )
           ),
@@ -220,9 +216,6 @@ class RangerSecurityZoneGatewayTest
                 "database" -> Seq("plt_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
-              ),
-              Map(
-                "url" -> Seq.empty[String]
               )
             )
           ),
@@ -259,9 +252,6 @@ class RangerSecurityZoneGatewayTest
                 "database" -> Seq("plt_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
-              ),
-              Map(
-                "url" -> Seq.empty[String]
               )
             )
           ),
@@ -351,9 +341,6 @@ class RangerSecurityZoneGatewayTest
                 "database" -> Seq("plt_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
-              ),
-              Map(
-                "url" -> Seq.empty[String]
               )
             )
           )

@@ -2,16 +2,22 @@ package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import com.typesafe.scalalogging.StrictLogging
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaDataType
 import it.agilelab.provisioning.impala.table.provisioner.core.support.ImpalaDataTypeSupport
 
-object SchemaValidator extends ImpalaDataTypeSupport {
+object SchemaValidator extends ImpalaDataTypeSupport with StrictLogging {
+
+  def nonEmptySchema(schema: Seq[Column]): Boolean =
+    schema.nonEmpty
+
   def isValidSchema(schema: Seq[Column]): Boolean = {
     val result = for {
       nonEmptyList <- NonEmptyList.fromList(schema.toList).toRight("Empty schema")
       _            <- nonEmptyList.map(fromOpenMetadataColumn).sequence
     } yield ()
+    logger.info("Schema validation Result: {}", result)
     result.isRight
   }
 
@@ -30,6 +36,7 @@ object SchemaValidator extends ImpalaDataTypeSupport {
       impalaDataTypes <- columns.map(fromOpenMetadataColumn).sequence
       _               <- impalaDataTypes.map(isPartition).sequence
     } yield ()
+    logger.info("Partition validation Result: {}", result)
     result.isRight
   }
 
