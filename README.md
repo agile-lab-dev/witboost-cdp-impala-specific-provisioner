@@ -17,6 +17,8 @@ Designed by [Agile Lab](https://www.agilelab.it/), witboost is a versatile platf
 - [Configuring](#configuring)
 - [Deploying](#deploying)
 - [How it works](#how-it-works)
+- [HLD](docs/HLD.md)
+- [API specification](docs/API.md)
 
 ## Overview
 
