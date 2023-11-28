@@ -9,11 +9,15 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   private val CREATE_DATABASE_PATTERN = "%s %s"
   private val CREATE_TABLE_PATTERN = "%s %s (%s) %s%s"
   private val CREATE_PARTITIONED_TABLE_PATTERN = "%s %s (%s) PARTITIONED BY (%s) %s%s"
+  private val DROP_TABLE_PATTERN = "%s %s"
 
   private val CREATE_DATABASE_KEY = "CREATE DATABASE"
   private val CREATE_EXTERNAL_TABLE_KEY = "CREATE EXTERNAL TABLE"
-  private val IF_NOT_EXISTS_KEY = "IF NOT EXISTS"
   private val TBLPROPERTIES_KEY = "TBLPROPERTIES"
+  private val IF_NOT_EXISTS_KEY = "IF NOT EXISTS"
+  private val IF_EXISTS_KEY = "IF EXISTS"
+
+  private val DROP_TABLE_KEY = "DROP TABLE"
 
   private val STORED_AS_PATTERN = "STORED AS %s"
   private val ROW_FORMAT_PATTERN = "ROW FORMAT %s"
@@ -35,6 +39,12 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     CREATE_DATABASE_PATTERN.format(
       serializeCreateDatabaseDDL(ifNotExists),
       database
+    )
+
+  override def dropExternalTable(externalTable: ExternalTable, ifExists: Boolean): String =
+    DROP_TABLE_PATTERN.format(
+      serializeDropTableDDL(ifExists),
+      serializeTableName(externalTable)
     )
 
   private def createDefaultExternalTable(externalTable: ExternalTable, ifNotExists: Boolean) =
@@ -62,6 +72,10 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   private def serializeCreateTableDDL(ifNotExists: Boolean): String =
     if (ifNotExists) asString(" ", CREATE_EXTERNAL_TABLE_KEY, IF_NOT_EXISTS_KEY)
     else CREATE_EXTERNAL_TABLE_KEY
+
+  private def serializeDropTableDDL(ifExists: Boolean): String =
+    if (ifExists) asString(" ", DROP_TABLE_KEY, IF_EXISTS_KEY)
+    else DROP_TABLE_KEY
 
   private def serializeCreateDatabaseDDL(ifNotExists: Boolean): String =
     if (ifNotExists) asString(" ", CREATE_DATABASE_KEY, IF_NOT_EXISTS_KEY)

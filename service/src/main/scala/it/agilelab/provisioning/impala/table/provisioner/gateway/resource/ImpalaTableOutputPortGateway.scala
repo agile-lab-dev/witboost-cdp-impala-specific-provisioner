@@ -4,8 +4,10 @@ import cats.implicits._
 import com.cloudera.cdp.datalake.model.Datalake
 import com.cloudera.cdp.environments.model.Environment
 import io.circe.Json
+import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
 import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
+import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.core.model._
 import it.agilelab.provisioning.impala.table.provisioner.gateway.mapper.ExternalTableMapper
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
@@ -18,6 +20,8 @@ import it.agilelab.provisioning.mesh.self.service.core.gateway.{
 }
 import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 import it.agilelab.provisioning.mesh.self.service.lambda.core.model.Domain
+
+import scala.util.Try
 
 class ImpalaTableOutputPortGateway(
     serviceRole: String,
@@ -93,10 +97,22 @@ class ImpalaTableOutputPortGateway(
     env <- hostProvider
       .getEnvironment(opRequest.specific.cdpEnvironment)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    dl            <- hostProvider.getDataLake(env).leftMap(e => ComponentGatewayError(show"$e"))
-    domain        <- Right(getDomain(unprovisionCommand.provisionRequest))
-    externalTable <- createAndGetExternalTable(env, opRequest)
-    gtwys         <- getRangerGateways(dl)
+    dl     <- hostProvider.getDataLake(env).leftMap(e => ComponentGatewayError(show"$e"))
+    domain <- Right(getDomain(unprovisionCommand.provisionRequest))
+    dropOnUnprovision <- Try {
+      ApplicationConfiguration.provisionerConfig.getBoolean(
+        ApplicationConfiguration.DROP_ON_UNPROVISION)
+    }.toEither.leftMap { _ =>
+      val confError = ConfKeyNotFoundErr(ApplicationConfiguration.DROP_ON_UNPROVISION)
+      ComponentGatewayError(show"$confError")
+    }
+    externalTable <-
+      if (dropOnUnprovision) {
+        dropAndGetExternalTable(env, opRequest)
+      } else {
+        createAndGetExternalTable(env, opRequest)
+      }
+    gtwys <- getRangerGateways(dl)
     _ <- gtwys._1
       .upsertSecurityZone(
         serviceRole,
@@ -154,6 +170,18 @@ class ImpalaTableOutputPortGateway(
       )
       .leftMap(e => ComponentGatewayError(show"$e"))
 
+  private def dropExternalTable(
+      impalaHost: String,
+      externalTable: ExternalTable
+  ): Either[ComponentGatewayError, Unit] =
+    externalTableGateway
+      .drop(
+        ConnectionConfig(impalaHost, "443", "default", "", ""),
+        externalTable,
+        ifExists = true
+      )
+      .leftMap(e => ComponentGatewayError(show"$e"))
+
   private def getRangerGateways(dl: Datalake) = for {
     rangerHost <- hostProvider.getRangerHost(dl).leftMap(e => ComponentGatewayError(show"$e"))
     rangerClient <- rangerGatewayProvider
@@ -173,6 +201,17 @@ class ImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest)
     _             <- createExternalTable(impalaHost, externalTable)
+  } yield externalTable
+
+  private def dropAndGetExternalTable(
+      env: Environment,
+      opRequest: OutputPort[ImpalaCdw]
+  ): Either[ComponentGatewayError, ExternalTable] = for {
+    impalaHost <- hostProvider
+      .getImpalaCoordinatorHost(env, opRequest.specific.cdwVirtualWarehouse)
+      .leftMap(e => ComponentGatewayError(show"$e"))
+    externalTable <- ExternalTableMapper.map(opRequest)
+    _             <- dropExternalTable(impalaHost, externalTable)
   } yield externalTable
 
 }

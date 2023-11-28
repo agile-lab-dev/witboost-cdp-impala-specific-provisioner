@@ -25,25 +25,6 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaPrimitiveDataType
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  ImpalaDataType,
-  ImpalaPrimitiveDataType
-}
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaDataType.{
-  ImpalaArray,
-  ImpalaBigInt,
-  ImpalaBoolean,
-  ImpalaChar,
-  ImpalaDate,
-  ImpalaDecimal,
-  ImpalaDouble,
-  ImpalaInt,
-  ImpalaSmallInt,
-  ImpalaString,
-  ImpalaTimestamp,
-  ImpalaTinyInt,
-  ImpalaVarChar
-}
 
 import java.util.Locale
 import scala.util.Try

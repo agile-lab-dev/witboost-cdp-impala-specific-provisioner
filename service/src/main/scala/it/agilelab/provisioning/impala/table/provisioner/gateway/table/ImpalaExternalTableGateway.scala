@@ -29,4 +29,15 @@ class ImpalaExternalTableGateway(
         )
       )
       .map(_ => ())
+
+  override def drop(
+      connectionConfigurations: ConnectionConfig,
+      externalTable: ExternalTable,
+      ifExists: Boolean
+  ): Either[SqlGatewayError, Unit] =
+    sqlQueryExecutor
+      .executeDDL(
+        connectionConfigurations.copy(user = deployUser, password = deployPassword),
+        ddlProvider.dropExternalTable(externalTable, ifExists))
+      .map(_ => ())
 }

@@ -42,7 +42,7 @@ object ImpalaProvisionerController {
             new ImpalaTableOutputPortGateway(
               ctx.deployRoleUser,
               new HostProvider(ctx.cdpEnvClient, ctx.cdpDlClient),
-              ExternalTableGateway.impala(ctx.deployRoleUser, ctx.deployRolePwd),
+              ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd),
               new RangerGatewayProvider(ctx.deployRoleUser, ctx.deployRolePwd)
             )
           ),

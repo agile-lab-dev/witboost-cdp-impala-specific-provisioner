@@ -148,6 +148,10 @@ By default, the server binds to port 8080 on localhost. After it's up and runnin
 
 Most application configurations are handled with the Typesafe Config library. You can find the default settings in the `reference.conf` of each module. Customize them and use the `config.file` system property or the other options provided by Typesafe Config according to your needs. The provided docker image expects the config file mounted at path `/config/application.conf`.
 
+| Configuration       | Description                                           | Default |
+|:--------------------|:------------------------------------------------------|:--------|
+| drop-on-unprovision | Drops the created external tables at unprovision time | `true`  |
+
 ## Deploying
 
 This microservice is meant to be deployed to a Kubernetes cluster.

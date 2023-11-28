@@ -8,4 +8,6 @@ trait DataDefinitionLanguageProvider {
 
   def createExternalTable(externalTable: ExternalTable, ifNotExists: Boolean): String
 
+  def dropExternalTable(externalTable: ExternalTable, ifExists: Boolean): String
+
 }

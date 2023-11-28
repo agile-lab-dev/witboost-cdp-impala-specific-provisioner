@@ -2,34 +2,24 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 
 import com.cloudera.cdp.datalake.model.Datalake
 import com.cloudera.cdp.environments.model.Environment
+import io.circe.Json
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.model.{
   RangerSecurityZone,
   RangerSecurityZoneResources
 }
+import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
-import it.agilelab.provisioning.mesh.repository.Repository
+import it.agilelab.provisioning.impala.table.provisioner.core.model._
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.policy.RangerPolicyGateway
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
+import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
 import it.agilelab.provisioning.mesh.self.service.api.model.{ DataProduct, ProvisionRequest }
 import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 import it.agilelab.provisioning.mesh.self.service.lambda.core.model.Domain
-import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  Acl,
-  ExternalTable,
-  Field,
-  ImpalaCdpAcl,
-  ImpalaCdw,
-  ImpalaDataType,
-  ImpalaTableOutputPortResource,
-  PolicyAttachment
-}
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.policy.RangerPolicyGateway
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
-import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -120,7 +110,6 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       new ImpalaTableOutputPortGateway(
         "srvRole",
         hostProvider,
-        //domainRepository,
         externalTableGateway,
         rangerGatewayProvider
       )
@@ -406,7 +395,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       .returns(Right("impalaHost"))
 
     val externalTableGateway = stub[ExternalTableGateway]
-    (externalTableGateway.create _)
+    (externalTableGateway.drop _)
       .when(*, *, *)
       .returns(Right())
 
@@ -464,7 +453,6 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       new ImpalaTableOutputPortGateway(
         "srvRole",
         hostProvider,
-        //domainRepository,
         externalTableGateway,
         rangerGatewayProvider
       )
@@ -543,5 +531,4 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     )
     assert(actual == expected)
   }
-
 }
