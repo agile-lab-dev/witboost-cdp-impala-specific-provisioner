@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ template "cdp-impala-provisioner.name" . }}
+{{- include "cdp-impala-provisioner.labels" . | nindent 4 }}
+  name: {{ template "cdp-impala-provisioner.fullname" . }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "cdp-impala-provisioner.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "cdp-impala-provisioner.name" . }}
+        actorSystemName: {{ template "cdp-impala-provisioner.name" . }}
+    spec:
+      {{- if .Values.existingServiceAccount }}
+      serviceAccountName: {{ .Values.existingServiceAccount }}
+      {{- else if .Values.serviceAccount.create }}
+      serviceAccountName: {{ template "cdp-impala-provisioner.name" . }}-service-account
+      {{- else }}
+        {{- fail "Service account not specified. It is mandatory" }}
+      {{- end }}
+      automountServiceAccountToken: false
+      {{- if .Values.dockerRegistrySecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.dockerRegistrySecretName }}
+      {{- end}}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ template "cdp-impala-provisioner.fullname" . }}-config
+            defaultMode: 420
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.registry }}:{{ .Values.image.tag }}
+          command: ["bin/impala-table-provisioner"]
+          args: ["-Dconfig.file=etc/configs/application.conf", "-Dlogback.configurationFile=etc/configs/logback.xml", "-Dconfig.override_with_env_vars=true"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8093
+              protocol: TCP
+          {{- if .Values.securityContext }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CDP_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: witboost-secrets
+                  key: CDP_ACCESS_KEY_ID
+            - name: CDP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: witboost-secrets
+                  key: CDP_PRIVATE_KEY
+            - name: CDP_DEPLOY_ROLE_USER
+              value: bbb
+            - name: CDP_DEPLOY_ROLE_PASSWORD
+              value: aaa
+          volumeMounts:
+            - name: config
+              mountPath: /opt/docker/etc/configs

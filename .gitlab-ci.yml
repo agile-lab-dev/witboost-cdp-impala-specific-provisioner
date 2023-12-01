@@ -11,6 +11,7 @@ stages:
   - test
   - build
   - deploy
+  - package
 
 variables:
   SBT_OPTS: "-Dsbt.global.base=sbt-cache/sbtboot -Dsbt.boot.directory=sbt-cache/boot -Dsbt.ivy.home=sbt-cache/ivy"
@@ -42,6 +43,17 @@ setup:
     reports:
       dotenv: vars.env
 
+witboost.helm.checks:
+  stage: check
+  extends: .witboost.helm.base-job
+  before_script: []
+  cache: []
+  script:
+    - !reference [.witboost.helm.clone-scripts, script]
+    - !reference [.witboost.helm.checks, script]
+  variables:
+    CHART_FOLDER: helm
+    
 check:
   stage: check
   script:
@@ -91,3 +103,13 @@ build:
     docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     echo "VERSION: $VERSION"
     sbt clean compile k8tyGitlabCIPublish docker:publish ${SBT_OPTS}
+
+witboost.helm.deploy:
+  stage: package
+  before_script: []
+  cache: []
+  extends: .witboost.helm.deploy
+  only:
+    - master
+    - tags
+    - /(^release\/([0-9]+)\.([0-9]+))/

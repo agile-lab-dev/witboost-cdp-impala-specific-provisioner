@@ -1,0 +1,50 @@
+# Default values for cdp-impala-provisioner.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  # -- Image repository
+  registry: registry.gitlab.com/agilefactory/witboost.mesh/provisioning/cdp-refresh/witboost.mesh.provisioning.outputport.cdp.impala
+  # -- Image tag
+  tag: latest
+  # -- The imagePullPolicy for a container and the tag of the image affect when the kubelet attempts to pull (download) the specified image.
+  pullPolicy: Always
+
+# -- Docker Registry Secret name used to access a private repo
+dockerRegistrySecretName: regcred
+
+# -- service account nme
+serviceAccount:
+  create: false
+  # -- The AWS role arn that will be assumed
+  roleArn:
+
+# -- the name of an existing serviceAccount
+existingServiceAccount: cdp-s3-provisioner-service-account
+
+# -- security context spec
+securityContext:
+  runAsUser: 1001
+  allowPrivilegeEscalation: false
+  runAsNonRoot: false
+
+# -- the number of pod replicas
+replicas: 1
+
+# -- readiness probe spec
+readinessProbe: {}
+
+# -- liveliness probe spec
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+
+# -- resources spec
+resources: {}
+
+# -- This configuration allows you to override the application.conf file
+configOverride:
+
+# -- This configuration allows you to override the logback.xml file
+logbackOverride:
