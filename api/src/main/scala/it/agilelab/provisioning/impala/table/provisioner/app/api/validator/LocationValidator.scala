@@ -6,11 +6,11 @@ class LocationValidator(s3Gateway: S3Gateway) {
   def locationExists(location: String): Boolean = {
     val result = for {
       bucketAndKey <- getBucketAndKey(location)
-      content      <- s3Gateway.getObjectContent(bucketAndKey._1, bucketAndKey._2)
+      content      <- s3Gateway.listObjects(bucketAndKey._1, Some(bucketAndKey._2))
     } yield content
     result match {
-      case Right(_) => true
-      case Left(_)  => false
+      case Right(list) => list.nonEmpty
+      case Left(_)     => false
     }
   }
 
