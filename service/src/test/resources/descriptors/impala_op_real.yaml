@@ -81,7 +81,7 @@ dataProduct:
         cdpEnvironment: aws-frankfurt-data-eng
         cdwVirtualWarehouse: impala-test-vw
         format: CSV
-        location: s3a://bucketName/folderPath/
+        location: s3a://cdp-data-eu-central-1-512175274871/mesh/warehouse/tablespace/external/hive/test-other-dp-sergio/
         acl:
           owners:
             - user:sergio.mejia_agilelab.it

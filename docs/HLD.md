@@ -3,6 +3,14 @@
 This document describes the High Level Design of the CDP Impala Specific Provisioner.
 The source diagrams can be found and edited in the [accompanying draw.io file](hld.drawio).
 
+- [Overview](#overview)
+- [CDP Public](#cdp-public-cloud-impala-specific-provisioner)
+  - [Provisioning](#provisioning)
+  - [Unprovisioning](#unprovisioning)
+- [CDP Private](#cdp-private-cloud-base-impala-specific-provisioner)
+  - [Provisioning](#provisioning-1)
+  - [Unprovisioning](#unprovisioning-1)
+
 ## Overview
 
 ### Specific Provisioner
@@ -22,7 +30,7 @@ To enable the above orchestration a SP exposes an API made up of five main opera
 - unprovision: destroys the resources previously allocated.
 - updateacl: grants access to a specific component/resource to a list of users/groups
 
-### CDP Impala Specific Provisioner
+## CDP Public Cloud Impala Specific Provisioner
 
 This Specific Provisioner interacts with a CDP Environment and provisions an Output Port based on an Impala external table created on a Cloudera Data Warehouse (CDW) Impala Virtual Warehouse. This table exposes data contained in a S3 bucket.
 
@@ -45,7 +53,7 @@ The provisioner will be designed as a microservice implementing v1 endpoints of 
 
 The creation and management of the S3 bucket, as well as the data contained in it, is out of the scope of the provisioner, as it only creates the external table based on it. For this reason, the deploy user configured for the microservice should have the permissions to access the S3 bucket.
 
-## Provisioning
+### Provisioning
 
 The provisioning task creates (if not existent) the database and tables on the Impala VW based on the received parameters, it then creates the security zone, roles and policies in order to manage the access control of these resources.
 
@@ -55,8 +63,32 @@ Owners and users are defined based on the received descriptor fields
 
 ![Provisioning](img/hld-Provisioning.png)
 
-## Unprovisioning
+### Unprovisioning
 
 Unprovisioning consists of removing the existing (if any) created tables on Impala, deleting the Ranger access policies for the provisioned table and URL resources, and removing from the Security Zone managed resources the URL. For concurrency safety, the provisioner never drops databases or schemas, this should be done manually. For the same reason, it doesn't remove the database access policy.
 
 ![Unprovisioning](img/hld-Unprovisioning.png)
+
+## CDP Private Cloud Base Impala Specific Provisioner
+
+This Specific Provisioner is configured to also work with a CDP Private environment, although with different limitations. It continues to provision an Output Port based on an Impala external table created on a Cloudera Data Warehouse (CDW) Impala Virtual Warehouse. In CDP Private, this table exposes data stored in the HDFS cluster.
+
+The provisioner is designed to work with CDP Private v7.1.7 which includes Apache Impala 3.4.0 and Apache Ranger 2.1.0.
+
+The same considerations as the CDP Public for database and table management follow, including the access management through Ranger policies. The creation and management of HDFS, as well as the data contained in it, is out of the scope of the provisioner, as it only creates the external table based on it.
+
+### Provisioning
+
+The provisioning task creates (if not existent) the database and tables on the Impala environment based on the received parameters, it then creates the security zone, roles and policies in order to manage the access control of these resources.
+
+Differently from the CDW experience, when the Specific Provisioner is configured to work with CDP Private, it should define a configurable list of JDBC URLs in order to communicate with the set of Impala coordinators. If the deployed infrastructure includes a load balancer for Impala, the list may contain just one entry corresponding to the load balancer URL. Because of this, the descriptor only needs to include the HDFS location of the files. 
+
+Ranger roles and policy management acts the same as the CDP Public provisioning explained above. 
+
+![Provisioning](img/hld-PrivateProvisioning.png)
+
+### Unprovisioning
+
+Unprovisioning works the same as the CDP Public version, dropping the external table and removing the appropriate policies and roles.
+
+![Unprovisioning](img/hld-PrivateUnprovisioning.png)

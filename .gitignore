@@ -6,3 +6,6 @@ target
 null/
 
 .lab.cache
+
+*.bkp
+*.dtmp
