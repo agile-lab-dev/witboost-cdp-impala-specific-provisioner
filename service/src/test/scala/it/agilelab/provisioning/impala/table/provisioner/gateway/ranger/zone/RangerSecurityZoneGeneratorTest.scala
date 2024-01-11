@@ -1,10 +1,9 @@
-package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger
+package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone
 
 import it.agilelab.provisioning.commons.client.ranger.model.{
   RangerSecurityZone,
   RangerSecurityZoneResources
 }
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGenerator
 import org.scalatest.funsuite.AnyFunSuite
 
 class RangerSecurityZoneGeneratorTest extends AnyFunSuite {

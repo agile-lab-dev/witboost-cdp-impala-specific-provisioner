@@ -63,17 +63,23 @@ spec:
             - name: CDP_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: witboost-secrets
+                  name: witboost-addons-secrets
                   key: CDP_ACCESS_KEY_ID
             - name: CDP_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
-                  name: witboost-secrets
+                  name: witboost-addons-secrets
                   key: CDP_PRIVATE_KEY
             - name: CDP_DEPLOY_ROLE_USER
-              value: bbb
+              valueFrom:
+                secretKeyRef:
+                  name: witboost-addons-secrets
+                  key: CDP_DEPLOY_ROLE_USER
             - name: CDP_DEPLOY_ROLE_PASSWORD
-              value: aaa
+              valueFrom:
+                secretKeyRef:
+                  name: witboost-addons-secrets
+                  key: CDP_DEPLOY_ROLE_PASSWORD
           volumeMounts:
             - name: config
               mountPath: /opt/docker/etc/configs

@@ -5,19 +5,17 @@ import io.circe.Json
 import io.circe.generic.auto._
 import it.agilelab.provisioning.api.generated.definitions._
 import it.agilelab.provisioning.api.generated.{ Handler, Resource }
+import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.app.api.mapping.{
   ProvisioningStatusMapper,
   ValidationErrorMapper
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  ImpalaCdw,
-  ImpalaTableOutputPortResource
-}
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
 import it.agilelab.provisioning.mesh.self.service.api.controller.ProvisionerController
 import it.agilelab.provisioning.mesh.self.service.api.model.{ ApiError, ApiRequest }
 
 class SpecificProvisionerHandler(
-    provisioner: ProvisionerController[Json, ImpalaCdw]
+    provisioner: ProvisionerController[Json, ImpalaCdw, CdpIamPrincipals]
 ) extends Handler[IO] {
 
   private val NotImplementedError = SystemError(
@@ -62,7 +60,17 @@ class SpecificProvisionerHandler(
   override def updateacl(respond: Resource.UpdateaclResponse.type)(
       body: UpdateAclRequest
   ): IO[Resource.UpdateaclResponse] = IO {
-    Resource.UpdateaclResponse.InternalServerError(NotImplementedError)
+    provisioner.updateAcl(
+      ApiRequest.UpdateAclRequest(
+        body.refs,
+        ApiRequest.ProvisionInfo(body.provisionInfo.request, body.provisionInfo.result))
+    ) match {
+      case Left(error: ApiError.ValidationError) =>
+        Resource.UpdateaclResponse.BadRequest(RequestValidationError(error.errors.toVector))
+      case Left(error: ApiError.SystemError) =>
+        Resource.UpdateaclResponse.InternalServerError(SystemError(error.error))
+      case Right(status) => Resource.UpdateaclResponse.Ok(ProvisioningStatusMapper.from(status))
+    }
   }
 
   override def validate(respond: Resource.ValidateResponse.type)(

@@ -7,12 +7,8 @@ import it.agilelab.provisioning.commons.client.ranger.RangerClientError.{
 }
 import it.agilelab.provisioning.commons.client.ranger.model.RangerSecurityZone
 import it.agilelab.provisioning.commons.http.HttpErrors.ConnectionErr
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.{
-  FindSecurityZoneOwnerErr,
-  UpsertSecurityZoneErr
-}
-import it.agilelab.provisioning.mesh.repository.RepositoryError.FindEntityByIdErr
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.UpsertSecurityZoneErr
 import org.scalatest.EitherValues._
 
 trait RangerGatewayTestSupport {
@@ -128,33 +124,6 @@ trait RangerGatewayTestSupport {
         .asInstanceOf[ConnectionErr]
         .getMessage == httpError.getMessage
     )
-  }
-
-  def assertFindSecurityZoneErr[A](
-      actual: Either[RangerSecurityZoneGatewayError, A],
-      error: FindEntityByIdErr[String]
-  ): Unit = {
-    assert(actual.isLeft)
-    assert(actual.left.value.isInstanceOf[FindSecurityZoneOwnerErr])
-    assert(
-      actual.left.value
-        .asInstanceOf[FindSecurityZoneOwnerErr]
-        .error
-        .isInstanceOf[FindEntityByIdErr[String]])
-    assert(
-      actual.left.value
-        .asInstanceOf[FindSecurityZoneOwnerErr]
-        .error
-        .asInstanceOf[FindEntityByIdErr[String]]
-        .id == error.id
-    )
-    assert(
-      actual.left.value
-        .asInstanceOf[FindSecurityZoneOwnerErr]
-        .error
-        .asInstanceOf[FindEntityByIdErr[String]]
-        .error
-        .getMessage == error.error.getMessage)
   }
 
 }

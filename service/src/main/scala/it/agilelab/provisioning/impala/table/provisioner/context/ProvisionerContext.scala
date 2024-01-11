@@ -4,6 +4,7 @@ import cats.implicits.toBifunctorOps
 import it.agilelab.provisioning.commons.client.cdp.dl.CdpDlClient
 import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClient
 import it.agilelab.provisioning.commons.config.Conf
+import it.agilelab.provisioning.commons.principalsmapping.{ CdpIamPrincipals, PrincipalsMapper }
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
   ClientError,
   ConfigurationError
@@ -13,7 +14,8 @@ final case class ProvisionerContext(
     deployRoleUser: String,
     deployRolePwd: String,
     cdpEnvClient: CdpEnvClient,
-    cdpDlClient: CdpDlClient
+    cdpDlClient: CdpDlClient,
+    principalsMapper: PrincipalsMapper[CdpIamPrincipals]
 )
 
 object ProvisionerContext {
@@ -35,10 +37,13 @@ object ProvisionerContext {
       deployRolePwd  <- conf.get(CDP_DEPLOY_ROLE_PASSWORD).leftMap(e => ConfigurationError(e))
       cdpEnvClient   <- CdpEnvClient.defaultWithAudit().leftMap(e => ClientError("CdpEnvClient", e))
       cdpDlClient    <- CdpDlClient.defaultWithAudit().leftMap(e => ClientError("CdpDlClient", e))
+      principalsMapper <- new PrincipalsMapperPluginLoader().load(
+        ApplicationConfiguration.provisionerConfig)
     } yield ProvisionerContext(
       deployRoleUser,
       deployRolePwd,
       cdpEnvClient,
-      cdpDlClient
+      cdpDlClient,
+      principalsMapper
     )
 }

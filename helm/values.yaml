@@ -20,7 +20,7 @@ serviceAccount:
   roleArn:
 
 # -- the name of an existing serviceAccount
-existingServiceAccount: cdp-s3-provisioner-service-account
+existingServiceAccount: cdp-impala-provisioner-service-account
 
 # -- security context spec
 securityContext:

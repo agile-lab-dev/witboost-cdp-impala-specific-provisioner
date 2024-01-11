@@ -19,8 +19,8 @@ object RangerPolicyGenerator {
 
   def impalaDb(
       database: String,
-      owners: Seq[String],
-      users: Seq[String],
+      ownerRole: String,
+      userRole: String,
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -35,15 +35,15 @@ object RangerPolicyGenerator {
       )
       .copy(
         resources = RangerResources.database(database),
-        policyItems = defineDbPolicyItems(owners, usersOwners, users),
+        policyItems = defineDbPolicyItems(ownerRole, usersOwners, userRole),
         policyPriority = PolicyPriority.OVERRIDE
       )
 
   def impalaTable(
       database: String,
       table: String,
-      owners: Seq[String],
-      users: Seq[String],
+      ownerRole: String,
+      userRole: String,
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -58,15 +58,15 @@ object RangerPolicyGenerator {
       )
       .copy(
         resources = RangerResources.table(database, table),
-        policyItems = defineDataPolicyItems(owners, usersOwners, users)
+        policyItems = defineDataPolicyItems(ownerRole, usersOwners, userRole)
       )
 
   def impalaUrl(
       database: String,
       table: String,
       url: String,
-      owners: Seq[String],
-      users: Seq[String],
+      ownerRole: String,
+      userRole: String,
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -81,43 +81,50 @@ object RangerPolicyGenerator {
       )
       .copy(
         resources = RangerResources.url(url),
-        policyItems = defineDataPolicyItems(owners, usersOwners, users)
+        policyItems = defineDataPolicyItems(ownerRole, usersOwners, userRole)
       )
 
   private def defineDataPolicyItems(
-      ownerGroups: Seq[String],
+      ownerRole: String,
       ownerUsers: Seq[String],
-      usersGroups: Seq[String]
-  ): Seq[RangerPolicyItem] = {
-    val ownerItems = nonEmptyExec(
-      ownerGroups,
-      (s: Seq[String]) => Seq(RangerPolicyItem.ownerLevel(s, ownerUsers))
+      userRole: String
+  ): Seq[RangerPolicyItem] =
+    Seq(
+      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole)),
+      RangerPolicyItem
+        .userLevel(Seq.empty, Seq.empty[String], List(userRole))
     )
-    val usersItems = nonEmptyExec(
-      usersGroups,
-      (s: Seq[String]) => Seq(RangerPolicyItem.userLevel(s, Seq.empty[String]))
-    )
-    ownerItems ++ usersItems
-  }
 
   private def defineDbPolicyItems(
-      ownerGroups: Seq[String],
+      ownerRole: String,
       ownerUsers: Seq[String],
-      usersGroups: Seq[String]
-  ): Seq[RangerPolicyItem] = {
-    val ownerItems = nonEmptyExec(
-      ownerGroups,
-      (s: Seq[String]) => Seq(RangerPolicyItem.ownerLevel(s, ownerUsers))
+      userRole: String
+  ): Seq[RangerPolicyItem] =
+    Seq(
+      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole)),
+      RangerPolicyItem
+        .userLevel(Seq.empty, Seq.empty[String], List(userRole))
+        .copy(accesses = Seq(Access.select))
     )
-    val usersItems = nonEmptyExec(
-      usersGroups,
-      (s: Seq[String]) =>
-        Seq(RangerPolicyItem.userLevel(s, Seq.empty[String]).copy(accesses = Seq(Access.select)))
-    )
-    ownerItems ++ usersItems
+
+  def policyWithMergedPolicyItems(
+      rangerPolicy: RangerPolicy,
+      policyItems: Seq[RangerPolicyItem]
+  ): RangerPolicy = {
+    val mergedItems = (rangerPolicy.policyItems ++ policyItems).distinct
+    rangerPolicy.copy(policyItems = mergedItems)
   }
 
-  private def nonEmptyExec[A, B](seq: Seq[A], func: Seq[A] => Seq[B]): Seq[B] =
-    if (seq.nonEmpty) func(seq)
-    else Seq.empty[B]
+  def policyWithRemovedRole(
+      rangerPolicy: RangerPolicy,
+      roleName: String
+  ): RangerPolicy =
+    rangerPolicy.copy(policyItems = rangerPolicy.policyItems.flatMap { policyItem =>
+      val item = policyItem.copy(
+        roles = policyItem.roles.filter(!_.equals(roleName))
+      )
+      if (item.roles.isEmpty && item.roles.isEmpty && item.roles.isEmpty) None
+      else Some(item)
+    })
+
 }

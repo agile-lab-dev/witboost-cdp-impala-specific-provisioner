@@ -8,15 +8,21 @@ import it.agilelab.provisioning.mesh.self.service.core.gateway.{
 }
 import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 import io.circe.Json
+import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaCdw,
   ImpalaTableOutputPortResource
 }
 
 class ImpalaTableOutputPortGatewayWithAudit(
-    componentGateway: ComponentGateway[Json, ImpalaCdw, ImpalaTableOutputPortResource],
+    componentGateway: ComponentGateway[
+      Json,
+      ImpalaCdw,
+      ImpalaTableOutputPortResource,
+      CdpIamPrincipals
+    ],
     audit: Audit
-) extends ComponentGateway[Json, ImpalaCdw, ImpalaTableOutputPortResource] {
+) extends ComponentGateway[Json, ImpalaCdw, ImpalaTableOutputPortResource, CdpIamPrincipals] {
   private val INFO_MSG = "Executing %s"
 
   override def create(
@@ -48,4 +54,14 @@ class ImpalaTableOutputPortGatewayWithAudit(
       case Left(l)  => audit.error(s"$action failed. Details: ${l.error}")
     }
 
+  override def updateAcl(
+      provisionCommand: ProvisionCommand[Json, ImpalaCdw],
+      refs: Set[CdpIamPrincipals]
+  ): Either[ComponentGatewayError, Set[CdpIamPrincipals]] = {
+    val action = s"UpdateAcl($provisionCommand)"
+    audit.info(INFO_MSG.format(action))
+    val result = componentGateway.updateAcl(provisionCommand, refs)
+    auditWithinResult(result, action)
+    result
+  }
 }

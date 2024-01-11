@@ -1,4 +1,4 @@
-package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger
+package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone
 
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.RangerClientError.{
@@ -12,17 +12,8 @@ import it.agilelab.provisioning.commons.client.ranger.model.{
   RangerService
 }
 import it.agilelab.provisioning.commons.http.HttpErrors.ConnectionErr
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
-import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.{
-  FindSecurityZoneOwnerErr,
-  FindServiceErr
-}
-import it.agilelab.provisioning.mesh.repository.Repository
-import it.agilelab.provisioning.mesh.repository.RepositoryError.{
-  EntityDoesNotExists,
-  FindEntityByIdErr
-}
-import it.agilelab.provisioning.mesh.self.service.lambda.core.model.{ Domain, Role }
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.RangerGatewayTestSupport
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.FindServiceErr
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -31,12 +22,12 @@ class RangerSecurityZoneGatewayTest
     with MockFactory
     with RangerGatewayTestSupport {
   val client: RangerClient = stub[RangerClient]
-  val roleRepository: Repository[Role, String, Unit] = stub[Repository[Role, String, Unit]]
+
   val gateway =
-    new RangerSecurityZoneGateway(roleRepository, client)
+    new RangerSecurityZoneGateway(client)
   val zone: RangerSecurityZone = RangerSecurityZone(
     1,
-    "plt",
+    "domain_dpName_0",
     Map(
       "nifi" -> RangerSecurityZoneResources(
         Seq(
@@ -54,12 +45,12 @@ class RangerSecurityZoneGatewayTest
   )
   val zoneUpdated: RangerSecurityZone = RangerSecurityZone(
     1,
-    "plt",
+    "domain_dpName_0",
     Map(
       "cm_hive" -> RangerSecurityZoneResources(
         Seq(
           Map(
-            "database" -> Seq("plt_*"),
+            "database" -> Seq("domain_dpName_0_*"),
             "column"   -> Seq("*"),
             "table"    -> Seq("*")
           ),
@@ -105,8 +96,9 @@ class RangerSecurityZoneGatewayTest
   )
 
   test("upsertSecurityZone return Right(RangerSecurityZone) when security zone already exists") {
+
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(Some(zone)))
 
     (client.findAllServices _)
@@ -123,7 +115,9 @@ class RangerSecurityZoneGatewayTest
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
@@ -134,18 +128,18 @@ class RangerSecurityZoneGatewayTest
   test(
     "upsertSecurityZone return Right(RangerSecurityZone) when security zone already exists with isDestroy") {
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(
         Right(
           Some(
             RangerSecurityZone(
               1,
-              "plt",
+              "domain_dpName_0",
               Map(
                 "cm_hive" -> RangerSecurityZoneResources(
                   Seq(
                     Map(
-                      "database" -> Seq("plt_*"),
+                      "database" -> Seq("domain_dpName_0_*"),
                       "column"   -> Seq("*"),
                       "table"    -> Seq("*")
                     ),
@@ -181,12 +175,12 @@ class RangerSecurityZoneGatewayTest
     (client.updateSecurityZone _)
       .when(RangerSecurityZone(
         1,
-        "plt",
+        "domain_dpName_0",
         Map(
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -208,12 +202,12 @@ class RangerSecurityZoneGatewayTest
       ))
       .returns(Right(RangerSecurityZone(
         1,
-        "plt",
+        "domain_dpName_0",
         Map(
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -234,22 +228,26 @@ class RangerSecurityZoneGatewayTest
         List("auditUserGroup1", "auditUserGroup2")
       )))
 
-    val actual = gateway.upsertSecurityZone(
-      "srvRole",
-      Domain("platform", "plt"),
-      "hive",
-      "cdpDlName",
-      Seq("url1"),
-      isDestroy = true)
+    val actual =
+      gateway.upsertSecurityZone(
+        "srvRole",
+        "domain_dpName_0",
+        "dataProductOwner",
+        Some("devGroup"),
+        "hive",
+        "cdpDlName",
+        Seq("url1"),
+        isDestroy = true)
+
     val expected = Right(
       RangerSecurityZone(
         1,
-        "plt",
+        "domain_dpName_0",
         Map(
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -275,13 +273,13 @@ class RangerSecurityZoneGatewayTest
   test("upsertSecurityZone return Right(RangerSecurityZone) when security zone does not exists") {
     val newZone = RangerSecurityZone(
       -1,
-      "plt",
+      "domain_dpName_0",
       Map(
         "cm_hive" ->
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),
@@ -293,12 +291,12 @@ class RangerSecurityZoneGatewayTest
       ),
       isEnabled = true,
       Seq("srvRole"),
-      Seq("cdpRole"),
-      Seq("srvRole"),
-      Seq("cdpRole")
+      Seq.empty,
+      Seq("srvRole", "dataProductOwner"),
+      Seq("devGroup")
     )
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(None))
 
     (client.findAllServices _)
@@ -309,18 +307,15 @@ class RangerSecurityZoneGatewayTest
             hiveService,
             RangerService(1, isEnabled = true, "nifi", "cm_nifi", "NiFi", Map.empty))))
 
-    (roleRepository.findById _)
-      .when("platform-team-role")
-      .returns(Right(
-        Some(Role("platform-team-role", "plt", "iamRole", "iamRoleArn", "cdpRole", "cdpRoleCrn"))))
-
     (client.createSecurityZone _)
       .when(newZone)
       .returns(Right(newZone))
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
@@ -332,13 +327,13 @@ class RangerSecurityZoneGatewayTest
     "upsertSecurityZone return Right(RangerSecurityZone) when security zone does not exists with isDestroy") {
     val newZone = RangerSecurityZone(
       -1,
-      "plt",
+      "domain_dpName_0",
       Map(
         "cm_hive" ->
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -347,12 +342,12 @@ class RangerSecurityZoneGatewayTest
       ),
       isEnabled = true,
       Seq("srvRole"),
-      Seq("cdpRole"),
-      Seq("srvRole"),
-      Seq("cdpRole")
+      Seq.empty,
+      Seq("srvRole", "dataProductOwner"),
+      Seq("devGroup")
     )
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(None))
 
     (client.findAllServices _)
@@ -363,18 +358,15 @@ class RangerSecurityZoneGatewayTest
             hiveService,
             RangerService(1, isEnabled = true, "nifi", "cm_nifi", "NiFi", Map.empty))))
 
-    (roleRepository.findById _)
-      .when("platform-team-role")
-      .returns(Right(
-        Some(Role("platform-team-role", "plt", "iamRole", "iamRoleArn", "cdpRole", "cdpRoleCrn"))))
-
     (client.createSecurityZone _)
       .when(newZone)
       .returns(Right(newZone))
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"),
@@ -386,28 +378,32 @@ class RangerSecurityZoneGatewayTest
   test(
     "upsertSecurityZone return Left(UpsertSecurityZoneErr(FindSecurityZoneByNameErr)) when security zone is not available") {
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(
         Left(
-          FindSecurityZoneByNameErr("plt", ConnectionErr("xx", new IllegalArgumentException("x")))
+          FindSecurityZoneByNameErr(
+            "domain_dpName_0",
+            ConnectionErr("xx", new IllegalArgumentException("x")))
         ))
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
 
     assertUpsertZoneWithFindZoneErr(
       actual,
-      "plt",
+      "domain_dpName_0",
       ConnectionErr("xx", new IllegalArgumentException("x")))
   }
 
   test("upsertSecurityZone return Left(FindServiceErr) when service is not available") {
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(Some(zone)))
 
     (client.findAllServices _)
@@ -416,7 +412,9 @@ class RangerSecurityZoneGatewayTest
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
@@ -428,7 +426,7 @@ class RangerSecurityZoneGatewayTest
 
   test("upsertSecurityZone return Left(UpsertSecurityZoneErr) when update fails") {
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(Some(zone)))
 
     (client.findAllServices _)
@@ -448,7 +446,9 @@ class RangerSecurityZoneGatewayTest
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
@@ -462,13 +462,13 @@ class RangerSecurityZoneGatewayTest
   test("upsertSecurityZone return Left(UpsertSecurityZoneErr) when create fails") {
     val zoneToBeCreated = RangerSecurityZone(
       -1,
-      "plt",
+      "domain_dpName_0",
       Map(
         "cm_hive" ->
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("plt_*"),
+                "database" -> Seq("domain_dpName_0_*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),
@@ -480,12 +480,12 @@ class RangerSecurityZoneGatewayTest
       ),
       isEnabled = true,
       Seq("srvRole"),
-      Seq("cdpRole"),
-      Seq("srvRole"),
-      Seq("cdpRole")
+      Seq.empty,
+      Seq("srvRole", "dataProductOwner"),
+      Seq("devGroup")
     )
     (client.findSecurityZoneByName _)
-      .when("plt")
+      .when("domain_dpName_0")
       .returns(Right(None))
 
     (client.findAllServices _)
@@ -495,11 +495,6 @@ class RangerSecurityZoneGatewayTest
           List(
             hiveService,
             RangerService(1, isEnabled = true, "nifi", "cm_nifi", "NiFi", Map.empty))))
-
-    (roleRepository.findById _)
-      .when("platform-team-role")
-      .returns(Right(
-        Some(Role("platform-team-role", "plt", "iamRole", "iamRoleArn", "cdpRole", "cdpRoleCrn"))))
 
     (client.createSecurityZone _)
       .when(zoneToBeCreated)
@@ -512,7 +507,9 @@ class RangerSecurityZoneGatewayTest
 
     val actual = gateway.upsertSecurityZone(
       "srvRole",
-      Domain("platform", "plt"),
+      "domain_dpName_0",
+      "dataProductOwner",
+      Some("devGroup"),
       "hive",
       "cdpDlName",
       Seq("url1", "url2"))
@@ -521,61 +518,6 @@ class RangerSecurityZoneGatewayTest
       actual,
       zoneToBeCreated,
       ConnectionErr("xx", new IllegalArgumentException("x")))
-  }
-
-  test("upsertSecurityZone return Left(UpsertSecurityZoneErr) when owner does not exists") {
-    (client.findSecurityZoneByName _)
-      .when("plt")
-      .returns(Right(None))
-
-    (client.findAllServices _)
-      .when()
-      .returns(
-        Right(
-          List(
-            hiveService,
-            RangerService(1, isEnabled = true, "nifi", "cm_nifi", "NiFi", Map.empty))))
-
-    (roleRepository.findById _)
-      .when("platform-team-role")
-      .returns(Right(None))
-
-    val actual = gateway.upsertSecurityZone(
-      "srvRole",
-      Domain("platform", "plt"),
-      "hive",
-      "cdpDlName",
-      Seq("url1", "url2"))
-    val expected = Left(FindSecurityZoneOwnerErr(EntityDoesNotExists("platform-team-role")))
-    assert(actual == expected)
-  }
-
-  test("upsertSecurityZone return Left(UpsertSecurityZoneErr) when findById fails") {
-    (client.findSecurityZoneByName _)
-      .when("plt")
-      .returns(Right(None))
-
-    (client.findAllServices _)
-      .when()
-      .returns(
-        Right(
-          List(
-            hiveService,
-            RangerService(1, isEnabled = true, "nifi", "cm_nifi", "NiFi", Map.empty))))
-
-    (roleRepository.findById _)
-      .when("platform-team-role")
-      .returns(Left(FindEntityByIdErr("x", new IllegalArgumentException("x"))))
-
-    val actual = gateway.upsertSecurityZone(
-      "srvRole",
-      Domain("platform", "plt"),
-      "hive",
-      "cdpDlName",
-      Seq("url1", "url2"))
-    assertFindSecurityZoneErr(
-      actual,
-      FindEntityByIdErr[String]("x", new IllegalArgumentException("x")))
   }
 
 }

@@ -131,7 +131,7 @@ export CDP_ACCESS_KEY_ID=<cdp_user_access_key_id>
 export CDP_PRIVATE_KEY=<cdp_user_private_key>
 ```
 
-The CDP user needs to have at least the following roles:
+The CDP user must be a `Machine User` and needs to have at least the following roles:
 - DWAdmin
 - DWUser
 - EnvironmentAdmin
@@ -150,9 +150,7 @@ By default, the server binds to port 8080 on localhost. After it's up and runnin
 
 Most application configurations are handled with the Typesafe Config library. You can find the default settings in the `reference.conf` of each module. Customize them and use the `config.file` system property or the other options provided by Typesafe Config according to your needs. The provided docker image expects the config file mounted at path `/config/application.conf`.
 
-| Configuration       | Description                                           | Default |
-|:--------------------|:------------------------------------------------------|:--------|
-| drop-on-unprovision | Drops the created external tables at unprovision time | `true`  |
+For more information on the configuration, see [Configuring the Impala SP](docs/Configuration.md).
 
 ## Deploying
 
@@ -163,9 +161,9 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 1. Parse the request body
 2. Retrieve impala coordinator host and ranger host from cdpEnvironment specified on the request
 3. Create the impala table
-4. Retrieve owners and users Ranger roles mapping
-5. Upsert ranger policy for the specified owners and users roles
-6. Upsert the ranger security zone for the specific domain
+4. Upsert the ranger security zone for the specific data product version
+5. Upsert ranger roles for owner and users of the component.
+6. Upsert access policies for said roles, granting read/write access to the owner role, and read-only to the user role
 7. Return the deployed resource
 
 ## Example input requested
@@ -175,7 +173,6 @@ The specific field shape must correspond to the format below. Specially, the dat
 - Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 - Table name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 
-The current implementation of the project will map the received `acl.owners` and `acl.users` names into CDP roles based on a configuration file present in the project.
 
 Simple table:
 ```
@@ -206,11 +203,6 @@ components:
     cdwVirtualWarehouse: sdpawdir-sfs-i
     format: CSV
     location: s3a://bucket/path/to/folder/
-    acl:
-      owners:
-      - platform-team-role
-      users:
-      - platform-user-role
 ```
 
 Partitions are defined as a list of column names to be used as partitions. These columns must exist in the `dataContract.schema` field and will be validated before deploying any resource.
@@ -244,11 +236,6 @@ components:
     cdwVirtualWarehouse: sdpawdir-sfs-i
     format: CSV
     location: s3a://bucket/path/to/folder/
-    acl:
-      owners:
-      - platform-team-role
-      users:
-      - platform-user-role
     partitions:
       - country
 ```

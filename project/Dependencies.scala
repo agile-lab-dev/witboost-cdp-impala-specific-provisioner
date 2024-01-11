@@ -1,7 +1,7 @@
 import sbt._
 
 trait Dependencies {
-  lazy val scalaCommonsVrs = "0.0.0-SNAPSHOT-94c691a.wit-365-cdp-common-l"
+  lazy val scalaCommonsVrs = "0.0.0-SNAPSHOT-080d200a79.wit-1081-commons-lib"
   lazy val scalaTestVrs = "3.1.0"
   lazy val scalaMockVrs = "4.4.0"
 
@@ -14,6 +14,8 @@ trait Dependencies {
   lazy val scalaMeshSelf = "it.agilelab.provisioning" %% "scala-mesh-self-service" % scalaCommonsVrs
   lazy val scalaMeshSelfLambda =
     "it.agilelab.provisioning" %% "scala-mesh-self-service-lambda" % scalaCommonsVrs
+  lazy val scalaMeshPrincipalsMappingSamples =
+    "it.agilelab.provisioning" %% "scala-mesh-principals-mapping-samples" % scalaCommonsVrs
 
   private val http4sVersion = "0.23.18"
   lazy val http4sDependencies: Seq[ModuleID] = Seq(

@@ -14,7 +14,8 @@ import it.agilelab.provisioning.impala.table.provisioner.app.config.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
   ClientError,
-  ConfigurationError
+  ConfigurationError,
+  PrincipalsMapperLoaderError
 }
 import org.http4s.ember.server.EmberServerBuilder
 
@@ -38,6 +39,9 @@ object Main extends IOApp with StrictLogging {
       case Left(error: ConfigurationError) =>
         logThrowableError(error.error)
         IO.raiseError(error.error)
+      case Left(error: PrincipalsMapperLoaderError) =>
+        logThrowableError(error.throwable)
+        IO.raiseError(error.throwable)
       case Right(value) => IO.pure(value)
     }
     frameworkDependencies <- IO.pure(new FrameworkDependencies(provisionerController))

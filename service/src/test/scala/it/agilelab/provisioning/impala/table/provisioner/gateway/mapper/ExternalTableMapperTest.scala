@@ -1,6 +1,7 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.mapper
 
 import cats.data.NonEmptyList
+import io.circe.Json
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaDataType.{
   ImpalaInt,
   ImpalaString,
@@ -17,14 +18,6 @@ import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{
   ColumnDataType
 }
 import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
-import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  Acl,
-  ExternalTable,
-  Field,
-  ImpalaCdw,
-  ImpalaDataType
-}
 import org.scalatest.EitherValues._
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -36,6 +29,8 @@ class ExternalTableMapperTest extends AnyFunSuite {
     environment = "environment",
     version = "version",
     dataProductOwner = "dataProductOwner",
+    devGroup = "devGroup",
+    ownerGroup = "ownerGroup",
     specific = Json.obj(),
     components = Seq.empty
   )
@@ -72,7 +67,6 @@ class ExternalTableMapperTest extends AnyFunSuite {
         cdwVirtualWarehouse = "service",
         format = Csv,
         location = "location",
-        acl = Acl(Seq.empty, Seq.empty),
         partitions = Some(Seq("name", "surname"))
       )
     )
@@ -127,7 +121,6 @@ class ExternalTableMapperTest extends AnyFunSuite {
         cdwVirtualWarehouse = "service",
         format = Csv,
         location = "location",
-        acl = Acl(Seq.empty, Seq.empty),
         partitions = Some(Seq("name", "surname"))
       )
     )

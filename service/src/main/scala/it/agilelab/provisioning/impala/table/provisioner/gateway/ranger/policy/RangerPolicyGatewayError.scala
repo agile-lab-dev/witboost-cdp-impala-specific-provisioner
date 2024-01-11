@@ -12,10 +12,12 @@ object RangerPolicyGatewayError {
       extends RangerPolicyGatewayError
   final case class AttachRangerPolicyErr(error: RepositoryError) extends RangerPolicyGatewayError
   final case class UpsertPolicyErr(error: RangerClientError) extends RangerPolicyGatewayError
+  final case class DeletePolicyErr(error: RangerClientError) extends RangerPolicyGatewayError
 
   implicit def showPolicyGatewayError: Show[RangerPolicyGatewayError] = Show.show {
     case RangerPolicyGatewayInitErr(error) => show"RangerPolicyGatewayInitErr($error)"
     case AttachRangerPolicyErr(error)      => show"AttachRangerPolicyErr($error)"
     case UpsertPolicyErr(error)            => show"UpsertPolicyErr($error)"
+    case DeletePolicyErr(error)            => show"DeletePolicyErr($error)"
   }
 }

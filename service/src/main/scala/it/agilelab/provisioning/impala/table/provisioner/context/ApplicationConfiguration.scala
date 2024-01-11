@@ -11,8 +11,9 @@ trait ApplicationConfiguration {
 
   val DROP_ON_UNPROVISION = "drop-on-unprovision"
 
-  /** The whole configuration starting from the "datameshProvisioner" key in the configuration files.
-    */
+  val PRINCIPAL_MAPPING_PLUGIN: String = "principalsMappingPlugin"
+  val PRINCIPAL_MAPPING_PLUGIN_CLASS: String = s"$PRINCIPAL_MAPPING_PLUGIN.pluginClass"
+
   lazy val provisionerConfig: Config = ConfigFactory.load().getConfig(IMPALA)
 
   private val formatter = ConfigRenderOptions.concise().setFormatted(true)

@@ -5,6 +5,7 @@ import cats.effect.IO
 import cats.implicits.toSemigroupKOps
 import io.circe.Json
 import it.agilelab.provisioning.api.generated.{ Handler, Resource }
+import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.app.api.SpecificProvisionerHandler
 import it.agilelab.provisioning.impala.table.provisioner.app.api.routes.HealthCheck
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
@@ -12,7 +13,9 @@ import it.agilelab.provisioning.mesh.self.service.api.controller.ProvisionerCont
 import org.http4s.server.middleware.Logger
 import org.http4s.{ Request, Response }
 
-final class FrameworkDependencies(provisionerController: ProvisionerController[Json, ImpalaCdw]) {
+final class FrameworkDependencies(
+    provisionerController: ProvisionerController[Json, ImpalaCdw, CdpIamPrincipals]
+) {
 
   private val provisionerHandler: Handler[IO] = new SpecificProvisionerHandler(
     provisionerController)

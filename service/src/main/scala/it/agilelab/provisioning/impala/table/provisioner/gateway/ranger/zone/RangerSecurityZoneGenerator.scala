@@ -7,6 +7,14 @@ import it.agilelab.provisioning.commons.client.ranger.model.{
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.RangerResources
 
 object RangerSecurityZoneGenerator {
+
+  private val RangerSecurityZoneNameFormat = "%s_%s_%s"
+
+  def generateSecurityZoneName(domain: String, name: String, majorVersion: String): String =
+    RangerSecurityZoneNameFormat.format(clean(domain), clean(name), clean(majorVersion))
+
+  def clean(string: String): String = string.replaceAll("[^A-Za-z0-9_]", "_")
+
   def securityZone(
       zoneName: String,
       serviceName: String,

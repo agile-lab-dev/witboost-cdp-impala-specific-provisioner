@@ -10,7 +10,7 @@ A Helm chart for Kubernetes
 |-----|------|---------|-------------|
 | configOverride | string | `nil` | This configuration allows you to override the application.conf file |
 | dockerRegistrySecretName | string | `"regcred"` | Docker Registry Secret name used to access a private repo |
-| existingServiceAccount | string | `"cdp-s3-provisioner-service-account"` | the name of an existing serviceAccount |
+| existingServiceAccount | string | `"cdp-impala-provisioner-service-account"` | the name of an existing serviceAccount |
 | image.pullPolicy | string | `"Always"` | The imagePullPolicy for a container and the tag of the image affect when the kubelet attempts to pull (download) the specified image. |
 | image.registry | string | `"registry.gitlab.com/agilefactory/witboost.mesh/provisioning/cdp-refresh/witboost.mesh.provisioning.outputport.cdp.impala"` | Image repository |
 | image.tag | string | `"latest"` | Image tag |

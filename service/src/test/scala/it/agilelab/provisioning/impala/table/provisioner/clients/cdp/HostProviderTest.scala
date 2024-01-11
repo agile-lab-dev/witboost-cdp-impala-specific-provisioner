@@ -1,7 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.cdp
 
 import com.cloudera.cdp.datalake.model.{ Datalake, DatalakeDetails, Endpoint, Endpoints }
-import com.cloudera.cdp.dw.model.ClusterSummary
 import com.cloudera.cdp.environments.model.{ Environment, FreeipaDetails }
 import it.agilelab.provisioning.commons.client.cdp.dl.CdpDlClient
 import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClient

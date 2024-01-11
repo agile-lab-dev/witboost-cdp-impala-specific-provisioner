@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
-import com.cloudera.cdp.dw.model.{ ClusterSummary, VwSummary }
+import com.cloudera.cdp.dw.model.{ ClusterSummaryResponse, VwSummary }
 import com.cloudera.cdp.environments.model.Environment
 import it.agilelab.provisioning.commons.client.cdp.dw.CdpDwClient
 import it.agilelab.provisioning.commons.client.cdp.dw.CdpDwClientError.{
@@ -57,7 +57,7 @@ class CdpValidatorTest extends AnyFunSuite with MockFactory {
   test("cdwVirtualClusterExists return false when findVwByName return Left") {
     val environment = new Environment()
     environment.setCrn("envCrn")
-    val cluster = new ClusterSummary()
+    val cluster = new ClusterSummaryResponse()
     cluster.setId("clusterId")
     (envClient.describeEnvironment _).when("envName").returns(Right(environment))
     (dwClient.findClusterByEnvironmentCrn _).when("envCrn").returns(Right(Some(cluster)))
@@ -70,7 +70,7 @@ class CdpValidatorTest extends AnyFunSuite with MockFactory {
   test("cdwVirtualClusterExists return false when findVwByName return Right(None)") {
     val environment = new Environment()
     environment.setCrn("envCrn")
-    val cluster = new ClusterSummary()
+    val cluster = new ClusterSummaryResponse()
     cluster.setId("clusterId")
     (envClient.describeEnvironment _).when("envName").returns(Right(environment))
     (dwClient.findClusterByEnvironmentCrn _).when("envCrn").returns(Right(Some(cluster)))
@@ -81,7 +81,7 @@ class CdpValidatorTest extends AnyFunSuite with MockFactory {
   test("cdwVirtualClusterExists return true") {
     val environment = new Environment()
     environment.setCrn("envCrn")
-    val cluster = new ClusterSummary()
+    val cluster = new ClusterSummaryResponse()
     cluster.setId("clusterId")
     (envClient.describeEnvironment _).when("envName").returns(Right(environment))
     (dwClient.findClusterByEnvironmentCrn _).when("envCrn").returns(Right(Some(cluster)))

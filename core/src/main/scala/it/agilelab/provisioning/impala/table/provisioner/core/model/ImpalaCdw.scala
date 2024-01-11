@@ -7,6 +7,5 @@ final case class ImpalaCdw(
     cdwVirtualWarehouse: String,
     format: ImpalaFormat,
     location: String,
-    acl: Acl,
     partitions: Option[Seq[String]]
 )

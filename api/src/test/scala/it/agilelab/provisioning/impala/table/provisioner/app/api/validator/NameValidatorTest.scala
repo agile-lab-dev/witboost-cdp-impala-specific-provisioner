@@ -1,10 +1,10 @@
 package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
+import io.circe.Json
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Parquet
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
 import it.agilelab.provisioning.mesh.self.service.api.model.DataProduct
-import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ Acl, ImpalaCdw }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -18,6 +18,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         environment = "environment",
         version = "0.0.0",
         dataProductOwner = "dataProductOwner",
+        devGroup = "devGroup",
+        ownerGroup = "ownerGroup",
         specific = Json.obj(),
         components = Seq.empty
       ),
@@ -36,10 +38,6 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          acl = Acl(
-            owners = Seq.empty,
-            users = Seq.empty
-          ),
           partitions = None
         )
       )
@@ -56,6 +54,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         environment = "environment",
         version = "0.0.0",
         dataProductOwner = "dataProductOwner",
+        devGroup = "devGroup",
+        ownerGroup = "ownerGroup",
         specific = Json.obj(),
         components = Seq.empty
       ),
@@ -74,10 +74,6 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          acl = Acl(
-            owners = Seq.empty,
-            users = Seq.empty
-          ),
           partitions = None
         )
       )
@@ -94,6 +90,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         environment = "environment",
         version = "0.0.0",
         dataProductOwner = "dataProductOwner",
+        devGroup = "devGroup",
+        ownerGroup = "ownerGroup",
         specific = Json.obj(),
         components = Seq.empty
       ),
@@ -112,10 +110,6 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          acl = Acl(
-            owners = Seq.empty,
-            users = Seq.empty
-          ),
           partitions = None
         )
       )
@@ -132,6 +126,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         environment = "environment",
         version = "0.0.0",
         dataProductOwner = "dataProductOwner",
+        devGroup = "devGroup",
+        ownerGroup = "ownerGroup",
         specific = Json.obj(),
         components = Seq.empty
       ),
@@ -150,10 +146,6 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          acl = Acl(
-            owners = Seq.empty,
-            users = Seq.empty
-          ),
           partitions = None
         )
       )

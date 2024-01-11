@@ -1,33 +1,20 @@
 package it.agilelab.provisioning.impala.table.provisioner.app.api
 
 import cats.effect.IO
+import io.circe.generic.auto._
+import io.circe.syntax._
 import io.circe.{ parser, Decoder, Json }
 import it.agilelab.provisioning.api.generated.Resource
-import it.agilelab.provisioning.api.generated.definitions.{
-  DescriptorKind,
-  Info,
-  ProvisioningRequest,
-  ProvisioningStatus,
-  SystemError,
-  ValidationError
-}
+import it.agilelab.provisioning.api.generated.definitions._
 import it.agilelab.provisioning.commons.support.ParserSupport
 import it.agilelab.provisioning.impala.table.provisioner.app.api.helpers.ProvisionerControllerMock
 import it.agilelab.provisioning.impala.table.provisioner.app.api.routes.helpers.HandlerTestBase
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  ExternalTable,
-  ImpalaCdpAcl,
-  ImpalaCdw,
-  ImpalaFormat,
-  ImpalaTableOutputPortResource
-}
+import it.agilelab.provisioning.impala.table.provisioner.core.model._
 import it.agilelab.provisioning.mesh.self.service.api.model._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.implicits.http4sLiteralsSyntax
 import org.http4s.{ Method, Request, Response, Status }
-import io.circe.generic.auto._
-import io.circe.syntax._
 
 class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
   "The server" should "return a 200 with COMPLETED on a successful provision" in {
@@ -203,4 +190,68 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
     check[SystemError](response, Status.InternalServerError, Some(expected)) shouldBe true
   }
+
+  it should "return a 200 with COMPLETED on successful updateAcl" in {
+    val handler = new SpecificProvisionerHandler(new ProvisionerControllerMock)
+    val response: IO[Response[IO]] = new Resource[IO]()
+      .routes(handler)
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/v1/updateacl")
+          .withEntity(
+            UpdateAclRequest(
+              Vector("user:user1", "group:agroup"),
+              ProvisionInfo("a-yaml-descriptor", "")))
+      )
+    val expected = ProvisioningStatus(ProvisioningStatus.Status.Completed, "")
+
+    check[ProvisioningStatus](response, Status.Ok, Some(expected)) shouldBe true
+  }
+
+  it should "return a 400 with a list of errors if an error happens on updateAcl" in {
+    val errors = Vector("user doesnt exist", "group doesnt exist")
+    val handler = new SpecificProvisionerHandler(new ProvisionerControllerMock {
+      override def updateAcl(updateAclRequest: ApiRequest.UpdateAclRequest)(implicit
+          decoderPd: Decoder[ProvisioningDescriptor[Json]],
+          decoderCmp: Decoder[Component[ImpalaCdw]]
+      ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.validErr(errors: _*))
+    })
+    val response: IO[Response[IO]] = new Resource[IO]()
+      .routes(handler)
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/v1/updateacl")
+          .withEntity(
+            UpdateAclRequest(
+              Vector("user:user1", "group:agroup"),
+              ProvisionInfo("a-yaml-descriptor", "")))
+      )
+    val expected = ValidationError(errors)
+
+    check[ValidationError](response, Status.BadRequest, Some(expected)) shouldBe true
+  }
+
+  it should "return a 500 with a list of errors if an error happens on updateAcl" in {
+    val error = "system error"
+    val handler = new SpecificProvisionerHandler(new ProvisionerControllerMock {
+      override def updateAcl(updateAclRequest: ApiRequest.UpdateAclRequest)(implicit
+          decoderPd: Decoder[ProvisioningDescriptor[Json]],
+          decoderCmp: Decoder[Component[ImpalaCdw]]
+      ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.sysErr(error))
+    })
+    val response: IO[Response[IO]] = new Resource[IO]()
+      .routes(handler)
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/v1/updateacl")
+          .withEntity(
+            UpdateAclRequest(
+              Vector("user:user1", "group:agroup"),
+              ProvisionInfo("a-yaml-descriptor", "")))
+      )
+    val expected = SystemError(error)
+
+    check[SystemError](response, Status.InternalServerError, Some(expected)) shouldBe true
+  }
+
 }

@@ -4,19 +4,11 @@ import cats.implicits._
 import it.agilelab.provisioning.commons.client.ranger.model.{ RangerSecurityZone, RangerService }
 import it.agilelab.provisioning.commons.client.ranger.{ RangerClient, RangerClientError }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGatewayError.{
-  FindSecurityZoneOwnerErr,
   FindServiceErr,
-  RangerSecurityZoneGatewayInitErr,
   UpsertSecurityZoneErr
 }
-import it.agilelab.provisioning.impala.table.provisioner.repository.RoleConfigRepository
-import it.agilelab.provisioning.mesh.repository.Repository
-import it.agilelab.provisioning.mesh.repository.RepositoryError.EntityDoesNotExists
-import it.agilelab.provisioning.mesh.self.service.lambda.core.model.{ Domain, Role }
-import it.agilelab.provisioning.mesh.self.service.lambda.core.repository.role.RoleDynamoDBRepository
 
 class RangerSecurityZoneGateway(
-    val roleRepository: Repository[Role, String, Unit],
     val rangerClient: RangerClient
 ) {
 
@@ -27,8 +19,9 @@ class RangerSecurityZoneGateway(
     * and related to the databases associated to the received domain ($domain_*)
     *
     * @param deployUser Deploy user to act as an admin user of the security zone
-    * @param domain Domain that the security zone will be associated with.
-    *               The Security Zone name and the owner role name will correspond to the domain short name
+    * @param securityZoneName Security Zone name
+    * @param auditUser User to be added as part of the audits of the Security Zone
+    * @param auditGroup Group to be added as part of the audit groups of the Security Zone
     * @param serviceType The service type related to the security zone
     * @param dlName Data lake name
     * @param folderUrl Location of the folder data to be included as part of the security zone
@@ -37,27 +30,26 @@ class RangerSecurityZoneGateway(
     */
   def upsertSecurityZone(
       deployUser: String,
-      domain: Domain,
+      securityZoneName: String,
+      auditUser: String,
+      auditGroup: Option[String],
       serviceType: String,
       dlName: String,
       folderUrl: Seq[String],
       isDestroy: Boolean = false
   ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] = for {
-    zone <- rangerClient
-      .findSecurityZoneByName(domain.shortName)
+    zoneOpt <- rangerClient
+      .findSecurityZoneByName(securityZoneName)
       .leftMap(e => UpsertSecurityZoneErr(e))
     service <- getService(serviceType, dlName)
-    zoneUpdated <- upsertSC(
-      domain.shortName,
-      zone,
-      service.name,
-      folderUrl.map(u => safelyRemove(u, "/")),
-      if (domain.name.equalsIgnoreCase("platform"))
-        "platform-team-role"
-      else s"${domain.name}-owner-role",
-      deployUser,
-      isDestroy
-    )
+    zoneUpdated <- zoneOpt.fold(
+      createSecurityZone(
+        securityZoneName,
+        service.name,
+        if (isDestroy) Seq.empty[String] else folderUrl.map(u => safelyRemove(u, "/")),
+        auditUser,
+        auditGroup,
+        deployUser))(z => updateSC(z, service.name, folderUrl, isDestroy))
   } yield zoneUpdated
 
   private def getService(
@@ -72,51 +64,29 @@ class RangerSecurityZoneGateway(
           "type %s in cluster %s.".format(serviceType, dlName)))
   } yield s
 
-  private def upsertSC(
-      zoneName: String,
-      zoneOpt: Option[RangerSecurityZone],
-      serviceName: String,
-      folderUrl: Seq[String],
-      ownerRole: String,
-      deployUser: String,
-      isDestroy: Boolean
-  ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] =
-    zoneOpt.fold(
-      createSecurityZone(
-        zoneName,
-        serviceName,
-        if (isDestroy) Seq.empty[String] else folderUrl,
-        ownerRole,
-        deployUser))(z => updateSC(z, serviceName, folderUrl, isDestroy))
-
   private def createSecurityZone(
       zoneName: String,
       serviceName: String,
       folderUrl: Seq[String],
-      ownerRole: String,
+      auditUser: String,
+      auditGroup: Option[String],
       deployUser: String
   ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] =
-    roleRepository.findById(ownerRole) match {
-      case Right(Some(u)) =>
-        rangerClient
-          .createSecurityZone(
-            RangerSecurityZoneGenerator.securityZone(
-              zoneName = zoneName,
-              serviceName = serviceName,
-              databaseResources = Seq(s"${zoneName}_*"),
-              tableResources = Seq("*"),
-              columnResources = Seq("*"),
-              urlResources = folderUrl.map(u => s"$u/*"),
-              adminUsers = Seq(deployUser),
-              adminUserGroups = Seq(u.cdpRole),
-              auditUsers = Seq(deployUser),
-              auditUserGroups = Seq(u.cdpRole)
-            ))
-          .leftMap(e => UpsertSecurityZoneErr(e))
-      case Right(None) =>
-        Left(FindSecurityZoneOwnerErr(EntityDoesNotExists(ownerRole)))
-      case Left(e) => Left(FindSecurityZoneOwnerErr(e))
-    }
+    rangerClient
+      .createSecurityZone(
+        RangerSecurityZoneGenerator.securityZone(
+          zoneName = zoneName,
+          serviceName = serviceName,
+          databaseResources = Seq(s"${zoneName}_*"),
+          tableResources = Seq("*"),
+          columnResources = Seq("*"),
+          urlResources = folderUrl.map(u => s"$u/*"),
+          adminUsers = Seq(deployUser),
+          adminUserGroups = Seq.empty,
+          auditUsers = Seq(deployUser, auditUser),
+          auditUserGroups = auditGroup.toList
+        ))
+      .leftMap(e => UpsertSecurityZoneErr(e))
 
   private def updateSC(
       zone: RangerSecurityZone,
@@ -167,31 +137,7 @@ class RangerSecurityZoneGateway(
 
 object RangerSecurityZoneGateway {
   def default(
-      roleTable: String,
-      roleTablePrimaryKey: String,
       rangerClient: RangerClient
-  ): Either[RangerSecurityZoneGatewayError, RangerSecurityZoneGateway] = for {
-    repo <- Repository
-      .dynamoDB(roleTable, roleTablePrimaryKey, None)
-      .leftMap(e => RangerSecurityZoneGatewayInitErr(e))
-  } yield new RangerSecurityZoneGateway(
-    new RoleDynamoDBRepository(repo),
-    rangerClient
-  )
-
-  def defaultWithAudit(
-      roleTable: String,
-      roleTablePrimaryKey: String,
-      rangerClient: RangerClient
-  ): Either[RangerSecurityZoneGatewayError, RangerSecurityZoneGateway] = for {
-    repo <- Repository
-      .dynamoDBWithAudit(roleTable, roleTablePrimaryKey, None)
-      .leftMap(e => RangerSecurityZoneGatewayInitErr(e))
-  } yield new RangerSecurityZoneGateway(
-    new RoleDynamoDBRepository(repo),
-    rangerClient
-  )
-
-  def defaultWithConfig(rangerClient: RangerClient): RangerSecurityZoneGateway =
-    new RangerSecurityZoneGateway(new RoleConfigRepository, rangerClient)
+  ): RangerSecurityZoneGateway =
+    new RangerSecurityZoneGateway(rangerClient)
 }

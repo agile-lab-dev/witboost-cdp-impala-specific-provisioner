@@ -27,7 +27,8 @@ lazy val service = (project in file("service"))
       Dependencies.scalaMeshRep,
       Dependencies.scalaCdpDl,
       Dependencies.scalaCdpEnv,
-      Dependencies.ranger
+      Dependencies.ranger,
+      Dependencies.scalaMeshPrincipalsMappingSamples
     ),
     artifactorySettings,
     wartremoverSettings,

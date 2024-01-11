@@ -45,9 +45,12 @@ Furthermore, this provisioner also needs to interact with the Apache Ranger inst
 Access policy names:
 - **Database policy**: `$DBName_access_policy`
 - **Table access policy**: `$DBName_$TableName_access_policy`
-- **URL access policy**: `$DBName_$TableName_url_access_policy`
 
-Mapping between the IDP principals of witboost and the CDP principals should be performed using a configurable repository.
+These access policies are granted to single users and groups using roles as intermediaries. Read-write access is granted to the owner role, which will include the data product owner user and the development group, while read-only access is granted to the user role, where the allowed users and groups (through the updateacl operation) will be assigned.
+
+Role names:
+- **Owner role**: `$Domain_$DPName_$MajorVersion_owner`
+- **User role**: `$Domain_$DPName_$MajorVersion_$ComponentName_read`
 
 The provisioner will be designed as a microservice implementing v1 endpoints of version 2.2.0 of interface-specification, thus it should handle all requests synchronously.
 
@@ -57,17 +60,21 @@ The creation and management of the S3 bucket, as well as the data contained in i
 
 The provisioning task creates (if not existent) the database and tables on the Impala VW based on the received parameters, it then creates the security zone, roles and policies in order to manage the access control of these resources.
 
-The Security Zone is created at domain level to manage all data products. Read/Write policies for owners and Read-only policies for users are handled using a set of groups, and mapping between users in the incoming descriptor and the CDP groups is done using a configurable Repository.
-
-Owners and users are defined based on the received descriptor fields
+The Security Zone is created at data product version level. Read/Write policies for owners and Read-only policies for users are handled using a pair of roles. An owner role at data product level for read-write access to the component, and a user role at component level for read-only access. Mapping between principals in the incoming descriptor and the CDP groups is done using a PrincipalsMapper interface which checks the existence of said principals on CDP.
 
 ![Provisioning](img/hld-Provisioning.png)
 
 ### Unprovisioning
 
-Unprovisioning consists of removing the existing (if any) created tables on Impala, deleting the Ranger access policies for the provisioned table and URL resources, and removing from the Security Zone managed resources the URL. For concurrency safety, the provisioner never drops databases or schemas, this should be done manually. For the same reason, it doesn't remove the database access policy.
+Unprovisioning consists of removing the existing (if any) created tables on Impala, deleting the Ranger access policies for the provisioned table, the user role, and removing the s3 URL connector from the Security Zone managed resources. For concurrency safety, the provisioner never drops databases or schemas, this should be done manually. For the same reason, it doesn't remove the database access policy.
 
 ![Unprovisioning](img/hld-Unprovisioning.png)
+
+### Update Acl
+
+The Update Acl operation consists of updating the assignments to the user role, adding the received principals to the user, while removing the ones already present in the role but not received anymore on the request.
+
+![Update ACL](img/hld-UpdateAcl.png)
 
 ## CDP Private Cloud Base Impala Specific Provisioner
 
@@ -92,3 +99,9 @@ Ranger roles and policy management acts the same as the CDP Public provisioning 
 Unprovisioning works the same as the CDP Public version, dropping the external table and removing the appropriate policies and roles.
 
 ![Unprovisioning](img/hld-PrivateUnprovisioning.png)
+
+### Update ACL
+
+The Update ACL operation works the same as the CDP Public version, updating the user role with the received refs.
+
+![Update ACL](img/hld-PrivateUpdateAcl.png)
