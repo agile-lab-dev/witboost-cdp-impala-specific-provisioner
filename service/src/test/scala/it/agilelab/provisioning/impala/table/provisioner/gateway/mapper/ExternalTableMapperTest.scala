@@ -36,7 +36,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
   )
 
   test("genExternalTable return Right(ExternalTable)") {
-    val component: OutputPort[ImpalaCdw] = OutputPort[ImpalaCdw](
+    val component: OutputPort[PublicImpalaCdw] = OutputPort[PublicImpalaCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
       description = "description",
@@ -60,7 +60,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
           )
         )
       ),
-      specific = ImpalaCdw(
+      specific = PublicImpalaCdw(
         databaseName = "databaseName",
         tableName = "tableName",
         cdpEnvironment = "cdpEnvironment",
@@ -70,7 +70,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
         partitions = Some(Seq("name", "surname"))
       )
     )
-    val actual = ExternalTableMapper.map(component)
+    val actual = ExternalTableMapper.map(component.dataContract.schema, component.specific)
     val expected = Right(
       ExternalTable(
         database = "databaseName",
@@ -100,7 +100,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
   }
 
   test("genExternalTable return Left") {
-    val component: OutputPort[ImpalaCdw] = OutputPort[ImpalaCdw](
+    val component: OutputPort[PublicImpalaCdw] = OutputPort[PublicImpalaCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
       description = "description",
@@ -114,7 +114,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
           getC("jobExperiences", ColumnDataType.ARRAY)
         )
       ),
-      specific = ImpalaCdw(
+      specific = PublicImpalaCdw(
         databaseName = "databaseName",
         tableName = "tableName",
         cdpEnvironment = "cdpEnvironment",
@@ -124,7 +124,7 @@ class ExternalTableMapperTest extends AnyFunSuite {
         partitions = Some(Seq("name", "surname"))
       )
     )
-    val actual = ExternalTableMapper.map(component)
+    val actual = ExternalTableMapper.map(component.dataContract.schema, component.specific)
 
     assert(actual.isLeft)
     assert(actual.left.value.isInstanceOf[ComponentGatewayError])

@@ -3,6 +3,9 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 import cats.implicits.showInterpolator
 import com.cloudera.cdp.datalake.model.Datalake
 import io.circe.Json
+import io.circe.generic.auto.exportEncoder
+import io.circe.syntax.EncoderOps
+import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.RangerClientError.UpdateRoleErr
 import it.agilelab.provisioning.commons.client.ranger.model.{
   RangerRole,
@@ -17,7 +20,7 @@ import it.agilelab.provisioning.commons.principalsmapping.{
   CdpIamUser,
   PrincipalsMapper
 }
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
+import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.CDPPublicHostProvider
 import it.agilelab.provisioning.impala.table.provisioner.common.{
   OutputPortFaker,
   ProvisionRequestFaker
@@ -44,10 +47,10 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
 
   test("provision access control for simple table") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -55,7 +58,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
 
@@ -71,7 +74,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       "loc",
       Csv)
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
       .when(*)
       .returns(Right("rangerHost"))
@@ -164,8 +167,9 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
         )
       )
 
+    val rangerClient = stub[RangerClient]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
-    (rangerGatewayProvider.getRangerGateways _)
+    (rangerGatewayProvider.getRangerGatewaysFromClient _)
       .when(*)
       .returns(Right(new RangerGateway(policyGateway, securityZoneGateway, rangerRoleGateway)))
 
@@ -187,23 +191,26 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
 
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
 
     val actual =
-      impalaOutputPortAccessControlGateway.provisionAccessControl(request, datalake, externalTable)
+      impalaOutputPortAccessControlGateway.provisionAccessControl(
+        request,
+        rangerClient,
+        externalTable,
+        "dlName")
 
     assert(actual == expected)
   }
 
   test("provision access control should fail on wrong id") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -211,15 +218,11 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          ))
+          ).asJson)
           .withId("urn:dmb:dp:domain:dp-name:0")
           .build()
       )
       .build()
-
-    val datalake = new Datalake()
-    datalake.setEnvironmentCrn("cdpEnvCrn")
-    datalake.setDatalakeName("dlName")
 
     val externalTable = ExternalTable(
       "databaseName",
@@ -229,7 +232,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       "loc",
       Csv)
 
-    val hostProvider = stub[HostProvider]
+    val rangerClient = stub[RangerClient]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val principalsMapper = stub[PrincipalsMapper[CdpIamPrincipals]]
 
@@ -238,23 +241,26 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
 
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
 
     val actual =
-      impalaOutputPortAccessControlGateway.provisionAccessControl(request, datalake, externalTable)
+      impalaOutputPortAccessControlGateway.provisionAccessControl(
+        request,
+        rangerClient,
+        externalTable,
+        "dlName")
 
     assert(actual == expected)
   }
 
   test("unprovision access control") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker[ImpalaCdw](
-          ImpalaCdw(
+        OutputPortFaker[Json](
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -262,13 +268,9 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
-
-    val datalake = new Datalake()
-    datalake.setEnvironmentCrn("cdpEnvCrn")
-    datalake.setDatalakeName("dlName")
 
     val externalTable = ExternalTable(
       "databaseName",
@@ -278,7 +280,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       "loc",
       Csv)
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
       .when(*)
       .returns(Right("rangerHost"))
@@ -354,9 +356,11 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       )
 
     val rangerGatewayProvider = stub[RangerGatewayProvider]
-    (rangerGatewayProvider.getRangerGateways _)
+    (rangerGatewayProvider.getRangerGatewaysFromClient _)
       .when(*)
       .returns(Right(new RangerGateway(policyGateway, securityZoneGateway, rangerRoleGateway)))
+
+    val rangerClient = stub[RangerClient]
 
     val principalsMapper = stub[PrincipalsMapper[CdpIamPrincipals]]
     (principalsMapper.map _)
@@ -375,7 +379,6 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
 
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
@@ -383,18 +386,19 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
     val actual =
       impalaOutputPortAccessControlGateway.unprovisionAccessControl(
         request,
-        datalake,
-        externalTable)
+        rangerClient,
+        externalTable,
+        "dlName")
 
     assert(actual == expected)
   }
 
   test("unprovision access control should fail on wrong id") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -402,7 +406,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          ))
+          ).asJson)
           .withId("urn:dmb:dp:domain:dp-name:0")
           .build()
       )
@@ -420,7 +424,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       "loc",
       Csv)
 
-    val hostProvider = stub[HostProvider]
+    val rangerClient = stub[RangerClient]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val principalsMapper = stub[PrincipalsMapper[CdpIamPrincipals]]
 
@@ -429,7 +433,6 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
 
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
@@ -437,17 +440,18 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
     val actual =
       impalaOutputPortAccessControlGateway.unprovisionAccessControl(
         request,
-        datalake,
-        externalTable)
+        rangerClient,
+        externalTable,
+        "dlName")
 
     assert(actual == expected)
   }
 
   test("update acl") {
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -455,7 +459,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
 
@@ -482,7 +486,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       CdpIamGroup("group1", "")
     )
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
       .when(*)
       .returns(Right("rangerHost"))
@@ -499,10 +503,11 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
         List("group1"))
       .returns(Right(userRole))
 
+    val rangerClient = stub[RangerClient]
     val policyGateway = stub[RangerPolicyGateway]
     val securityZoneGateway = stub[RangerSecurityZoneGateway]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
-    (rangerGatewayProvider.getRangerGateways _)
+    (rangerGatewayProvider.getRangerGatewaysFromClient _)
       .when(*)
       .returns(Right(new RangerGateway(policyGateway, securityZoneGateway, rangerRoleGateway)))
 
@@ -511,22 +516,21 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
     val principalsMapper = stub[PrincipalsMapper[CdpIamPrincipals]]
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
 
     val actual =
-      impalaOutputPortAccessControlGateway.updateAcl(request, refs, datalake)
+      impalaOutputPortAccessControlGateway.updateAcl(request, refs, rangerClient)
 
     assert(actual == expected)
   }
 
   test("update acl returns error on upsert error") {
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -534,7 +538,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
 
@@ -561,10 +565,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
       CdpIamGroup("group1", "")
     )
 
-    val hostProvider = stub[HostProvider]
-    (hostProvider.getRangerHost _)
-      .when(*)
-      .returns(Right("rangerHost"))
+    val rangerClient = stub[RangerClient]
 
     val rangerRoleGateway = stub[RangerRoleGateway]
     val err = UpsertRoleErr(UpdateRoleErr(userRole, HttpErrors.ServerErr(500, "err")))
@@ -582,7 +583,7 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
     val policyGateway = stub[RangerPolicyGateway]
     val securityZoneGateway = stub[RangerSecurityZoneGateway]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
-    (rangerGatewayProvider.getRangerGateways _)
+    (rangerGatewayProvider.getRangerGatewaysFromClient _)
       .when(*)
       .returns(Right(new RangerGateway(policyGateway, securityZoneGateway, rangerRoleGateway)))
 
@@ -591,13 +592,12 @@ class ImpalaOutputPortAccessControlGatewayTest extends AnyFunSuite with MockFact
     val principalsMapper = stub[PrincipalsMapper[CdpIamPrincipals]]
     val impalaOutputPortAccessControlGateway = new ImpalaOutputPortAccessControlGateway(
       serviceRole = "srvRole",
-      hostProvider = hostProvider,
       rangerGatewayProvider = rangerGatewayProvider,
       principalsMapper = principalsMapper
     )
 
     val actual =
-      impalaOutputPortAccessControlGateway.updateAcl(request, refs, datalake)
+      impalaOutputPortAccessControlGateway.updateAcl(request, refs, rangerClient)
 
     assert(actual == expected)
   }

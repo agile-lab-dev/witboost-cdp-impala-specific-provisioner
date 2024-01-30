@@ -68,7 +68,7 @@ lazy val api = (project in file("api"))
   )
   .enablePlugins(K8tyGitlabPlugin)
   .dependsOn(
-    service
+    service % "compile->compile;test->test"
   )
 
 lazy val root = (project in file("."))

@@ -17,7 +17,7 @@ import HostProviderError.{
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
-class HostProvider(cdpEnvClient: CdpEnvClient, cdpDlClient: CdpDlClient) {
+class CDPPublicHostProvider(cdpEnvClient: CdpEnvClient, cdpDlClient: CdpDlClient) {
   private val FIND_DL_ERR = "Unable to find dl cluster"
 
   def getEnvironment(environment: String): Either[HostProviderError, Environment] =
@@ -49,19 +49,11 @@ class HostProvider(cdpEnvClient: CdpEnvClient, cdpDlClient: CdpDlClient) {
         .describeDl(dl.getDatalakeName)
         .leftMap(e => DataLakeClientErr(e))
       rangerEndpoint <- retrieveRangerEndpoint(dlDesc)
-      rangerHost     <- extractRangerHost(rangerEndpoint)
-    } yield rangerHost
+    } yield rangerEndpoint
 
   private def retrieveRangerEndpoint(dl: DatalakeDetails): Either[HostProviderError, String] =
     dl.getEndpoints.getEndpoints.asScala
       .find(e => e.getServiceName === "RANGER_ADMIN" && e.getMode === "PAM")
       .map(_.getServiceUrl)
       .toRight(GetRangerHostErr("Unable to find ranger admin endpoint"))
-
-  private def extractRangerHost(rangerHost: String): Either[HostProviderError, String] =
-    rangerHost match {
-      case s"http://$path"  => Right(path)
-      case s"https://$path" => Right(path)
-      case _                => Left(GetRangerHostErr("Unable to extract ranger endpoint"))
-    }
 }

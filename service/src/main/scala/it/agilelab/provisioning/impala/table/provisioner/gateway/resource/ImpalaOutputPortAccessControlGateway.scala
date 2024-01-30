@@ -1,8 +1,8 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 
 import cats.implicits.{ showInterpolator, toBifunctorOps }
-import com.cloudera.cdp.datalake.model.Datalake
 import io.circe.Json
+import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.model.RangerRole
 import it.agilelab.provisioning.commons.principalsmapping.{
   CdpIamGroup,
@@ -10,7 +10,7 @@ import it.agilelab.provisioning.commons.principalsmapping.{
   CdpIamUser,
   PrincipalsMapper
 }
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw.ImpalaProvisionRequestOps
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   ImpalaCdw,
@@ -32,7 +32,6 @@ import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayE
 
 class ImpalaOutputPortAccessControlGateway(
     serviceRole: String,
-    hostProvider: HostProvider,
     rangerGatewayProvider: RangerGatewayProvider,
     principalsMapper: PrincipalsMapper[CdpIamPrincipals]
 ) {
@@ -46,23 +45,27 @@ class ImpalaOutputPortAccessControlGateway(
     *   These access policies grant read-write permissions to the owner role, and read-only to the user role
     *   The operation is idempotent, so if any of these resources exist, they're not recreated
     * @param provisionRequest Provision request with the output port information
-    * @param dataLake CDP Datalake hosting the Ranger instance
+    * @param rangerClient Ranger Client to be used for contacting Ranger
     * @param externalTable External table to which access will be managed
+    * @param clusterName Cluster name used to create Security Zones on Ranger. On CDP Public it refers to the Datalake name
     * @return Either a [[ComponentGatewayError]] if an error occurs, or a sequence of [[PolicyAttachment]] with the access policies
     */
   def provisionAccessControl(
-      provisionRequest: ProvisionRequest[Json, ImpalaCdw],
-      dataLake: Datalake,
-      externalTable: ExternalTable
+      provisionRequest: ProvisionRequest[Json, Json],
+      rangerClient: RangerClient,
+      externalTable: ExternalTable,
+      clusterName: String
   ): Either[ComponentGatewayError, Seq[PolicyAttachment]] =
     for {
-      opRequest   <- ImpalaTableOutputPortGateway.getOutputPortRequest(provisionRequest)
+      opRequest <- provisionRequest
+        .getOutputPortRequest[ImpalaCdw]
+        .leftMap(e => ComponentGatewayError(show"$e"))
       identifiers <- extractIdentifiers(opRequest)
       szName <- Right(
         RangerSecurityZoneGenerator
           .generateSecurityZoneName(identifiers._1, identifiers._2, identifiers._3))
       owners <- getOwnerPrincipals(provisionRequest.dataProduct)
-      gtwys  <- getRangerGateways(dataLake)
+      gtwys  <- getRangerGateways(rangerClient)
       securityZone <- gtwys.securityZoneGateway
         .upsertSecurityZone(
           serviceRole,
@@ -70,7 +73,7 @@ class ImpalaOutputPortAccessControlGateway(
           owners._1.workloadUsername,
           Some(owners._2.groupName),
           "hive",
-          dataLake.getDatalakeName,
+          clusterName,
           Seq(opRequest.specific.location)
         )
         .leftMap(e => ComponentGatewayError(show"$e"))
@@ -122,23 +125,27 @@ class ImpalaOutputPortAccessControlGateway(
     * The operation is idempotent, so if any of these resources exist, they're not recreated
     *
     * @param provisionRequest Provision request with the output port information
-    * @param dataLake         CDP Datalake hosting the Ranger instance
-    * @param externalTable    External table to which access will be managed
+    * @param rangerClient      Ranger Client to be used for contacting Ranger
+    * @param externalTable     External table to which access will be managed
+    * @param clusterName       Cluster name used to update Security Zones on Ranger. On CDP Public it refers to the Datalake name
     * @return Either a [[ComponentGatewayError]] if an error occurs, or a sequence of [[PolicyAttachment]] with the unprovisioned access policies
     */
 
   def unprovisionAccessControl(
-      provisionRequest: ProvisionRequest[Json, ImpalaCdw],
-      dl: Datalake,
-      externalTable: ExternalTable
+      provisionRequest: ProvisionRequest[Json, Json],
+      rangerClient: RangerClient,
+      externalTable: ExternalTable,
+      clusterName: String
   ): Either[ComponentGatewayError, Seq[PolicyAttachment]] = for {
-    opRequest   <- ImpalaTableOutputPortGateway.getOutputPortRequest(provisionRequest)
+    opRequest <- provisionRequest
+      .getOutputPortRequest[ImpalaCdw]
+      .leftMap(e => ComponentGatewayError(show"$e"))
     identifiers <- extractIdentifiers(opRequest)
     szName <- Right(
       RangerSecurityZoneGenerator
         .generateSecurityZoneName(identifiers._1, identifiers._2, identifiers._3))
     owners <- getOwnerPrincipals(provisionRequest.dataProduct)
-    gtwys  <- getRangerGateways(dl)
+    gtwys  <- getRangerGateways(rangerClient)
     userRoleName = RangerRoleGenerator.generateUserRoleName(
       s"${identifiers._1}_${identifiers._2}_${identifiers._3}_${identifiers._4}")
     securityZone <- gtwys.securityZoneGateway
@@ -148,7 +155,7 @@ class ImpalaOutputPortAccessControlGateway(
         owners._1.workloadUsername,
         Some(owners._2.groupName),
         "hive",
-        dl.getDatalakeName,
+        clusterName,
         Seq(opRequest.specific.location),
         isDestroy = true
       )
@@ -168,13 +175,15 @@ class ImpalaOutputPortAccessControlGateway(
   } yield policies
 
   def updateAcl(
-      provisionRequest: ProvisionRequest[Json, ImpalaCdw],
+      provisionRequest: ProvisionRequest[Json, Json],
       refs: Set[CdpIamPrincipals],
-      dataLake: Datalake
+      rangerClient: RangerClient
   ): Either[ComponentGatewayError, RangerRole] = for {
-    opRequest   <- ImpalaTableOutputPortGateway.getOutputPortRequest(provisionRequest)
+    opRequest <- provisionRequest
+      .getOutputPortRequest[ImpalaCdw]
+      .leftMap(e => ComponentGatewayError(show"$e"))
     identifiers <- extractIdentifiers(opRequest)
-    gtwys       <- getRangerGateways(dataLake)
+    gtwys       <- getRangerGateways(rangerClient)
     usersGroups <- Right(refs.partitionMap {
       case CdpIamUser(_, workloadUsername, _) => Left(workloadUsername)
       case CdpIamGroup(groupName, _)          => Right(groupName)
@@ -192,7 +201,7 @@ class ImpalaOutputPortAccessControlGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
   } yield userRole
 
-  private def extractIdentifiers(opRequest: OutputPort[ImpalaCdw]) =
+  private def extractIdentifiers(opRequest: OutputPort[_]) =
     opRequest.id match {
       case s"urn:dmb:cmp:$domain:$name:$majorVersion:$componentName" =>
         Right((domain, name, majorVersion, componentName))
@@ -204,10 +213,11 @@ class ImpalaOutputPortAccessControlGateway(
         )
     }
 
-  private def getRangerGateways(dl: Datalake): Either[ComponentGatewayError, RangerGateway] = for {
-    rangerHost <- hostProvider.getRangerHost(dl).leftMap(e => ComponentGatewayError(show"$e"))
+  private def getRangerGateways(
+      rangerClient: RangerClient
+  ): Either[ComponentGatewayError, RangerGateway] = for {
     rangerGateways <- rangerGatewayProvider
-      .getRangerGateways(rangerHost)
+      .getRangerGatewaysFromClient(rangerClient)
       .leftMap(e => ComponentGatewayError(show"$e"))
   } yield rangerGateways
 

@@ -19,17 +19,23 @@ class RangerGatewayProvider(
     password: String
 ) {
 
+  // TODO Set depending on CloudType
   def getRangerClient(
       rangerHost: String
   ): Either[RangerGatewayProviderError, RangerClient] =
-    Try(
-      RangerClient.defaultWithAudit(
-        prepRangerHost(rangerHost),
-        BasicCredential(username, password))).toEither.leftMap(e => RangerGatewayProviderError(e))
+    Try(RangerClient.defaultWithAudit(rangerHost, BasicCredential(username, password))).toEither
+      .leftMap(e => RangerGatewayProviderError(e))
 
   def getRangerGateways(rangerHost: String): Either[RangerGatewayProviderError, RangerGateway] =
     for {
-      rangerClient         <- getRangerClient(rangerHost)
+      rangerClient <- getRangerClient(rangerHost)
+      gateway      <- getRangerGatewaysFromClient(rangerClient)
+    } yield gateway
+
+  def getRangerGatewaysFromClient(
+      rangerClient: RangerClient
+  ): Either[RangerGatewayProviderError, RangerGateway] =
+    for {
       rangerSecZoneGateway <- getRangerSecurityZoneGateway(rangerClient)
       policyGateway        <- getRangerPolicyGateway(rangerClient)
       roleGateway          <- getRangerRoleGateway(rangerClient)
@@ -49,10 +55,5 @@ class RangerGatewayProvider(
       rangerClient: RangerClient
   ): Either[RangerGatewayProviderError, RangerRoleGateway] =
     Right(RangerRoleGateway.default(rangerClient))
-
-  protected def prepRangerHost(host: String): String =
-    if (host.endsWith("/"))
-      host.substring(0, host.length - 1)
-    else host
 
 }

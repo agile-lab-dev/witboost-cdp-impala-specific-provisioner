@@ -7,31 +7,36 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
 
 object NameValidator {
 
-  def isDatabaseNameValid(
+  def isDatabaseNameValid[COMP_SPEC <: ImpalaCdw](
       dataProduct: DataProduct[Json],
-      component: OutputPort[ImpalaCdw]
+      component: OutputPort[COMP_SPEC]
   ): Boolean =
     getDatabaseName(dataProduct).equals(component.specific.databaseName)
 
-  def isTableNameValid(dataProduct: DataProduct[Json], component: OutputPort[ImpalaCdw]): Boolean =
+  def isTableNameValid[COMP_SPEC <: ImpalaCdw](
+      dataProduct: DataProduct[Json],
+      component: OutputPort[COMP_SPEC]
+  ): Boolean =
     getTableName(dataProduct, component).equals(component.specific.tableName)
 
   def getDatabaseName(dataProduct: DataProduct[Json]): String =
     sanitizeCDWString(extractDataProductId(dataProduct))
 
-  def getTableName(
+  def getTableName[COMP_SPEC <: ImpalaCdw](
       dataProduct: DataProduct[Json],
-      component: OutputPort[ImpalaCdw]
+      component: OutputPort[COMP_SPEC]
   ): String =
-    sanitizeCDWString(String.join("_", extractComponentId(component), dataProduct.environment))
+    sanitizeCDWString(
+      String.join("_", extractComponentId[COMP_SPEC](component), dataProduct.environment))
 
   private def sanitizeCDWString(s: String): String =
     s.replaceAll("[^a-zA-Z0-9_]", "_")
 
-  private def extractComponentId(component: OutputPort[ImpalaCdw]): String = component.id match {
-    case s"urn:dmb:cmp:$id" => id
-    case a                  => a
-  }
+  private def extractComponentId[COMP_SPEC <: ImpalaCdw](component: OutputPort[COMP_SPEC]): String =
+    component.id match {
+      case s"urn:dmb:cmp:$id" => id
+      case a                  => a
+    }
 
   private def extractDataProductId(dataProduct: DataProduct[Json]): String = dataProduct.id match {
     case s"urn:dmb:dp:$id" => id

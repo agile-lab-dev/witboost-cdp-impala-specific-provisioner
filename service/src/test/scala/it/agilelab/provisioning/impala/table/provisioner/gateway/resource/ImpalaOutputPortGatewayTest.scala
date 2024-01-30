@@ -3,13 +3,19 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 import com.cloudera.cdp.datalake.model.Datalake
 import com.cloudera.cdp.environments.model.Environment
 import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
+import io.circe.generic.auto.exportEncoder
+import io.circe.syntax.EncoderOps
+import it.agilelab.provisioning.commons.client.ranger.RangerClient
+import it.agilelab.provisioning.commons.client.ranger.model.{ RangerRole, RoleMember }
+import it.agilelab.provisioning.commons.principalsmapping.{ CdpIamPrincipals, CdpIamUser }
+import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.CDPPublicHostProvider
 import it.agilelab.provisioning.impala.table.provisioner.common.{
   OutputPortFaker,
   ProvisionRequestFaker
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model._
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.DataContract
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
@@ -21,10 +27,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
   test("provision simple table") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -32,7 +38,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
 
@@ -43,7 +49,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     datalake.setEnvironmentCrn("cdpEnvCrn")
     datalake.setDatalakeName("dlName")
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getEnvironment _)
       .when(*)
       .returns(Right(environment))
@@ -56,6 +62,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       .when(*, *)
       .returns(Right("impalaHost"))
 
+    (hostProvider.getRangerHost _)
+      .when(datalake)
+      .returns(Right("http://rangerHost/ranger/"))
+
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.create _)
       .when(*, *, *)
@@ -63,7 +73,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *)
+      .when(*, *, *, *)
       .returns(
         Right(
           Seq(
@@ -73,11 +83,20 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           ))
       )
 
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when("http://rangerHost/ranger/")
+      .returns(
+        Right(rangerClient)
+      )
+
     val impalaTableOutputPortGateway =
       new ImpalaTableOutputPortGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        rangerGatewayProvider,
         impalaAccessControlGateway
       )
 
@@ -108,9 +127,9 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
   test("provision partitioned table") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(ImpalaCdw(
+        OutputPortFaker(PublicImpalaCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           cdpEnvironment = "cdpEnv",
@@ -118,7 +137,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           format = Csv,
           location = "loc",
           partitions = Some(Seq("part1"))
-        ))
+        ).asJson)
           .withDataContract(DataContract(
             schema = Seq(
               Column(
@@ -160,7 +179,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     datalake.setEnvironmentCrn("cdpEnvCrn")
     datalake.setDatalakeName("dlName")
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getEnvironment _)
       .when(*)
       .returns(Right(environment))
@@ -184,7 +203,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *)
+      .when(*, *, *, *)
       .returns(
         Right(
           Seq(
@@ -194,11 +213,20 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           ))
       )
 
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when(*)
+      .returns(
+        Right(rangerClient)
+      )
+
     val impalaTableOutputPortGateway =
       new ImpalaTableOutputPortGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        rangerGatewayProvider,
         impalaAccessControlGateway
       )
 
@@ -231,10 +259,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
   test("destroy table") {
 
-    val request = ProvisionRequestFaker[Json, ImpalaCdw](Json.obj())
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          ImpalaCdw(
+          PublicImpalaCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -242,7 +270,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
             format = Csv,
             location = "loc",
             partitions = None
-          )).build()
+          ).asJson).build()
       )
       .build()
 
@@ -253,7 +281,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     datalake.setEnvironmentCrn("cdpEnvCrn")
     datalake.setDatalakeName("dlName")
 
-    val hostProvider = stub[HostProvider]
+    val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getEnvironment _)
       .when(*)
       .returns(Right(environment))
@@ -277,7 +305,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
     (impalaAccessControlGateway.unprovisionAccessControl _)
-      .when(*, *, *)
+      .when(*, *, *, *)
       .returns(
         Right(
           Seq(
@@ -286,11 +314,20 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           ))
       )
 
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when(*)
+      .returns(
+        Right(rangerClient)
+      )
+
     val impalaTableOutputPortGateway =
       new ImpalaTableOutputPortGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        rangerGatewayProvider,
         impalaAccessControlGateway
       )
 
@@ -318,5 +355,88 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     assert(actual == expected)
   }
 
-  test("updateacl") {}
+  test("updateacl") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        OutputPortFaker(
+          PublicImpalaCdw(
+            databaseName = "databaseName",
+            tableName = "tableName",
+            cdpEnvironment = "cdpEnv",
+            cdwVirtualWarehouse = "service",
+            format = Csv,
+            location = "loc",
+            partitions = None
+          ).asJson).build()
+      )
+      .build()
+
+    val refs: Set[CdpIamPrincipals] =
+      Set(CdpIamUser("uid", "username", "crn"), CdpIamUser("uid", "username2", "crn"))
+
+    val environment = new Environment()
+    environment.setCrn("cdpEnvCrn")
+
+    val datalake = new Datalake()
+    datalake.setEnvironmentCrn("cdpEnvCrn")
+    datalake.setDatalakeName("dlName")
+
+    val hostProvider = stub[CDPPublicHostProvider]
+    (hostProvider.getEnvironment _)
+      .when(*)
+      .returns(Right(environment))
+
+    (hostProvider.getDataLake _)
+      .when(*)
+      .returns(Right(datalake))
+
+    (hostProvider.getRangerHost _)
+      .when(*)
+      .returns(Right("rangerHost"))
+
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when(*)
+      .returns(
+        Right(rangerClient)
+      )
+
+    val externalTableGateway = stub[ExternalTableGateway]
+
+    val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
+    (impalaAccessControlGateway.updateAcl _)
+      .when(request, refs, rangerClient)
+      .returns(
+        Right(
+          RangerRole(
+            id = 10,
+            isEnabled = true,
+            name = "domain_dp_name_0_databaseName_tableName_read",
+            description = "description",
+            groups = Seq.empty,
+            users = Seq(
+              RoleMember("username", isAdmin = false),
+              RoleMember("username2", isAdmin = false)),
+            roles = Seq.empty
+          )
+        )
+      )
+
+    val impalaTableOutputPortGateway =
+      new ImpalaTableOutputPortGateway(
+        "srvRole",
+        hostProvider,
+        externalTableGateway,
+        rangerGatewayProvider,
+        impalaAccessControlGateway
+      )
+
+    val provisionCommand = ProvisionCommand("requestId", request)
+    val actual = impalaTableOutputPortGateway.updateAcl(provisionCommand, refs)
+
+    val expected = Right(refs)
+
+    assert(actual == expected)
+  }
 }

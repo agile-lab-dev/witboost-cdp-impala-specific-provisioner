@@ -5,7 +5,7 @@ import io.circe.generic.auto._
 import it.agilelab.provisioning.commons.config.Conf
 import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator.impalaCdwValidator
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.HostProvider
+import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.CDPPublicHostProvider
 import it.agilelab.provisioning.impala.table.provisioner.context.{
   ContextError,
   MemoryStateRepository,
@@ -27,7 +27,7 @@ import it.agilelab.provisioning.mesh.self.service.core.provisioner.Provisioner
 object ImpalaProvisionerController {
   def apply(
       conf: Conf
-  ): Either[ContextError, ProvisionerController[Json, ImpalaCdw, CdpIamPrincipals]] = for {
+  ): Either[ContextError, ProvisionerController[Json, Json, CdpIamPrincipals]] = for {
     impalaValidator <- ValidatorContext
       .init(conf)
       .map { ctx =>
@@ -39,20 +39,20 @@ object ImpalaProvisionerController {
     controller <- ProvisionerContext
       .init(conf)
       .map { ctx =>
-        val hostProvider = new HostProvider(ctx.cdpEnvClient, ctx.cdpDlClient)
-        ProvisionerController.defaultAclWithAudit[Json, ImpalaCdw, CdpIamPrincipals](
+        val hostProvider = new CDPPublicHostProvider(ctx.cdpEnvClient, ctx.cdpDlClient)
+        val rangerGatewayProvider = new RangerGatewayProvider(ctx.deployRoleUser, ctx.deployRolePwd)
+        ProvisionerController.defaultAclWithAudit[Json, Json, CdpIamPrincipals](
           impalaValidator,
           // Currently supporting only synchronous operations
-          Provisioner.defaultSync[Json, ImpalaCdw, ImpalaTableOutputPortResource, CdpIamPrincipals](
+          Provisioner.defaultSync[Json, Json, ImpalaTableOutputPortResource, CdpIamPrincipals](
             new ImpalaTableOutputPortGateway(
               ctx.deployRoleUser,
               hostProvider,
               ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd),
+              rangerGatewayProvider,
               new ImpalaOutputPortAccessControlGateway(
                 serviceRole = ctx.deployRoleUser,
-                hostProvider = hostProvider,
-                rangerGatewayProvider =
-                  new RangerGatewayProvider(ctx.deployRoleUser, ctx.deployRolePwd),
+                rangerGatewayProvider = rangerGatewayProvider,
                 principalsMapper = ctx.principalsMapper
               )
             )

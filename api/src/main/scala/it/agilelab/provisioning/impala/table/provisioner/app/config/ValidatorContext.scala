@@ -7,7 +7,8 @@ import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClient
 import it.agilelab.provisioning.commons.config.Conf
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.{
   CdpValidator,
-  LocationValidator
+  LocationValidator,
+  S3LocationValidator
 }
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.ClientError
@@ -16,6 +17,8 @@ final case class ValidatorContext(
     cdpValidator: CdpValidator,
     locationValidator: LocationValidator
 )
+
+final case class PrivateValidatorContext(locationValidator: LocationValidator)
 
 object ValidatorContext {
 
@@ -40,6 +43,6 @@ object ValidatorContext {
         .leftMap(e => ClientError("S3Gateway", e))
     } yield new ValidatorContext(
       new CdpValidator(cdpEnvClient, cdpDwClient),
-      new LocationValidator(s3Gateway)
+      new S3LocationValidator(s3Gateway)
     )
 }

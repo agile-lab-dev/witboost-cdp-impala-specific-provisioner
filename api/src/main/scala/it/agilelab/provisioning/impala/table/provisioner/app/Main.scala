@@ -8,10 +8,10 @@ import it.agilelab.provisioning.commons.client.cdp.dw.CdpDwClientError.CdpDwClie
 import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClientError.CdpEnvClientInitError
 import it.agilelab.provisioning.commons.config.Conf
 import it.agilelab.provisioning.impala.table.provisioner.app.config.{
-  ApplicationConfiguration,
   FrameworkDependencies,
   ImpalaProvisionerController
 }
+import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
   ClientError,
   ConfigurationError,

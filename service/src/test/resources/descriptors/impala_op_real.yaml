@@ -78,13 +78,8 @@ dataProduct:
       specific:
         databaseName: finance_salary_test_cdp_0
         tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
-        cdpEnvironment: aws-frankfurt-data-eng
+        cdpEnvironment: cdp-env-data-eng
         cdwVirtualWarehouse: impala-test-vw
         format: CSV
-        location: s3a://cdp-data-eu-central-1-512175274871/mesh/warehouse/tablespace/external/hive/test-other-dp-sergio/
-        acl:
-          owners:
-            - user:sergio.mejia_agilelab.it
-            - user:nicolo.bidotti_agilelab.it
-          users: []
+        location: s3a://cdp-env/path/to/data-folder/
         partitions: []

@@ -2,7 +2,10 @@ package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
 import it.agilelab.provisioning.aws.s3.gateway.S3Gateway
 
-class LocationValidator(s3Gateway: S3Gateway) {
+trait LocationValidator {
+  def locationExists(location: String): Boolean
+}
+class S3LocationValidator(s3Gateway: S3Gateway) extends LocationValidator {
   def locationExists(location: String): Boolean = {
     val result = for {
       bucketAndKey <- getBucketAndKey(location)

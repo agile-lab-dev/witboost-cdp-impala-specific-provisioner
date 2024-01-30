@@ -9,7 +9,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import java.util
 
-class HostProviderTest extends AnyFunSuite with MockFactory {
+class CDPPublicHostProviderTest extends AnyFunSuite with MockFactory {
 
   test("getEnvironment") {
     val environment = new Environment()
@@ -19,7 +19,7 @@ class HostProviderTest extends AnyFunSuite with MockFactory {
     val cdpDlClient = stub[CdpDlClient]
     (cdpEnvClient.describeEnvironment _).when("env1").returns(Right(environment))
 
-    val cdpClient = new HostProvider(cdpEnvClient, cdpDlClient)
+    val cdpClient = new CDPPublicHostProvider(cdpEnvClient, cdpDlClient)
     val actual = cdpClient.getEnvironment("env1")
     val expected = Right(environment)
     assert(actual == expected)
@@ -37,7 +37,7 @@ class HostProviderTest extends AnyFunSuite with MockFactory {
     val cdpDlClient = stub[CdpDlClient]
     (cdpDlClient.findAllDl _).when().returns(Right(Seq(datalake)))
 
-    val cdpClient = new HostProvider(cdpEnvClient, cdpDlClient)
+    val cdpClient = new CDPPublicHostProvider(cdpEnvClient, cdpDlClient)
     val actual = cdpClient.getDataLake(environment)
     val expected = Right(datalake)
     assert(actual == expected)
@@ -56,7 +56,7 @@ class HostProviderTest extends AnyFunSuite with MockFactory {
     val cdpDlClient = stub[CdpDlClient]
     (cdpEnvClient.describeEnvironment _).when(*).returns(Right(environment))
 
-    val cdpClient = new HostProvider(cdpEnvClient, cdpDlClient)
+    val cdpClient = new CDPPublicHostProvider(cdpEnvClient, cdpDlClient)
     val actual = cdpClient.getImpalaCoordinatorHost(environment, "cluster2")
     val expected = Right("coordinator-cluster2.dw-env1.ysuy-npya.cloudera.site")
     assert(actual == expected)
@@ -90,13 +90,13 @@ class HostProviderTest extends AnyFunSuite with MockFactory {
     val cdpEnvClient = stub[CdpEnvClient]
     val cdpDlClient = stub[CdpDlClient]
 
-    val cdpClient = new HostProvider(cdpEnvClient, cdpDlClient)
+    val cdpClient = new CDPPublicHostProvider(cdpEnvClient, cdpDlClient)
     (cdpEnvClient.describeEnvironment _).when(*).returns(Right(environment))
     (cdpDlClient.findAllDl _).when().returns(Right(Seq(datalake)))
     (cdpDlClient.describeDl _).when("dlName").returns(Right(datalakeDetails))
 
     val actual = cdpClient.getRangerHost(datalake)
-    val expected = Right("test/host/")
+    val expected = Right("http://test/host/")
     assert(actual == expected)
 
   }

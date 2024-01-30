@@ -10,13 +10,19 @@ import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
   ConfigurationError
 }
 
-final case class ProvisionerContext(
+class ProvisionerContext(
+    val deployRoleUser: String,
+    val deployRolePwd: String,
+    val principalsMapper: PrincipalsMapper[CdpIamPrincipals]
+)
+
+class CDPPublicProvisionerContext(
     deployRoleUser: String,
     deployRolePwd: String,
-    cdpEnvClient: CdpEnvClient,
-    cdpDlClient: CdpDlClient,
-    principalsMapper: PrincipalsMapper[CdpIamPrincipals]
-)
+    principalsMapper: PrincipalsMapper[CdpIamPrincipals],
+    val cdpEnvClient: CdpEnvClient,
+    val cdpDlClient: CdpDlClient
+) extends ProvisionerContext(deployRoleUser, deployRolePwd, principalsMapper)
 
 object ProvisionerContext {
 
@@ -31,19 +37,19 @@ object ProvisionerContext {
 
   def init(
       conf: Conf
-  ): Either[ContextError, ProvisionerContext] =
+  ): Either[ContextError, CDPPublicProvisionerContext] =
     for {
       deployRoleUser <- conf.get(CDP_DEPLOY_ROLE_USER).leftMap(e => ConfigurationError(e))
       deployRolePwd  <- conf.get(CDP_DEPLOY_ROLE_PASSWORD).leftMap(e => ConfigurationError(e))
       cdpEnvClient   <- CdpEnvClient.defaultWithAudit().leftMap(e => ClientError("CdpEnvClient", e))
       cdpDlClient    <- CdpDlClient.defaultWithAudit().leftMap(e => ClientError("CdpDlClient", e))
       principalsMapper <- new PrincipalsMapperPluginLoader().load(
-        ApplicationConfiguration.provisionerConfig)
-    } yield ProvisionerContext(
+        ApplicationConfiguration.impalaConfig)
+    } yield new CDPPublicProvisionerContext(
       deployRoleUser,
       deployRolePwd,
+      principalsMapper,
       cdpEnvClient,
-      cdpDlClient,
-      principalsMapper
+      cdpDlClient
     )
 }

@@ -6,14 +6,12 @@ import it.agilelab.provisioning.api.generated.Resource
 import it.agilelab.provisioning.api.generated.definitions.{
   DescriptorKind,
   ProvisioningRequest,
-  ProvisioningStatus,
   SystemError,
   ValidationError,
   ValidationResult
 }
 import it.agilelab.provisioning.impala.table.provisioner.app.api.helpers.ProvisionerControllerMock
 import it.agilelab.provisioning.impala.table.provisioner.app.api.routes.helpers.HandlerTestBase
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
 import it.agilelab.provisioning.mesh.self.service.api.model._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
@@ -40,7 +38,7 @@ class ValidateHandlerTest extends HandlerTestBase {
     val controllerMock = new ProvisionerControllerMock {
       override def validate(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError.SystemError, ApiResponse.ValidationResult] =
         Right(ApiResponse.invalid(errors: _*))
     }
@@ -65,7 +63,7 @@ class ValidateHandlerTest extends HandlerTestBase {
     val controllerMock = new ProvisionerControllerMock {
       override def validate(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError.SystemError, ApiResponse.ValidationResult] = Left(ApiError.sysErr(error))
     }
 

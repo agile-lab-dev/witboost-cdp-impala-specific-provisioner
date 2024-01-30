@@ -10,12 +10,11 @@ import it.agilelab.provisioning.impala.table.provisioner.app.api.mapping.{
   ProvisioningStatusMapper,
   ValidationErrorMapper
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
 import it.agilelab.provisioning.mesh.self.service.api.controller.ProvisionerController
 import it.agilelab.provisioning.mesh.self.service.api.model.{ ApiError, ApiRequest }
 
 class SpecificProvisionerHandler(
-    provisioner: ProvisionerController[Json, ImpalaCdw, CdpIamPrincipals]
+    provisioner: ProvisionerController[Json, Json, CdpIamPrincipals]
 ) extends Handler[IO] {
 
   private val NotImplementedError = SystemError(

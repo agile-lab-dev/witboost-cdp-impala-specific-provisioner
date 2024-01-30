@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.s3.model.S3Object
 
 class LocationValidatorTest extends AnyFunSuite with MockFactory {
   val s3Gateway = mock[S3Gateway]
-  val locationValidator = new LocationValidator(s3Gateway)
+  val locationValidator = new S3LocationValidator(s3Gateway)
 
   test("location validation return false when path is wrongly formatted") {
     assert(!locationValidator.locationExists("path"))

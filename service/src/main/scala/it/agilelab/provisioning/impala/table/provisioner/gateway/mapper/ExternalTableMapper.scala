@@ -1,8 +1,5 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.mapper
 
-import it.agilelab.provisioning.mesh.self.service.api.model.Component.OutputPort
-import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
-import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
 import cats.implicits._
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
@@ -10,26 +7,29 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaCdw
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.support.ImpalaDataTypeSupport
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
+import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
 
 object ExternalTableMapper extends ImpalaDataTypeSupport {
   def map(
-      component: OutputPort[ImpalaCdw]
+      schema: Seq[Column],
+      impalaSpecific: ImpalaCdw
   ): Either[ComponentGatewayError, ExternalTable] = for {
-    schema <- component.dataContract.schema
-      .filter(c => component.specific.partitions.forall(seq => !seq.contains(c.name)))
+    tableSchema <- schema
+      .filter(c => impalaSpecific.partitions.forall(seq => !seq.contains(c.name)))
       .map(toField)
       .sequence
-    partitions <- component.dataContract.schema
-      .filter(c => component.specific.partitions.exists(seq => seq.contains(c.name)))
+    partitions <- schema
+      .filter(c => impalaSpecific.partitions.exists(seq => seq.contains(c.name)))
       .map(toField)
       .sequence
   } yield ExternalTable(
-    database = component.specific.databaseName,
-    tableName = component.specific.tableName,
-    schema = schema,
+    database = impalaSpecific.databaseName,
+    tableName = impalaSpecific.tableName,
+    schema = tableSchema,
     partitions = partitions,
-    location = component.specific.location,
-    format = component.specific.format
+    location = impalaSpecific.location,
+    format = impalaSpecific.format
   )
 
   private def toField(c: Column): Either[ComponentGatewayError, Field] = for {

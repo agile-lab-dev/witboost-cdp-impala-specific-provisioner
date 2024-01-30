@@ -70,7 +70,4 @@ dataProduct:
         cdwVirtualWarehouse: impala-test-vw
         format: PARQUET
         location: s3a://bucketName/folderPath/
-        acl:
-          owners: []
-          users: []
         partitions: []

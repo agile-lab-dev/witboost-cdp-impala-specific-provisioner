@@ -48,7 +48,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val controllerMock = new ProvisionerControllerMock {
       override def provision(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] =
         Right(
           ApiResponse.completed("a-fake-id", Some(toJson[ImpalaTableOutputPortResource](resource))))
@@ -90,7 +90,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val controllerMock = new ProvisionerControllerMock {
       override def provision(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.validErr(errors: _*))
     }
 
@@ -113,7 +113,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val controllerMock = new ProvisionerControllerMock {
       override def provision(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.sysErr(error))
     }
 
@@ -150,7 +150,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val controllerMock = new ProvisionerControllerMock {
       override def unprovision(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.validErr(errors: _*))
     }
 
@@ -173,7 +173,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val controllerMock = new ProvisionerControllerMock {
       override def unprovision(request: ApiRequest.ProvisioningRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.sysErr(error))
     }
 
@@ -213,7 +213,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val handler = new SpecificProvisionerHandler(new ProvisionerControllerMock {
       override def updateAcl(updateAclRequest: ApiRequest.UpdateAclRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.validErr(errors: _*))
     })
     val response: IO[Response[IO]] = new Resource[IO]()
@@ -236,7 +236,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
     val handler = new SpecificProvisionerHandler(new ProvisionerControllerMock {
       override def updateAcl(updateAclRequest: ApiRequest.UpdateAclRequest)(implicit
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
-          decoderCmp: Decoder[Component[ImpalaCdw]]
+          decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] = Left(ApiError.sysErr(error))
     })
     val response: IO[Response[IO]] = new Resource[IO]()

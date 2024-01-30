@@ -8,8 +8,8 @@ Designed by [Agile Lab](https://www.agilelab.it/), witboost is a versatile platf
 
 # CDW Impala Specific Provisioner
 
-[![pipeline status](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/develop/pipeline.svg)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/develop)  
-[![coverage report](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/develop/coverage.svg)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/develop)
+[![pipeline status](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/master/pipeline.svg)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/master)  
+[![coverage report](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/master/coverage.svg?min_medium=60)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/master)
 
 - [Overview](#overview)
 - [Building](#building)
@@ -38,7 +38,8 @@ This is a multi module sbt project:
 
 * **api**: Contains the API layer of the service. The latter can be invoked synchronously in 3 different ways:
     1. POST /provision: provision the impala output port specified in the payload request. It will synchronously call the `service` logic to perform the provisioning logic.
-    3. POST /validate: validate the payload request and return a validation result. It should be invoked before provisioning a resource in order to understand if the request is correct
+    2. POST /validate: validate the payload request and return a validation result. It should be invoked before provisioning a resource in order to understand if the request is correct.
+    3. POST /updateacl: Updates the access to users to the provisioned resources. 
 * **core**: Contains model case classes and shared logic among the projects
 * **service**: Contains the Provisioner Service logic. Is called from the API layer after some check on the request and return the deployed resource. This is the module on which we provision the output port
 
