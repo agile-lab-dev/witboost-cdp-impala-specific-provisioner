@@ -1,10 +1,14 @@
+<br/>
 <p align="center">
     <a href="https://www.agilelab.it/witboost">
         <img src="docs/img/witboost_logo.svg" alt="witboost" width=600 >
     </a>
 </p>
+<br/>
 
-Designed by [Agile Lab](https://www.agilelab.it/), witboost is a versatile platform that addresses a wide range of sophisticated data engineering challenges. It enables businesses to discover, enhance, and productize their data, fostering the creation of automated data platforms that adhere to the highest standards of data governance. Want to know more about witboost? Check it out [here](https://www.agilelab.it/witboost) or [contact us!](https://www.agilelab.it/contacts)
+Designed by [Agile Lab](https://www.agilelab.it/), Witboost is a versatile platform that addresses a wide range of sophisticated data engineering challenges. It enables businesses to discover, enhance, and productize their data, fostering the creation of automated data platforms that adhere to the highest standards of data governance. Want to know more about Witboost? Check it out [here](https://www.agilelab.it/witboost) or [contact us!](https://www.agilelab.it/contacts)
+
+This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/witboost-starter-kit) meant to showcase Witboost's integration capabilities and provide a "batteries-included" product.
 
 # CDW Impala Specific Provisioner
 
@@ -255,13 +259,18 @@ components:
 * Improve code quality
 * Add Audit to other class
 
-## About us
+## License
 
+This project is available under the [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0); see [LICENSE](LICENSE) for full details.
+
+## About us
+<br/>
 <p align="center">
     <a href="https://www.agilelab.it">
-        <img src="docs/img/agilelab_logo.jpg" alt="Agile Lab" width=600>
+        <img src="docs/img/agilelab_logo.svg" alt="Agile Lab" width=600>
     </a>
 </p>
+<br/>
 
 Agile Lab creates value for its Clients in data-intensive environments through customizable solutions to establish performance driven processes, sustainable architectures, and automated platforms driven by data governance best practices.
 
