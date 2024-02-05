@@ -22,14 +22,7 @@ lazy val service = (project in file("service"))
   .settings(
     name := "impala-table-provisioner-service",
     unmanagedBase := baseDirectory.value / "lib",
-    libraryDependencies ++= Dependencies.testDependencies ++ Seq(
-      Dependencies.scalaMeshSelfLambda,
-      Dependencies.scalaMeshRep,
-      Dependencies.scalaCdpDl,
-      Dependencies.scalaCdpEnv,
-      Dependencies.ranger,
-      Dependencies.scalaMeshPrincipalsMappingSamples
-    ),
+    libraryDependencies ++= Dependencies.testDependencies ++ Dependencies.serviceDependencies,
     artifactorySettings,
     wartremoverSettings,
     k8tyGitlabPluginSettings

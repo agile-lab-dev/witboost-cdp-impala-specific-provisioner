@@ -10,7 +10,7 @@ Designed by [Agile Lab](https://www.agilelab.it/), Witboost is a versatile platf
 
 This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/witboost-starter-kit) meant to showcase Witboost's integration capabilities and provide a "batteries-included" product.
 
-# CDW Impala Specific Provisioner
+# CDP Impala Specific Provisioner
 
 [![pipeline status](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/master/pipeline.svg)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/master)  
 [![coverage report](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/badges/master/coverage.svg?min_medium=60)](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/cdp-refresh/witboost.Mesh.Provisioning.OutputPort.CDP.Impala/-/commits/master)
@@ -26,7 +26,7 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 
 ## Overview
 
-This project implements a Specific Provisioner for Cloudera Data Warehouse using Impala and Amazon Web Services (AWS) S3 storage. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports on existing csv or Parquet tables leveraging an existing Impala CDW environment.
+This project implements a Specific Provisioner deploying Output Ports as external tables on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports on existing csv or Parquet tables leveraging an existing Impala instance.
 
 ### What's a Specific Provisioner?
 
@@ -119,12 +119,13 @@ We added additional compilation rules using the wartRemover library, so if any e
 
 To run the server, you need to set up the necessary environment variables to access CDP and the AWS environment. This Specific Provisioner uses the followings SDK:
 
-- **CDP SDK**: please refer to the [official documentation](https://docs.cloudera.com/cdp-public-cloud/cloud/sdk/topics/mc-overview-of-the-cdp-sdk-for-java.html) to setup the access credentials
-- **AWS SDK**: please refer to the [official documentation](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/setup-basics.html) to setup the access credentials
+- **CDP SDK**: please refer to the [official documentation](https://docs.cloudera.com/cdp-public-cloud/cloud/sdk/topics/mc-overview-of-the-cdp-sdk-for-java.html) to setup the access credentials (only required for CDP Public Cloud).
+- **AWS SDK**: please refer to the [official documentation](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/setup-basics.html) to setup the access credentials (only required for CDP Public Cloud).
 
 For example, for local execution you need to set the following environment variables:
 
 ```
+# AWS configuration is only required for CDP Public Cloud
 export AWS_REGION=<aws_region>
 export AWS_ACCESS_KEY_ID=<aws_access_key_id>
 export AWS_SECRET_ACCESS_KEY=<aws_secret_access_key>
@@ -132,8 +133,8 @@ export AWS_SESSION_TOKEN=<aws_session_token>
 
 export CDP_DEPLOY_ROLE_USER=<cdp_user>
 export CDP_DEPLOY_ROLE_PASSWORD=<cdp_password>
-export CDP_ACCESS_KEY_ID=<cdp_user_access_key_id>
-export CDP_PRIVATE_KEY=<cdp_user_private_key>
+export CDP_ACCESS_KEY_ID=<cdp_user_access_key_id> # Only required for CDP Public Cloud
+export CDP_PRIVATE_KEY=<cdp_user_private_key> # Only required for CDP Public Cloud
 ```
 
 The CDP user must be a `Machine User` and needs to have at least the following roles:
@@ -142,6 +143,7 @@ The CDP user must be a `Machine User` and needs to have at least the following r
 - EnvironmentAdmin
 - EnvironmentUser
 
+Alternatively to `EnvironmentAdmin` role, the Machine User must have the necessary permissions to manage Ranger, specifically creating/updating/retrieving/deleting Security Zones, Roles, Resource based Policies and the resources related to them.
 
 After this, execute:
 
@@ -155,7 +157,7 @@ By default, the server binds to port 8080 on localhost. After it's up and runnin
 
 Most application configurations are handled with the Typesafe Config library. You can find the default settings in the `reference.conf` of each module. Customize them and use the `config.file` system property or the other options provided by Typesafe Config according to your needs. The provided docker image expects the config file mounted at path `/config/application.conf`.
 
-For more information on the configuration, see [Configuring the Impala SP](docs/Configuration.md).
+Especially for CDP Private Cloud, a set of required configuration fields must be modified, like Ranger and HDFS base URLs. For more information on the configuration and to understand how to set up the provisioner for a specific type of CDP Cloud, see [Configuring the Impala Specific Provisioner](docs/Configuration.md).
 
 ## Deploying
 
@@ -164,23 +166,25 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 ## How it works
 
 1. Parse the request body
-2. Retrieve impala coordinator host and ranger host from cdpEnvironment specified on the request
+2. Retrieve impala coordinator host and ranger host from either the CDP environment (CDP Public), or the provisioner configuration (CDP Private).
 3. Create the impala table
 4. Upsert the ranger security zone for the specific data product version
 5. Upsert ranger roles for owner and users of the component.
 6. Upsert access policies for said roles, granting read/write access to the owner role, and read-only to the user role
 7. Return the deployed resource
 
-## Example input requested
+## Example input
 
-The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention:
+The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention as this will be verified on the validation phase:
 
 - Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 - Table name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 
+### CDP Public Cloud
 
-Simple table:
-```
+**Simple table on CDP Public Cloud:**
+
+```yaml
 id: urn:dmb:dp:platform:demo-dp:0
 name: demo-dp
 domain: platform
@@ -210,10 +214,11 @@ components:
     location: s3a://bucket/path/to/folder/
 ```
 
-Partitions are defined as a list of column names to be used as partitions. These columns must exist in the `dataContract.schema` field and will be validated before deploying any resource.
+**Partitioned table on CDP Public Cloud:**
 
-Partitioned table:
-```
+Partitions are defined as a list of column names to be used as partitions. These columns must exist in the `dataContract.schema` field, which will be validated before deploying any resource.
+
+```yaml
 id: urn:dmb:dp:platform:demo-dp:0
 name: demo-dp
 domain: platform
@@ -245,12 +250,32 @@ components:
       - country
 ```
 
+### CDP Private Cloud
+
+When working with a Private Cloud, the descriptor holds the same schema as the ones presented above, excepting some fields in the `specific` section:
+
+```yaml
+...
+components:
+- id: ...
+  specific:
+    databaseName: platform_demo_dp_0
+    tableName: platform_demo_dp_0_witboost_table_impala_poc
+    # cdpEnvironment: Omitted on CDP Private
+    # cdwVirtualWarehouse: Omitted on CDP Private 
+    format: CSV
+    location: /path/to/folder # Specifies the HDFS folder path
+    partitions:
+      - country
+```
+
 ## Limitations
 
 * Only PARQUET and CSV are supported as `format`
   * CSV files must NOT start with a header row
-* `location` need to be expressed as `s3a://` and always ending with a slash `/`.
+* On CDP Public Cloud, `location` needs to be expressed as `s3a://` and always ending with a slash `/`.
   * Each Data Product data must be located in a different bucket 
+* On CDP Private Cloud, `location` is expressed as the directory path on HDFS in the form `/path/to/folder`.
 * Schema data types only support primitive types TINYINT, SMALLINT, INT, BIGINT, DOUBLE, DECIMAL, TIMESTAMP, DATE, STRING, CHAR, VARCHAR and BOOLEAN, and ARRAY, MAP and STRUCT with these types
 
 ## Tech debt

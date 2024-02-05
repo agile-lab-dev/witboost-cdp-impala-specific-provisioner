@@ -12,7 +12,9 @@ object HostProviderError {
   final case class EnvironmentClientErr(error: CdpEnvClientError) extends HostProviderError
   final case class DataLakeClientErr(error: CdpDlClientError) extends HostProviderError
   final case class DataLakeNotFoundError(error: String) extends HostProviderError
-  final case class GetImpalaCoordinatorErr(error: Throwable) extends HostProviderError
+  final case class GetImpalaCoordinatorErr(error: Throwable) extends HostProviderError {
+    initCause(error)
+  }
   final case class GetRangerHostErr(error: String) extends HostProviderError
 
   implicit def showHostProviderError: Show[HostProviderError] = Show.show {

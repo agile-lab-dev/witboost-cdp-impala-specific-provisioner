@@ -21,7 +21,8 @@ object Settings {
       Wart.ToString,
       Wart.DefaultArguments,
       Wart.AsInstanceOf,
-      Wart.Equals
+      Wart.Equals,
+      Wart.Enumeration
     ),
     wartremoverExcluded += sourceManaged.value
   )

@@ -9,6 +9,8 @@ trait ApplicationConfiguration extends ConfigurationModel {
 
   lazy val impalaConfig: Config = ConfigFactory.load().getConfig(IMPALA)
   lazy val provisionerConfig: Config = ConfigFactory.load().getConfig(PROVISIONER)
+  lazy val hdfsConfig: Config = ConfigFactory.load().getConfig(HDFS)
+  lazy val rangerConfig: Config = ConfigFactory.load().getConfig(RANGER)
 
   private val formatter = ConfigRenderOptions.concise().setFormatted(true)
 

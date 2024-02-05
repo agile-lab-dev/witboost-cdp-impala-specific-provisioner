@@ -36,12 +36,37 @@ trait Dependencies {
     "io.circe" %% "circe-parser"
   ).map(_ % circeVersion) ++ Seq("io.circe" %% "circe-generic-extras" % "0.14.3")
 
+  private val ldaptiveVrs = "2.3.0"
+  lazy val ldaptiveDependencies = "org.ldaptive" % "ldaptive" % ldaptiveVrs
+
+  private val pureconfigVrs = "0.17.5"
+  lazy val pureconfigDependencies = "com.github.pureconfig" %% "pureconfig" % pureconfigVrs
+
+  lazy val logbackVersion = "1.4.5"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion
+  lazy val logbackCore = "ch.qos.logback" % "logback-core" % logbackVersion
+  lazy val logbackDependencies: Seq[ModuleID] = Seq(logbackClassic, logbackCore)
+
+  lazy val serviceDependencies: Seq[ModuleID] = Seq(
+    scalaMeshSelfLambda,
+    scalaMeshRep,
+    scalaCdpDl,
+    scalaCdpEnv,
+    ranger,
+    scalaMeshPrincipalsMappingSamples,
+    ldaptiveDependencies,
+    pureconfigDependencies
+  ) ++ logbackDependencies
+
+  lazy val scalatestMockitoVersion = "3.2.11.0"
   lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVrs % "test"
   lazy val scalaMock = "org.scalamock" %% "scalamock" % scalaMockVrs % "test"
+  lazy val mockito = "org.scalatestplus" %% "mockito-4-2" % scalatestMockitoVersion
 
   lazy val testDependencies = Seq(
     scalaTest,
-    scalaMock
+    scalaMock,
+    mockito
   )
 
 }

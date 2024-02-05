@@ -3,6 +3,7 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provide
 import cats.implicits._
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.http.Auth.BasicCredential
+import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.policy.RangerPolicyGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.role.RangerRoleGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGateway
@@ -19,12 +20,20 @@ class RangerGatewayProvider(
     password: String
 ) {
 
-  // TODO Set depending on CloudType
   def getRangerClient(
       rangerHost: String
   ): Either[RangerGatewayProviderError, RangerClient] =
-    Try(RangerClient.defaultWithAudit(rangerHost, BasicCredential(username, password))).toEither
-      .leftMap(e => RangerGatewayProviderError(e))
+    Try {
+      ApplicationConfiguration.rangerConfig.getString(
+        // TODO We should create an enumeration in the scala-mesh-commons library to manage this error handling
+        ApplicationConfiguration.RANGER_AUTH_TYPE) match {
+        case RangerClient.SIMPLE_AUTH =>
+          RangerClient.defaultWithAudit(rangerHost, BasicCredential(username, password))
+        case RangerClient.KERBEROS_AUTH =>
+          RangerClient.defaultWithKerberosWithAudit(rangerHost, username, password)
+        case e => throw new NoSuchElementException(s"Authentication type $e is not supported")
+      }
+    }.toEither.leftMap(e => RangerGatewayProviderError(e))
 
   def getRangerGateways(rangerHost: String): Either[RangerGatewayProviderError, RangerGateway] =
     for {

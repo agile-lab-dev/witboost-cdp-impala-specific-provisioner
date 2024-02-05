@@ -1,12 +1,11 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 
-import cats.implicits._
-import com.cloudera.cdp.environments.model.Environment
+import cats.implicits.{ showInterpolator, toBifunctorOps }
 import io.circe.Json
 import io.circe.generic.auto._
 import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
 import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
-import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.CDPPublicHostProvider
+import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.ConfigHostProvider
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw.ImpalaProvisionRequestOps
@@ -23,9 +22,9 @@ import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 
 import scala.util.Try
 
-class ImpalaTableOutputPortGateway(
+class CDPPrivateImpalaTableOutputPortGateway(
     serviceRole: String,
-    hostProvider: CDPPublicHostProvider,
+    hostProvider: ConfigHostProvider,
     externalTableGateway: ExternalTableGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaOutputPortAccessControlGateway
@@ -36,6 +35,7 @@ class ImpalaTableOutputPortGateway(
     * It creates the Impala external table based on the location defined in the descriptor;
     * creates or updates the necessary security zones;
     * database, table and location policies for the defined owners and users in the component descriptor,
+    *
     * @param provisionCommand A Provision Command including the provisioning request containing the data product descriptor
     * @return Either a [[ComponentGatewayError]] if an error occurred while creating the output port,
     *         or an [[ImpalaTableOutputPortResource]] that includes the information of the newly deployed Output Port.
@@ -45,17 +45,19 @@ class ImpalaTableOutputPortGateway(
   ): Either[ComponentGatewayError, ImpalaTableOutputPortResource] = for {
     // Extract necessary information
     opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+      .getOutputPortRequest[PrivateImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
-    env <- hostProvider
-      .getEnvironment(opRequest.specific.cdpEnvironment)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    dl <- hostProvider.getDataLake(env).leftMap(e => ComponentGatewayError(show"$e"))
+    clusterName <- Try(
+      ApplicationConfiguration.provisionerConfig.getString(
+        ApplicationConfiguration.PROVISION_CLUSTER_NAME)).toEither
+      .leftMap { _ =>
+        val confError = ConfKeyNotFoundErr(ApplicationConfiguration.PROVISION_CLUSTER_NAME)
+        ComponentGatewayError(show"$confError")
+      }
     // Upsert output port
-    externalTable <- createAndGetExternalTable(env, opRequest)
+    externalTable <- createAndGetExternalTable(opRequest)
     // Upsert security and access
-    rangerHost <- hostProvider
-      .getRangerHost(dl)
+    rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
     rangerClient <- rangerGatewayProvider
       .getRangerClient(rangerHost)
@@ -64,45 +66,41 @@ class ImpalaTableOutputPortGateway(
       provisionCommand.provisionRequest,
       rangerClient,
       externalTable,
-      dl.getDatalakeName
+      clusterName
     )
   } yield ImpalaTableOutputPortResource(
     externalTable,
     ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
 
-  /** Destroys all the resources for the Output Port.
-    *
-    * It updates the security zones to remove the data location as part of the managed resources;
-    * deletes the table and location policies for the defined owners and users in the component descriptor,
-    *
-    * @param unprovisionCommand A Provision Command including the unprovisioning request containing the data product descriptor
-    * @return Either a [[ComponentGatewayError]] if an error occurred while destroying the output port,
-    *         or an [[ImpalaTableOutputPortResource]] that includes the information of the deleted Output Port.
-    */
   override def destroy(
       unprovisionCommand: ProvisionCommand[Json, Json]
   ): Either[ComponentGatewayError, ImpalaTableOutputPortResource] = for {
+    // Extract necessary information
     opRequest <- unprovisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+      .getOutputPortRequest[PrivateImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
-    env <- hostProvider
-      .getEnvironment(opRequest.specific.cdpEnvironment)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    dl <- hostProvider.getDataLake(env).leftMap(e => ComponentGatewayError(show"$e"))
     dropOnUnprovision <- Try {
       ApplicationConfiguration.impalaConfig.getBoolean(ApplicationConfiguration.DROP_ON_UNPROVISION)
     }.toEither.leftMap { _ =>
       val confError = ConfKeyNotFoundErr(ApplicationConfiguration.DROP_ON_UNPROVISION)
       ComponentGatewayError(show"$confError")
     }
+    clusterName <- Try(
+      ApplicationConfiguration.provisionerConfig.getString(
+        ApplicationConfiguration.PROVISION_CLUSTER_NAME)).toEither
+      .leftMap { _ =>
+        val confError = ConfKeyNotFoundErr(ApplicationConfiguration.PROVISION_CLUSTER_NAME)
+        ComponentGatewayError(show"$confError")
+      }
+    // Upsert/delete output port
     externalTable <-
       if (dropOnUnprovision) {
-        dropAndGetExternalTable(env, opRequest)
+        dropAndGetExternalTable(opRequest)
       } else {
-        createAndGetExternalTable(env, opRequest)
+        createAndGetExternalTable(opRequest)
       }
-    rangerHost <- hostProvider
-      .getRangerHost(dl)
+    // Update security and access
+    rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
     rangerClient <- rangerGatewayProvider
       .getRangerClient(rangerHost)
@@ -111,7 +109,8 @@ class ImpalaTableOutputPortGateway(
       unprovisionCommand.provisionRequest,
       rangerClient,
       externalTable,
-      dl.getDatalakeName)
+      clusterName
+    )
   } yield ImpalaTableOutputPortResource(
     externalTable,
     ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
@@ -120,23 +119,15 @@ class ImpalaTableOutputPortGateway(
       provisionCommand: ProvisionCommand[Json, Json],
       refs: Set[CdpIamPrincipals]
   ): Either[ComponentGatewayError, Set[CdpIamPrincipals]] = for {
-    opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+    _ <- provisionCommand.provisionRequest
+      .getOutputPortRequest[PrivateImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
-    env <- hostProvider
-      .getEnvironment(opRequest.specific.cdpEnvironment)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    dl <- hostProvider.getDataLake(env).leftMap(e => ComponentGatewayError(show"$e"))
-    rangerHost <- hostProvider
-      .getRangerHost(dl)
+    rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
     rangerClient <- rangerGatewayProvider
       .getRangerClient(rangerHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    role <- impalaAccessControlGateway.updateAcl(
-      provisionCommand.provisionRequest,
-      refs,
-      rangerClient)
+    _ <- impalaAccessControlGateway.updateAcl(provisionCommand.provisionRequest, refs, rangerClient)
   } yield refs
 
   private def createExternalTable(
@@ -164,11 +155,10 @@ class ImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def createAndGetExternalTable(
-      env: Environment,
-      opRequest: OutputPort[PublicImpalaCdw]
+      opRequest: OutputPort[PrivateImpalaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
-      .getImpalaCoordinatorHost(env, opRequest.specific.cdwVirtualWarehouse)
+      .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
@@ -178,11 +168,10 @@ class ImpalaTableOutputPortGateway(
   } yield externalTable
 
   private def dropAndGetExternalTable(
-      env: Environment,
-      opRequest: OutputPort[PublicImpalaCdw]
+      opRequest: OutputPort[PrivateImpalaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
-      .getImpalaCoordinatorHost(env, opRequest.specific.cdwVirtualWarehouse)
+      .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
