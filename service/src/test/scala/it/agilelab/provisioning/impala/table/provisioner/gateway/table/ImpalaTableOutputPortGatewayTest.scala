@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.table
 
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.UsernamePasswordConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl.ImpalaDataDefinitionLanguageProvider
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.DefaultSQLGateway
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Parquet
@@ -18,7 +18,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDLs _)
       .expects(
-        ConnectionConfig("a", "b", "c", "deployUser", "deployPwd"),
+        UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE db.table (id INT) PARTITIONED BY (p1 INT) " +
@@ -35,7 +35,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        ConnectionConfig("a", "b", "c", "", ""),
+        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ExternalTable(
           "db",
           "table",
@@ -52,7 +52,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDLs _)
       .expects(
-        ConnectionConfig("a", "b", "c", "deployUser", "deployPwd"),
+        UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE IF NOT EXISTS db.table (id INT) PARTITIONED BY (p1 INT) " +
@@ -69,7 +69,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        ConnectionConfig("a", "b", "c", "", ""),
+        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ExternalTable(
           "db",
           "table",
@@ -86,7 +86,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
-        ConnectionConfig("a", "b", "c", "deployUser", "deployPwd"),
+        UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
         "DROP TABLE db.table"
       )
       .once()
@@ -99,7 +99,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        ConnectionConfig("a", "b", "c", "", ""),
+        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ExternalTable(
           "db",
           "table",
@@ -116,7 +116,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
-        ConnectionConfig("a", "b", "c", "deployUser", "deployPwd"),
+        UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
         "DROP TABLE IF EXISTS db.table"
       )
       .once()
@@ -129,7 +129,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        ConnectionConfig("a", "b", "c", "", ""),
+        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ExternalTable(
           "db",
           "table",

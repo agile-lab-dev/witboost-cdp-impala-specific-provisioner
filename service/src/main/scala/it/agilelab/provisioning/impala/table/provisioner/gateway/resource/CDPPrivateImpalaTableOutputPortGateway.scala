@@ -47,13 +47,6 @@ class CDPPrivateImpalaTableOutputPortGateway(
     opRequest <- provisionCommand.provisionRequest
       .getOutputPortRequest[PrivateImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
-    clusterName <- Try(
-      ApplicationConfiguration.provisionerConfig.getString(
-        ApplicationConfiguration.PROVISION_CLUSTER_NAME)).toEither
-      .leftMap { _ =>
-        val confError = ConfKeyNotFoundErr(ApplicationConfiguration.PROVISION_CLUSTER_NAME)
-        ComponentGatewayError(show"$confError")
-      }
     // Upsert output port
     externalTable <- createAndGetExternalTable(opRequest)
     // Upsert security and access
@@ -66,7 +59,7 @@ class CDPPrivateImpalaTableOutputPortGateway(
       provisionCommand.provisionRequest,
       rangerClient,
       externalTable,
-      clusterName
+      ""
     )
   } yield ImpalaTableOutputPortResource(
     externalTable,
@@ -85,13 +78,6 @@ class CDPPrivateImpalaTableOutputPortGateway(
       val confError = ConfKeyNotFoundErr(ApplicationConfiguration.DROP_ON_UNPROVISION)
       ComponentGatewayError(show"$confError")
     }
-    clusterName <- Try(
-      ApplicationConfiguration.provisionerConfig.getString(
-        ApplicationConfiguration.PROVISION_CLUSTER_NAME)).toEither
-      .leftMap { _ =>
-        val confError = ConfKeyNotFoundErr(ApplicationConfiguration.PROVISION_CLUSTER_NAME)
-        ComponentGatewayError(show"$confError")
-      }
     // Upsert/delete output port
     externalTable <-
       if (dropOnUnprovision) {
@@ -109,7 +95,7 @@ class CDPPrivateImpalaTableOutputPortGateway(
       unprovisionCommand.provisionRequest,
       rangerClient,
       externalTable,
-      clusterName
+      ""
     )
   } yield ImpalaTableOutputPortResource(
     externalTable,
@@ -162,7 +148,9 @@ class CDPPrivateImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
-      .getFromConfig(ApplicationConfiguration.impalaConfig, impalaHost)
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
     _ <- createExternalTable(connectionConfig, externalTable)
   } yield externalTable
@@ -175,7 +163,9 @@ class CDPPrivateImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
-      .getFromConfig(ApplicationConfiguration.impalaConfig, impalaHost)
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
     _ <- dropExternalTable(connectionConfig, externalTable)
   } yield externalTable

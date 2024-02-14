@@ -13,4 +13,14 @@ class ExternalTableGatewayTest extends AnyFunSuite {
     val actual = ExternalTableGateway.impalaWithAudit("usr", "pwd")
     assert(actual.isInstanceOf[ImpalaExternalTableGatewayWithAudit])
   }
+
+  test("kerberized impala") {
+    val actual = ExternalTableGateway.kerberizedImpala()
+    assert(actual.isInstanceOf[ImpalaExternalTableGateway])
+  }
+
+  test("kerberized impala with audit") {
+    val actual = ExternalTableGateway.kerberizedImpalaWithAudit()
+    assert(actual.isInstanceOf[ImpalaExternalTableGatewayWithAudit])
+  }
 }

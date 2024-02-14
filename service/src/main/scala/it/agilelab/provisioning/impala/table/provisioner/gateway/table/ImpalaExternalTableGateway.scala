@@ -4,6 +4,7 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl.ImpalaDataDefinitionLanguageProvider
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
   DefaultSQLGateway,
+  SqlGateway,
   SqlGatewayError
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ExternalTable
@@ -12,7 +13,7 @@ class ImpalaExternalTableGateway(
     deployUser: String,
     deployPassword: String,
     ddlProvider: ImpalaDataDefinitionLanguageProvider,
-    sqlQueryExecutor: DefaultSQLGateway
+    sqlQueryExecutor: SqlGateway
 ) extends ExternalTableGateway {
 
   override def create(
@@ -22,7 +23,7 @@ class ImpalaExternalTableGateway(
   ): Either[SqlGatewayError, Unit] =
     sqlQueryExecutor
       .executeDDLs(
-        connectionConfigurations.copy(user = deployUser, password = deployPassword),
+        connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
         Seq(
           ddlProvider.createDataBase(externalTable.database, ifNotExists = true),
           ddlProvider.createExternalTable(externalTable, ifNotExists)
@@ -37,7 +38,7 @@ class ImpalaExternalTableGateway(
   ): Either[SqlGatewayError, Unit] =
     sqlQueryExecutor
       .executeDDL(
-        connectionConfigurations.copy(user = deployUser, password = deployPassword),
+        connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
         ddlProvider.dropExternalTable(externalTable, ifExists))
       .map(_ => ())
 }

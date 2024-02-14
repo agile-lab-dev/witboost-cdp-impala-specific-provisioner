@@ -11,6 +11,7 @@ trait ApplicationConfiguration extends ConfigurationModel {
   lazy val provisionerConfig: Config = ConfigFactory.load().getConfig(PROVISIONER)
   lazy val hdfsConfig: Config = ConfigFactory.load().getConfig(HDFS)
   lazy val rangerConfig: Config = ConfigFactory.load().getConfig(RANGER)
+  lazy val principalsMapperConfig: Config = ConfigFactory.load().getConfig(PRINCIPAL_MAPPING_PLUGIN)
 
   private val formatter = ConfigRenderOptions.concise().setFormatted(true)
 

@@ -137,13 +137,29 @@ export CDP_ACCESS_KEY_ID=<cdp_user_access_key_id> # Only required for CDP Public
 export CDP_PRIVATE_KEY=<cdp_user_private_key> # Only required for CDP Public Cloud
 ```
 
-The CDP user must be a `Machine User` and needs to have at least the following roles:
-- DWAdmin
-- DWUser
-- EnvironmentAdmin
-- EnvironmentUser
+This provisioner uses two sets of credentials to perform operations on Apache Ranger and Apache Impala. The default configuration sets them both equal to the environment variables `CDP_DEPLOY_ROLE_USER` and `CDP_DEPLOY_ROLE_PASSWORD`, so that only one user is initially necessary, but the Ranger credentials can be overridden via configuration if they need to be different (see [Configuring](#configuring)).
 
-Alternatively to `EnvironmentAdmin` role, the Machine User must have the necessary permissions to manage Ranger, specifically creating/updating/retrieving/deleting Security Zones, Roles, Resource based Policies and the resources related to them.
+The used CDP users must be `Machine User` and need to check some requirements depending on the type of CDP Cloud.
+
+### CDP Public Cloud
+
+On **CDP Public** it needs to have at least the following roles:
+- Impala:
+  - DWAdmin
+  - DWUser
+- Ranger:
+  - EnvironmentAdmin
+  - EnvironmentUser
+  
+Alternatively to `EnvironmentAdmin` role, the Machine User for Ranger must have the necessary permissions to manage Ranger, specifically creating/updating/retrieving/deleting Security Zones, Roles, Resource based Policies and the resources related to them. If the same user is used for both services, it must have the four roles and/or permissions.
+
+### CDP Private Cloud
+
+On **CDP Private**, the deploy user needs to have admin privileges on Ranger, as well as have the following permissions (e.g. through Ranger policies):
+- `read`, `write`, `execute` permissions on HDFS directory to be used
+- `all` permissions on Impala databases and tables to be used
+  
+However, if Impala is authenticated using Kerberos as it is in most cases, the only set of credentials needed will be used to access Ranger, whereas for Impala a valid keytab with a principal with service name `impala` will be necessary, accompanied by the necessary kerberos configuration files (see [Configuring](#configuring)). 
 
 After this, execute:
 
@@ -158,6 +174,18 @@ By default, the server binds to port 8080 on localhost. After it's up and runnin
 Most application configurations are handled with the Typesafe Config library. You can find the default settings in the `reference.conf` of each module. Customize them and use the `config.file` system property or the other options provided by Typesafe Config according to your needs. The provided docker image expects the config file mounted at path `/config/application.conf`.
 
 Especially for CDP Private Cloud, a set of required configuration fields must be modified, like Ranger and HDFS base URLs. For more information on the configuration and to understand how to set up the provisioner for a specific type of CDP Cloud, see [Configuring the Impala Specific Provisioner](docs/Configuration.md).
+
+### Helm chart configuration
+
+#### CDP Public v.s. CDP Private
+
+The chart provides a couple of configurations to setup the provisioner to work on either CDP Public Cloud or CDP Private Cloud. `private.enabled` would set the necessary environment variables that the provisioner needs in order to work (see [Running](#running)). By setting it to `true` it will remove the Access Key and Private Key used by the Cloudera SDK to contact the public cloud.
+
+The second configuration `kerberos.enabled` would set the necessary system properties needed for the provisioner to authenticate on a Kerberos system to services like Impala. For this, the provisioner expects a `jaas.conf` file and `krb5.conf`. For more information about these files see [Configuring the Impala Specific Provisioner](./docs/Configuration.md#jdbc-configuration). You can provide override values for these files using the `kerberos.krb5Override` and `kerberos.jaasOverride` fields.
+
+#### Custom Root CA
+
+The chart provides the option `customCA.enabled` to add a custom Root Certification Authority to the JVM truststore. If this option is enabled, the chart will load the custom CA from a secret with key `cdp-private-impala-custom-ca`. The CA is expected to be in a format compatible with `keytool` utility (PEM works fine).
 
 ## Deploying
 
@@ -175,7 +203,7 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 
 ## Example input
 
-The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention as this will be verified on the validation phase:
+The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention:
 
 - Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 - Table name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
@@ -277,12 +305,6 @@ components:
   * Each Data Product data must be located in a different bucket 
 * On CDP Private Cloud, `location` is expressed as the directory path on HDFS in the form `/path/to/folder`.
 * Schema data types only support primitive types TINYINT, SMALLINT, INT, BIGINT, DOUBLE, DECIMAL, TIMESTAMP, DATE, STRING, CHAR, VARCHAR and BOOLEAN, and ARRAY, MAP and STRUCT with these types
-
-## Tech debt
-
-* Improve code coverage
-* Improve code quality
-* Add Audit to other class
 
 ## License
 

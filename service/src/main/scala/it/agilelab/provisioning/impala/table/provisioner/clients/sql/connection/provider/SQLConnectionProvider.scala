@@ -1,15 +1,25 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider
 
+import cats.implicits.toBifunctorOps
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionProviderError.GetConnectionErr
+
 import java.sql.{ Connection, DriverManager }
+import scala.util.Try
 
 class SQLConnectionProvider(
     driver: String,
     sqlConnectionStringProvider: ConnectionStringProvider
 ) extends ConnectionProvider {
 
-  override def get(connectionConfig: ConnectionConfig): Connection = {
-    Class.forName(driver)
-    DriverManager.getConnection(sqlConnectionStringProvider.get(connectionConfig))
-  }
-
+  override def get(
+      connectionConfig: ConnectionConfig
+  ): Either[ConnectionProviderError, Connection] =
+    for {
+      jdbcConnectionString <- sqlConnectionStringProvider.get(connectionConfig)
+      connection <-
+        Try {
+          Class.forName(driver)
+          DriverManager.getConnection(jdbcConnectionString)
+        }.toEither.leftMap(GetConnectionErr)
+    } yield connection
 }

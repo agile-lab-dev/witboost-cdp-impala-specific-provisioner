@@ -1,7 +1,7 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.ldap
 
 import com.typesafe.config.Config
-import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
+import it.agilelab.provisioning.commons.config.ConfError.ConfDecodeErr
 import it.agilelab.provisioning.commons.principalsmapping.{
   CdpIamPrincipals,
   PrincipalsMapper,
@@ -17,8 +17,7 @@ class LdapPrincipalsMapperFactory extends PrincipalsMapperFactory[CdpIamPrincipa
         Success(
           new LdapPrincipalsMapper(
             LdapClient.defaultWithAudit(LdapClient.searchOperation(ldapConfig), ldapConfig)))
-      // TODO ConfKeyNotFoundErr is not the best decoding error
-      case Left(error) => Failure(ConfKeyNotFoundErr(error.toString()))
+      case Left(error) => Failure(ConfDecodeErr(error.toString()))
     }
 
   override def configIdentifier: String = "ldap"

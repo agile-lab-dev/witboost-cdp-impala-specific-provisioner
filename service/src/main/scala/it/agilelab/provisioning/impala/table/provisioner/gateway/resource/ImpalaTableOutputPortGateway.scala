@@ -172,7 +172,9 @@ class ImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
-      .getFromConfig(ApplicationConfiguration.impalaConfig, impalaHost)
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
     _ <- createExternalTable(connectionConfig, externalTable)
   } yield externalTable
@@ -186,7 +188,9 @@ class ImpalaTableOutputPortGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
     connectionConfig <- ConnectionConfig
-      .getFromConfig(ApplicationConfiguration.impalaConfig, impalaHost)
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
     _ <- dropExternalTable(connectionConfig, externalTable)
   } yield externalTable

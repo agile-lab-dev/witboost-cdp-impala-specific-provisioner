@@ -1,22 +1,49 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider
 
+import cats.Show
 import cats.implicits.toBifunctorOps
 import com.typesafe.config.Config
 import it.agilelab.provisioning.commons.config.ConfError
-import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
+import it.agilelab.provisioning.commons.config.ConfError.{ ConfDecodeErr, ConfKeyNotFoundErr }
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
-import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.ConfigurationError
-import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
 
 import scala.util.Try
 
-final case class ConnectionConfig(
-    host: String,
-    port: String,
-    schema: String,
-    user: String,
-    password: String
-)
+sealed trait ConnectionConfig {
+  def host: String
+  def port: String
+  def schema: String
+  def user: String
+  def password: String
+
+  def setCredentials(user: String, password: String): ConnectionConfig
+}
+final case class UsernamePasswordConnectionConfig(
+    override val host: String,
+    override val port: String,
+    override val schema: String,
+    override val user: String,
+    override val password: String,
+    useSSL: Boolean
+) extends ConnectionConfig {
+  override def setCredentials(user: String, password: String): ConnectionConfig =
+    copy(user = user, password = password)
+
+}
+
+final case class KerberosConnectionConfig(
+    override val host: String,
+    override val port: String,
+    override val schema: String,
+    krbRealm: Option[String],
+    krbHostFQDN: String,
+    krbServiceName: String,
+    useSSL: Boolean
+) extends ConnectionConfig {
+  override val user: String = ""
+  override val password: String = ""
+  override def setCredentials(user: String, password: String): ConnectionConfig = this
+}
 
 object ConnectionConfig {
 
@@ -34,15 +61,54 @@ object ConnectionConfig {
       port: Option[Int] = None,
       schema: Option[String] = None
   ): Either[ConfError, ConnectionConfig] = for {
-    impalaPort <- port.fold(Try {
-      config.getInt(ApplicationConfiguration.IMPALA_PORT)
-    }.toEither.leftMap { _ =>
-      ConfKeyNotFoundErr(ApplicationConfiguration.IMPALA_PORT)
-    })(Right(_))
-    impalaSchema <- schema.fold(Try {
-      config.getString(ApplicationConfiguration.IMPALA_SCHEMA)
-    }.toEither.leftMap { _ =>
-      ConfKeyNotFoundErr(ApplicationConfiguration.IMPALA_SCHEMA)
-    })(Right(_))
-  } yield ConnectionConfig(host, impalaPort.toString, impalaSchema, "", "")
+    authType <-
+      Try(config.getString(ApplicationConfiguration.JDBC_AUTH_TYPE)).toEither.leftMap(_ =>
+        ConfKeyNotFoundErr(ApplicationConfiguration.JDBC_AUTH_TYPE))
+    impalaPort <- port.fold(
+      Try(config.getInt(ApplicationConfiguration.JDBC_PORT)).toEither.leftMap(_ =>
+        ConfKeyNotFoundErr(ApplicationConfiguration.JDBC_PORT)))(Right(_))
+    impalaSchema <- schema.fold(
+      Try(config.getString(ApplicationConfiguration.JDBC_SCHEMA)).toEither.leftMap(_ =>
+        ConfKeyNotFoundErr(ApplicationConfiguration.JDBC_SCHEMA)))(Right(_))
+    ssl <-
+      Try(config.getBoolean(ApplicationConfiguration.JDBC_SSL)).toEither.leftMap(_ =>
+        ConfKeyNotFoundErr(ApplicationConfiguration.JDBC_SCHEMA))
+    cc <- authType match {
+      case ApplicationConfiguration.JDBC_SIMPLE_AUTH =>
+        Right(
+          UsernamePasswordConnectionConfig(host, impalaPort.toString, impalaSchema, "", "", ssl))
+      case ApplicationConfiguration.JDBC_KERBEROS_AUTH =>
+        getKerberosFromConfig(config, host, impalaPort, impalaSchema, ssl)
+      case authType =>
+        Left(ConfDecodeErr(s"Received JDBC authentication type '$authType' which is not supported"))
+    }
+  } yield cc
+
+  private def getKerberosFromConfig(
+      config: Config,
+      host: String,
+      port: Int,
+      schema: String,
+      ssl: Boolean
+  ): Either[ConfError, ConnectionConfig] = for {
+    krbRealm <- Right(Try(config.getString(ApplicationConfiguration.JDBC_KRBREALM)).toOption)
+    krbHostFQDN <- Try(config.getString(ApplicationConfiguration.JDBC_KRBHOSTFQDN)).toEither.left
+      .flatMap(_ => Right(host))
+    krbServiceName <- Try(config.getString(ApplicationConfiguration.JDBC_KRBSERVICENAME)).toEither
+      .leftMap(_ => ConfKeyNotFoundErr(ApplicationConfiguration.JDBC_KRBSERVICENAME))
+  } yield KerberosConnectionConfig(
+    host,
+    port.toString,
+    schema,
+    krbRealm,
+    krbHostFQDN,
+    krbServiceName,
+    ssl)
+
+  implicit def showConnectionConfig: Show[ConnectionConfig] = Show.show {
+    case KerberosConnectionConfig(host, port, schema, krbRealm, krbHostFQDN, krbServiceName, ssl) =>
+      s"KerberosConnectionConfig($host, $port, $schema, $krbRealm, $krbHostFQDN, $krbServiceName, useSSL=$ssl)"
+    case UsernamePasswordConnectionConfig(host, port, schema, user, password, ssl) =>
+      s"UsernamePasswordConnectionConfig($host, $port, $schema, $user, $password, useSSL=$ssl)"
+  }
 }

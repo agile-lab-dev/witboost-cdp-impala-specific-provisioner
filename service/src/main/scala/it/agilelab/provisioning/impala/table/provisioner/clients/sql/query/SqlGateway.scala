@@ -20,4 +20,7 @@ object SqlGateway {
   def impala(): SqlGateway =
     new DefaultSQLGateway(ConnectionProvider.impala())
 
+  def kerberizedImpala(): SqlGateway =
+    new DefaultSQLGateway(ConnectionProvider.kerberizedImpala())
+
 }

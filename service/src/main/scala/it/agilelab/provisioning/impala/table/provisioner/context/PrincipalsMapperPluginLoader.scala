@@ -57,13 +57,12 @@ class PrincipalsMapperPluginLoader() {
       mf: PrincipalsMapperFactory[CdpIamPrincipals],
       cfg: Config
   ): Either[ConfError, Config] = Try {
-    cfg
-      .getConfig(ApplicationConfiguration.PRINCIPAL_MAPPING_PLUGIN)
-      .getConfig(mf.configIdentifier)
-  }.toEither.leftMap(_ => ConfKeyNotFoundErr(ApplicationConfiguration.PRINCIPAL_MAPPING_PLUGIN))
+    cfg.getConfig(mf.configIdentifier)
+  }.toEither.leftMap(_ => ConfKeyNotFoundErr(mf.configIdentifier))
 
   private def extractPluginClass(cfg: Config): Either[ConfError, String] =
     Try {
       cfg.getString(ApplicationConfiguration.PRINCIPAL_MAPPING_PLUGIN_CLASS)
-    }.toEither.leftMap(_ => ConfKeyNotFoundErr(ApplicationConfiguration.PRINCIPAL_MAPPING_PLUGIN))
+    }.toEither.leftMap(_ =>
+      ConfKeyNotFoundErr(ApplicationConfiguration.PRINCIPAL_MAPPING_PLUGIN_CLASS))
 }

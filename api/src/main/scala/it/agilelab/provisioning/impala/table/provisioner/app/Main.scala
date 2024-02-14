@@ -1,12 +1,13 @@
 package it.agilelab.provisioning.impala.table.provisioner.app
 import cats.effect.{ ExitCode, IO, IOApp }
+import cats.implicits.showInterpolator
 import com.comcast.ip4s.{ Host, Port }
 import com.typesafe.scalalogging.StrictLogging
 import it.agilelab.provisioning.aws.s3.gateway.S3GatewayError.S3GatewayInitError
 import it.agilelab.provisioning.commons.client.cdp.dl.CdpDlClientError.CdpDlClientInitErr
 import it.agilelab.provisioning.commons.client.cdp.dw.CdpDwClientError.CdpDwClientInitClientError
 import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClientError.CdpEnvClientInitError
-import it.agilelab.provisioning.commons.config.Conf
+import it.agilelab.provisioning.commons.config.{ Conf, ConfError }
 import it.agilelab.provisioning.impala.table.provisioner.app.config.{
   FrameworkDependencies,
   ImpalaProvisionerController
@@ -27,6 +28,7 @@ object Main extends IOApp with StrictLogging {
       case err: CdpDlClientInitErr         => logger.error("CdpDlClientInitErr", err.error)
       case err: CdpEnvClientInitError      => logger.error("CdpEnvClientInitError", err.error)
       case err: CdpDwClientInitClientError => logger.error("CdpDwClientInitClientError", err.error)
+      case err: ConfError                  => logger.error(show"$err", err)
       case th                              => logger.error("Generic throwable error", th)
     }
 

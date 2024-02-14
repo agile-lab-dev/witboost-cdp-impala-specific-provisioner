@@ -58,7 +58,7 @@ object ProvisionerContext {
       cdpEnvClient <- CdpEnvClient.defaultWithAudit().leftMap(e => ClientError("CdpEnvClient", e))
       cdpDlClient  <- CdpDlClient.defaultWithAudit().leftMap(e => ClientError("CdpDlClient", e))
       principalsMapper <- new PrincipalsMapperPluginLoader().load(
-        ApplicationConfiguration.impalaConfig)
+        ApplicationConfiguration.principalsMapperConfig)
     } yield new CDPPublicProvisionerContext(
       deployRoleUser,
       deployRolePwd,
@@ -83,7 +83,7 @@ object ProvisionerContext {
         ApplicationConfiguration.RANGER_PASSWORD)).toEither.leftMap(_ =>
       ConfigurationError(ConfKeyNotFoundErr(ApplicationConfiguration.RANGER_PASSWORD)))
     principalsMapper <- new PrincipalsMapperPluginLoader().load(
-      ApplicationConfiguration.impalaConfig)
+      ApplicationConfiguration.principalsMapperConfig)
   } yield new ProvisionerContext(
     deployRoleUser,
     deployRolePwd,

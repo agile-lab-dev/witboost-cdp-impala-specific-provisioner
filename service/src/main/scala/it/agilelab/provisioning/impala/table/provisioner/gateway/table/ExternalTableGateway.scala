@@ -1,16 +1,10 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.table
 
 import it.agilelab.provisioning.commons.audit.Audit
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.pattern.ConnectionStringPatterns
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.{
-  ConnectionConfig,
-  ConnectionStringProvider,
-  SQLConnectionProvider
-}
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl.ImpalaDataDefinitionLanguageProvider
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.driver.Drivers
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
-  DefaultSQLGateway,
+  SqlGateway,
   SqlGatewayError
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ExternalTable
@@ -47,16 +41,22 @@ object ExternalTableGateway {
       deployUser,
       deployPassword,
       new ImpalaDataDefinitionLanguageProvider(),
-      new DefaultSQLGateway(
-        new SQLConnectionProvider(
-          Drivers.impala,
-          new ConnectionStringProvider(ConnectionStringPatterns.impala)
-        )
-      )
+      SqlGateway.impala()
     )
 
   def impalaWithAudit(deployUser: String, deployPassword: String): ExternalTableGateway =
     new ImpalaExternalTableGatewayWithAudit(
       impala(deployUser, deployPassword),
       Audit.default("ImpalaExternalTableGateway"))
+
+  def kerberizedImpala(): ExternalTableGateway = new ImpalaExternalTableGateway(
+    "",
+    "",
+    new ImpalaDataDefinitionLanguageProvider(),
+    SqlGateway.kerberizedImpala()
+  )
+
+  def kerberizedImpalaWithAudit(): ExternalTableGateway = new ImpalaExternalTableGatewayWithAudit(
+    kerberizedImpala(),
+    Audit.default("ImpalaExternalTableGateway"))
 }

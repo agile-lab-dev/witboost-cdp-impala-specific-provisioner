@@ -22,9 +22,8 @@ class DefaultLdapClient(searchOperation: SearchOperation, ldapConfig: LdapConfig
       val searchResponse = searchOperation.execute(searchRequest)
       val entry = searchResponse.getEntry
       if (entry != null) {
-        val userId = entry.getAttribute(ldapConfig.userAttributeName).getStringValue
-        val ldapEmail = entry.getAttribute("mail").getStringValue
-        Some(CdpIamUser(userId, ldapEmail, ""))
+        val userAttributeName = entry.getAttribute(ldapConfig.userAttributeName).getStringValue
+        Some(CdpIamUser(userAttributeName, userAttributeName, ""))
       } else {
         None
       }

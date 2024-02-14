@@ -17,3 +17,17 @@ data:
   {{- else -}}
   {{- .Files.Get "files/logback.xml" | nindent 4 }}
   {{ end }}
+  {{- if .Values.kerberos.enabled }}
+  krb5.conf: |
+  {{- if .Values.kerberos.krb5Override -}}
+  {{- .Values.kerberos.krb5Override | nindent 4 }}
+  {{- else -}}
+  {{- .Files.Get "files/krb5.conf" | nindent 4 }}
+  {{ end }}
+  jaas.conf: |
+  {{- if .Values.kerberos.jaasOverride -}}
+  {{- .Values.kerberos.jaasOverride | nindent 4 }}
+  {{- else -}}
+  {{- .Files.Get "files/jaas.conf" | nindent 4 }}
+  {{ end }}
+  {{- end }}

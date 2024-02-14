@@ -33,11 +33,36 @@ spec:
           configMap:
             name: {{ template "cdp-impala-provisioner.fullname" . }}-config
             defaultMode: 420
+        {{- if .Values.kerberos.enabled }}
+        - name: keytab-volume
+          secret:
+            secretName: witboost-addons-secrets
+            items:
+              - key: cdp-private-impala-keytab
+                path: cdp/private/impala/keytab
+        {{- end}}
+        {{- if .Values.customRootCA.enabled }}
+        - name: custom-ca-volume
+          secret:
+            secretName: witboost-addons-secrets
+            items:
+              - key: cdp-private-impala-custom-ca
+                path: custom_root_ca.crt
+        - name: shared-volume
+          emptyDir: {}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image.registry }}:{{ .Values.image.tag }}
           command: ["bin/impala-table-provisioner"]
-          args: ["-Dconfig.file=etc/configs/application.conf", "-Dlogback.configurationFile=etc/configs/logback.xml", "-Dconfig.override_with_env_vars=true"]
+          args: 
+            - "-Dconfig.file=etc/configs/application.conf"
+            - "-Dlogback.configurationFile=etc/configs/logback.xml"
+            - "-Dconfig.override_with_env_vars=true"
+            {{- if .Values.kerberos.enabled }}
+            - "-Djava.security.krb5.conf=etc/configs/krb5.conf"
+            - "-Djava.security.auth.login.config=etc/configs/jaas.conf"
+            {{- end}}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -60,6 +85,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{- if .Values.cdpPrivate.enabled }}
+            {{- else}}
             - name: CDP_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -70,6 +97,7 @@ spec:
                 secretKeyRef:
                   name: witboost-addons-secrets
                   key: CDP_PRIVATE_KEY
+            {{- end}}
             - name: CDP_DEPLOY_ROLE_USER
               valueFrom:
                 secretKeyRef:
@@ -81,5 +109,65 @@ spec:
                   name: witboost-addons-secrets
                   key: CDP_DEPLOY_ROLE_PASSWORD
           volumeMounts:
+            {{- if .Values.kerberos.enabled }}
+            - name: shared-volume
+              mountPath: /opt/docker/etc/security/keytab
+              subPath: keytab
+              readOnly: true
+            {{- end}}
+            {{- if .Values.customRootCA.enabled }}
+            - name: shared-volume
+              mountPath: /opt/java/openjdk/lib/security/cacerts
+              subPath: cacerts
+              readOnly: true
+            {{- end }}
             - name: config
               mountPath: /opt/docker/etc/configs
+      initContainers:
+        {{- if .Values.customRootCA.enabled }}
+        # Init container used to prepare the custom root ca
+        - name: {{ .Chart.Name }}-init-ca
+          image: {{ .Values.image.registry }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          command: ['sh', '-c']
+          args:
+            - |
+              cat /certificates/custom_root_ca.crt | base64 -d > /work/custom_root_ca_decoded.crt
+              cp $JAVA_HOME/lib/security/cacerts /work/cacerts
+              chmod 644 /work/cacerts
+              keytool -import -noprompt -alias customRootCA -keystore /work/cacerts -file /work/custom_root_ca_decoded.crt -storepass changeit
+          volumeMounts:
+            - name: custom-ca-volume
+              mountPath: /certificates
+              readOnly: true
+            - name: shared-volume
+              mountPath: /work
+        {{- end }}
+        {{- if .Values.kerberos.enabled }}
+        # Init container used to prepare the keytab
+        - name: {{ .Chart.Name }}-init-kerberos
+          image: {{ .Values.image.registry }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          command: ['sh', '-c']
+          args:
+            - |
+              cat etc/security/cdp/private/impala/keytab | base64 -d > /work/keytab
+          volumeMounts:
+            - name: keytab-volume
+              mountPath: /opt/docker/etc/security
+              readOnly: true
+            - name: shared-volume
+              mountPath: /work
+        {{- end }}

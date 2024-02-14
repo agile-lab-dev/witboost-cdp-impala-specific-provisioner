@@ -4,7 +4,7 @@ import cats.implicits.toBifunctorOps
 import io.circe.Json
 import io.circe.generic.auto._
 import it.agilelab.provisioning.commons.config.Conf
-import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
+import it.agilelab.provisioning.commons.config.ConfError.{ ConfDecodeErr, ConfKeyNotFoundErr }
 import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator.impalaCdwValidator
@@ -31,7 +31,7 @@ import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalT
 import it.agilelab.provisioning.mesh.self.service.api.controller.ProvisionerController
 import it.agilelab.provisioning.mesh.self.service.core.provisioner.Provisioner
 
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 object ImpalaProvisionerController {
   def apply(
@@ -54,28 +54,28 @@ object ImpalaProvisionerController {
 
   def createPublicProvisionerController(
       conf: Conf
-  ): Either[ContextError, ProvisionerController[Json, Json, CdpIamPrincipals]] = for {
-    impalaValidator <- ValidatorContext
+  ): Either[ContextError, ProvisionerController[Json, Json, CdpIamPrincipals]] =
+    ProvisionerContext
       .initPublic(conf)
-      .map { ctx =>
-        impalaCdwValidator(
-          cdpValidator = ctx.cdpValidator,
-          locationValidator = ctx.locationValidator
-        )
-      }
-    controller <- ProvisionerContext
-      .initPublic(conf)
-      .map { ctx =>
-        val hostProvider = new CDPPublicHostProvider(ctx.cdpEnvClient, ctx.cdpDlClient)
-        val rangerGatewayProvider = new RangerGatewayProvider(ctx.deployRoleUser, ctx.deployRolePwd)
-        ProvisionerController.defaultAclWithAudit[Json, Json, CdpIamPrincipals](
+      .flatMap { ctx =>
+        for {
+          impalaValidator <- ValidatorContext.initPublic(conf).map { validatorCtx =>
+            impalaCdwValidator(
+              cdpValidator = validatorCtx.cdpValidator,
+              locationValidator = validatorCtx.locationValidator
+            )
+          }
+          tableGateway <- getExternalTableGateway(ctx)
+          hostProvider = new CDPPublicHostProvider(ctx.cdpEnvClient, ctx.cdpDlClient)
+          rangerGatewayProvider = new RangerGatewayProvider(ctx.deployRoleUser, ctx.deployRolePwd)
+        } yield ProvisionerController.defaultAclWithAudit[Json, Json, CdpIamPrincipals](
           impalaValidator,
           // Currently supporting only synchronous operations
           Provisioner.defaultSync[Json, Json, ImpalaTableOutputPortResource, CdpIamPrincipals](
             new ImpalaTableOutputPortGateway(
               ctx.deployRoleUser,
               hostProvider,
-              ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd),
+              tableGateway,
               rangerGatewayProvider,
               new ImpalaOutputPortAccessControlGateway(
                 serviceRole = ctx.deployRoleUser,
@@ -89,26 +89,27 @@ object ImpalaProvisionerController {
           ctx.principalsMapper
         )
       }
-  } yield controller
 
   private def createPrivateProvisionerController(
       conf: Conf
-  ): Either[ContextError, ProvisionerController[Json, Json, CdpIamPrincipals]] = for {
-    impalaValidator <- ValidatorContext.initPrivate(conf).map { ctx =>
-      ImpalaCdwValidator.privateImpalaCdwValidator(ctx.locationValidator)
-    }
-    controller <- ProvisionerContext
+  ): Either[ContextError, ProvisionerController[Json, Json, CdpIamPrincipals]] =
+    ProvisionerContext
       .initPrivate(conf)
-      .map { ctx =>
-        val rangerGatewayProvider = new RangerGatewayProvider(ctx.rangerRoleUser, ctx.rangerRolePwd)
-        ProvisionerController.defaultAclWithAudit[Json, Json, CdpIamPrincipals](
+      .flatMap { ctx =>
+        for {
+          impalaValidator <- ValidatorContext.initPrivate(conf).map { validatorCtx =>
+            ImpalaCdwValidator.privateImpalaCdwValidator(validatorCtx.locationValidator)
+          }
+          tableGateway <- getExternalTableGateway(ctx)
+          rangerGatewayProvider = new RangerGatewayProvider(ctx.rangerRoleUser, ctx.rangerRolePwd)
+        } yield ProvisionerController.defaultAclWithAudit[Json, Json, CdpIamPrincipals](
           impalaValidator,
           // Currently supporting only synchronous operations
           Provisioner.defaultSync[Json, Json, ImpalaTableOutputPortResource, CdpIamPrincipals](
             new CDPPrivateImpalaTableOutputPortGateway(
               ctx.deployRoleUser,
               new ConfigHostProvider(),
-              ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd),
+              tableGateway,
               rangerGatewayProvider,
               new ImpalaOutputPortAccessControlGateway(
                 serviceRole = ctx.deployRoleUser,
@@ -122,6 +123,26 @@ object ImpalaProvisionerController {
           ctx.principalsMapper
         )
       }
-  } yield controller
 
+  private def getExternalTableGateway(
+      ctx: ProvisionerContext
+  ): Either[ContextError, ExternalTableGateway] =
+    Try {
+      ApplicationConfiguration.impalaConfig
+        .getConfig(ApplicationConfiguration.JDBC_CONFIG)
+        .getString(ApplicationConfiguration.JDBC_AUTH_TYPE)
+    } match {
+      case Success(ApplicationConfiguration.JDBC_SIMPLE_AUTH) =>
+        Right(ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd))
+      case Success(ApplicationConfiguration.JDBC_KERBEROS_AUTH) =>
+        Right(ExternalTableGateway.kerberizedImpalaWithAudit())
+      case Success(value) =>
+        Left(
+          ConfigurationError(
+            ConfDecodeErr(s"JDBC Authentication type not supported. Received '$value'")))
+      case Failure(_) =>
+        Left(
+          ConfigurationError(ConfKeyNotFoundErr(
+            s"${ApplicationConfiguration.JDBC_CONFIG}.${ApplicationConfiguration.JDBC_AUTH_TYPE}")))
+    }
 }

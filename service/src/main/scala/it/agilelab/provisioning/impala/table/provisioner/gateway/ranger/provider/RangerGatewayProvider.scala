@@ -1,6 +1,7 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider
 
 import cats.implicits._
+import it.agilelab.provisioning.commons.client.ranger.RangerAuthType.RangerAuthType
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.http.Auth.BasicCredential
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
@@ -24,14 +25,13 @@ class RangerGatewayProvider(
       rangerHost: String
   ): Either[RangerGatewayProviderError, RangerClient] =
     Try {
-      ApplicationConfiguration.rangerConfig.getString(
-        // TODO We should create an enumeration in the scala-mesh-commons library to manage this error handling
-        ApplicationConfiguration.RANGER_AUTH_TYPE) match {
-        case RangerClient.SIMPLE_AUTH =>
+      RangerAuthType.withName(
+        ApplicationConfiguration.rangerConfig.getString(
+          ApplicationConfiguration.RANGER_AUTH_TYPE)) match {
+        case RangerAuthType.Simple =>
           RangerClient.defaultWithAudit(rangerHost, BasicCredential(username, password))
-        case RangerClient.KERBEROS_AUTH =>
+        case RangerAuthType.Kerberos =>
           RangerClient.defaultWithKerberosWithAudit(rangerHost, username, password)
-        case e => throw new NoSuchElementException(s"Authentication type $e is not supported")
       }
     }.toEither.leftMap(e => RangerGatewayProviderError(e))
 

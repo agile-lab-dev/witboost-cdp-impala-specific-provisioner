@@ -5,7 +5,7 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
   ConnectionConfig,
   ConnectionProvider
 }
-import SqlGatewayError.ExecuteDDLErr
+import SqlGatewayError.{ ConnectionErr, ExecuteDDLErr }
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.{
   ConnectionConfig,
   ConnectionProvider
@@ -19,15 +19,19 @@ class DefaultSQLGateway(connectionProvider: ConnectionProvider) extends SqlGatew
       connectionConfig: ConnectionConfig,
       ddl: String
   ): Either[SqlGatewayError, Int] =
-    Using(connectionProvider.get(connectionConfig)) { c =>
-      c.createStatement().executeUpdate(ddl)
-    }.toEither.leftMap(e => ExecuteDDLErr(e))
+    connectionProvider.get(connectionConfig).leftMap(ConnectionErr).flatMap {
+      Using(_) { c =>
+        c.createStatement().executeUpdate(ddl)
+      }.toEither.leftMap(e => ExecuteDDLErr(e))
+    }
 
   override def executeDDLs(
       connectionConfig: ConnectionConfig,
       ddls: Seq[String]
   ): Either[SqlGatewayError, Int] =
-    Using(connectionProvider.get(connectionConfig)) { c =>
-      ddls.map(c.createStatement().executeUpdate).sum
-    }.toEither.leftMap(e => ExecuteDDLErr(e))
+    connectionProvider.get(connectionConfig).leftMap(ConnectionErr).flatMap {
+      Using(_) { c =>
+        ddls.map(c.createStatement().executeUpdate).sum
+      }.toEither.leftMap(e => ExecuteDDLErr(e))
+    }
 }

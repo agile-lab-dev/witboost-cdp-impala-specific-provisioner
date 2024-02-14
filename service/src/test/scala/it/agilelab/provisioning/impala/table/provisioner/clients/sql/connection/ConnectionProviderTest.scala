@@ -10,4 +10,8 @@ class ConnectionProviderTest extends AnyFunSuite {
   test("impala") {
     assert(ConnectionProvider.impala().isInstanceOf[SQLConnectionProvider])
   }
+
+  test("kerberized impala") {
+    assert(ConnectionProvider.kerberizedImpala().isInstanceOf[SQLConnectionProvider])
+  }
 }

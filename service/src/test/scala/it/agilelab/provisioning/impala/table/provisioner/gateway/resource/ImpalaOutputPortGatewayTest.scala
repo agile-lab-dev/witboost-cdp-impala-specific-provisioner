@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.resource
 
-import cats.implicits.toShow
+import cats.implicits.{ showInterpolator, toShow }
 import com.cloudera.cdp.datalake.model.Datalake
 import com.cloudera.cdp.environments.model.Environment
 import io.circe.Json
@@ -123,7 +123,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         )
       )
     )
-    assert(actual == expected)
+    actual match {
+      case e: Right[_, _] => assert(e == expected)
+      case Left(value)    => fail(value.error, value)
+    }
   }
 
   test("provision partitioned table") {

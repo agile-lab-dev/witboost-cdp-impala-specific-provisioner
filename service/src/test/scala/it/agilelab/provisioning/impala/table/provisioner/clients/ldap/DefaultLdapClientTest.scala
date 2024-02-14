@@ -46,7 +46,7 @@ class DefaultLdapClientTest extends AnyFunSuite with MockitoSugar with BeforeAnd
               .build())
           .build())
 
-    val expected = CdpIamUser("userId", "john.doe@company.com", "")
+    val expected = CdpIamUser("userId", "userId", "")
     val actual = ldapClient.findUserByMail("john.doe@company.com")
 
     assert(Right(Some(expected)) == actual)

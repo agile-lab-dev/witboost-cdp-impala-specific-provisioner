@@ -1,7 +1,10 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.table
 
 import it.agilelab.provisioning.commons.audit.Audit
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.{
+  ConnectionConfig,
+  UsernamePasswordConnectionConfig
+}
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, ImpalaFormat }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -14,7 +17,8 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
       gatewayMock,
       Audit.default("ImpalaExternalTableGateway"))
 
-    val connectionConfig = ConnectionConfig("host", "port", "schema", "user", "password")
+    val connectionConfig =
+      UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val externalTable =
       ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
 
@@ -31,7 +35,8 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
       gatewayMock,
       Audit.default("ImpalaExternalTableGateway"))
 
-    val connectionConfig = ConnectionConfig("host", "port", "schema", "user", "password")
+    val connectionConfig =
+      UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val externalTable =
       ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
 
