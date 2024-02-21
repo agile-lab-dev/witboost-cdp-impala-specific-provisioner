@@ -117,7 +117,7 @@ spec:
             {{- end}}
             {{- if .Values.customRootCA.enabled }}
             - name: shared-volume
-              mountPath: /opt/java/openjdk/lib/security/cacerts
+              mountPath: /usr/local/openjdk-11/lib/security/cacerts
               subPath: cacerts
               readOnly: true
             {{- end }}
