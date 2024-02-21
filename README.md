@@ -169,7 +169,7 @@ After this, execute:
 sbt compile run
 ```
 
-By default, the server binds to port 8080 on localhost. After it's up and running you can make provisioning requests to this address.
+By default, the server binds to port 8093 on localhost. After it's up and running you can make provisioning requests to this address.
 
 ## Configuring
 

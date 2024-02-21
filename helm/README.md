@@ -19,7 +19,7 @@ A Helm chart for Kubernetes
 | kerberos.enabled | bool | `false` | Enables Kerberos configuration injection |
 | kerberos.jaasOverride | string | `nil` | This configuration allows you to override the jaas.conf file |
 | kerberos.krb5Override | string | `nil` | This configuration allows you to override the krb5.conf file |
-| livenessProbe | object | `{"httpGet":{"path":"/health","port":8080}}` | liveliness probe spec |
+| livenessProbe | object | `{"httpGet":{"path":"/health","port":8093}}` | liveliness probe spec |
 | logbackOverride | string | `nil` | This configuration allows you to override the logback.xml file |
 | readinessProbe | object | `{}` | readiness probe spec |
 | replicas | int | `1` | the number of pod replicas |

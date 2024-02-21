@@ -7,7 +7,7 @@ Most application configurations are handled with the Typesafe Config library. Yo
 | Configuration                                 | Description                                                                                              | Default   |
 |:----------------------------------------------|:---------------------------------------------------------------------------------------------------------|:----------|
 | `provisioner.networking.httpServer.interface` | Interface to bind the specific provisioner API layer                                                     | `0.0.0.0` |
-| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                                                          | `8080`    |
+| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                                                          | `8093`    |
 | `provisioner.provision-cloud`                 | Type of CDP environment that sets the tasks done by the provisioner                                      | `public`  |
 
 Example:

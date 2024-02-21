@@ -38,7 +38,7 @@ readinessProbe: {}
 livenessProbe:
   httpGet:
     path: /health
-    port: 8080
+    port: 8093
 
 # -- resources spec
 resources: {}
