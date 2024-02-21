@@ -6,7 +6,11 @@ import it.agilelab.provisioning.mesh.self.service.api.model.{
   DataProduct,
   ProvisionRequest
 }
-import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
+import it.agilelab.provisioning.mesh.self.service.api.model.Component.{
+  DataContract,
+  OutputPort,
+  StorageArea
+}
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
 
 object ProvisionRequestFaker {
@@ -143,6 +147,44 @@ final case class OutputPortFakerBuilder[SPECIFIC](
     description = description,
     version = version,
     dataContract = dataContract,
+    specific = specific
+  )
+}
+
+object StorageAreaFaker {
+  def apply[SPECIFIC](specific: SPECIFIC): StorageAreaFakerBuilder[SPECIFIC] =
+    StorageAreaFakerBuilder(
+      id = "urn:dmb:cmp:domain:dp-name:0:cmp-name",
+      name = "cmp-name",
+      description = "description",
+      owners = Seq.empty,
+      specific = specific
+    )
+}
+
+final case class StorageAreaFakerBuilder[SPECIFIC](
+    id: String,
+    name: String,
+    description: String,
+    owners: Seq[String],
+    specific: SPECIFIC
+) {
+  def withId(id: String): StorageAreaFakerBuilder[SPECIFIC] =
+    this.copy(id = id)
+  def withName(name: String): StorageAreaFakerBuilder[SPECIFIC] =
+    this.copy(name = name)
+  def withDescription(description: String): StorageAreaFakerBuilder[SPECIFIC] =
+    this.copy(description = description)
+  def withSpecific(specific: SPECIFIC): StorageAreaFakerBuilder[SPECIFIC] =
+    this.copy(specific = specific)
+  def withOwners(owners: Seq[String]): StorageAreaFakerBuilder[SPECIFIC] =
+    this.copy(owners = owners)
+
+  def build(): StorageArea[SPECIFIC] = StorageArea[SPECIFIC](
+    id = id,
+    name = name,
+    description = description,
+    owners = owners,
     specific = specific
   )
 }

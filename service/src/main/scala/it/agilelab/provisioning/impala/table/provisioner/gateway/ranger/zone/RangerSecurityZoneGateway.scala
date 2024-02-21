@@ -77,7 +77,7 @@ class RangerSecurityZoneGateway(
         RangerSecurityZoneGenerator.securityZone(
           zoneName = zoneName,
           serviceName = serviceName,
-          databaseResources = Seq(s"${zoneName}_*"),
+          databaseResources = Seq(s"${zoneName}*"),
           tableResources = Seq("*"),
           columnResources = Seq("*"),
           urlResources = folderUrl.map(u => s"$u/*"),
@@ -100,7 +100,7 @@ class RangerSecurityZoneGateway(
           RangerSecurityZoneGenerator.securityZoneWithoutUrlResources(
             zone,
             serviceName,
-            Seq(s"${zone.name}_*"),
+            Seq(s"${zone.name}*"),
             Seq("*"),
             Seq("*"),
             folderUrl.map(u => s"$u/*")
@@ -109,7 +109,7 @@ class RangerSecurityZoneGateway(
           RangerSecurityZoneGenerator.securityZoneWithMergedServiceResources(
             zone,
             serviceName,
-            Seq(s"${zone.name}_*"),
+            Seq(s"${zone.name}*"),
             Seq("*"),
             Seq("*"),
             folderUrl.map(u => s"$u/*")

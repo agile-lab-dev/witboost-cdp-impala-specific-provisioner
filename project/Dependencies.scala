@@ -1,7 +1,7 @@
 import sbt._
 
 trait Dependencies {
-  lazy val scalaCommonsVrs = "0.0.0-SNAPSHOT-15dfac13ba.wit-1430-scala-mesh"
+  lazy val scalaCommonsVrs = "0.0.0-SNAPSHOT-a890cc0fa5.wit-1487-scala-mesh"
   lazy val scalaTestVrs = "3.1.0"
   lazy val scalaMockVrs = "4.4.0"
 

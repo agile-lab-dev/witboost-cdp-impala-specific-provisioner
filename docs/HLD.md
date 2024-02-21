@@ -7,10 +7,15 @@ The source diagrams can be found and edited in the [accompanying draw.io file](h
 - [CDP Public](#cdp-public-cloud-impala-specific-provisioner)
   - [Provisioning](#provisioning)
   - [Unprovisioning](#unprovisioning)
+  - [Update ACL](#update-acl)
 - [CDP Private](#cdp-private-cloud-base-impala-specific-provisioner)
-  - [Provisioning](#provisioning-1)
-  - [Unprovisioning](#unprovisioning-1)
-
+  - [Output Port](#output-port)
+    - [Provisioning](#provisioning-1)
+    - [Unprovisioning](#unprovisioning-1)
+    - [Update ACL](#update-acl-1)
+  - [Storage Area](#storage-area)
+    - [Provisioning](#provisioning-2)
+    - [Unprovisioning](#unprovisioning-2)
 ## Overview
 
 ### Specific Provisioner
@@ -46,7 +51,7 @@ Access policy names:
 - **Database policy**: `$DBName_access_policy`
 - **Table access policy**: `$DBName_$TableName_access_policy`
 
-These access policies are granted to single users and groups using roles as intermediaries. Read-write access is granted to the owner role, which will include the data product owner user and the development group, while read-only access is granted to the user role, where the allowed users and groups (through the updateacl operation) will be assigned.
+These access policies are granted to single users and groups using roles as intermediaries. Read-write access is granted to the owner role, which will include the data product owner user and the development group, while read-only access is granted to the user role, this last one used only for Output Ports, where the allowed users and groups (through the updateacl operation) will be assigned.
 
 Role names:
 - **Owner role**: `$Domain_$DPName_$MajorVersion_owner`
@@ -80,11 +85,15 @@ The Update Acl operation consists of updating the assignments to the user role, 
 
 This Specific Provisioner is configured to also work with a CDP Private environment, although with different limitations. It continues to provision an Output Port based on an Impala external table created on a Cloudera Data Warehouse (CDW) Impala Virtual Warehouse. In CDP Private, this table exposes data stored in the HDFS cluster.
 
+Furthermore, it allows to provision Storage Areas as External Tables, its main difference from Output Ports being that Storage Areas are internal to the logic of the Data Product and thus don't expose information, this is translated into the creation of only an Owner role, not a user role.
+
 The provisioner is designed to work with CDP Private v7.1.7 which includes Apache Impala 3.4.0 and Apache Ranger 2.1.0.
 
 The same considerations as the CDP Public for database and table management follow, including the access management through Ranger policies. The creation and management of HDFS, as well as the data contained in it, is out of the scope of the provisioner, as it only creates the external table based on it.
 
-### Provisioning
+### Output Port
+
+#### Provisioning
 
 The provisioning task creates (if not existent) the database and tables on the Impala environment based on the received parameters, it then creates the security zone, roles and policies in order to manage the access control of these resources.
 
@@ -94,14 +103,26 @@ Ranger roles and policy management acts the same as the CDP Public provisioning 
 
 ![Provisioning](img/hld-PrivateProvisioning.png)
 
-### Unprovisioning
+#### Unprovisioning
 
 Unprovisioning works the same as the CDP Public version, dropping the external table and removing the appropriate policies and roles.
 
 ![Unprovisioning](img/hld-PrivateUnprovisioning.png)
 
-### Update ACL
+#### Update ACL
 
 The Update ACL operation works the same as the CDP Public version, updating the user role with the received refs.
 
 ![Update ACL](img/hld-PrivateUpdateAcl.png)
+
+### Storage Area
+
+The management of Storage Areas behaves equally to the Output Ports based on Storage Areas, with the exclusion of the creation of the User role.
+
+#### Provisioning
+
+![Provisioning](./img/hld-Private-SA-Provisioning.png)
+
+#### Unprovisioning
+
+![Unprovisioning](./img/hld-Private-SA-Unprovisioning.png)

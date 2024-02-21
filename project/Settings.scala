@@ -22,7 +22,8 @@ object Settings {
       Wart.DefaultArguments,
       Wart.AsInstanceOf,
       Wart.Equals,
-      Wart.Enumeration
+      Wart.Enumeration,
+      Wart.TraversableOps
     ),
     wartremoverExcluded += sourceManaged.value
   )

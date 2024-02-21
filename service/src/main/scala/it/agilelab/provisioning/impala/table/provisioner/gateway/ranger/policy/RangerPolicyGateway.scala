@@ -19,8 +19,8 @@ class RangerPolicyGateway(
     * @param database Database name. It is used to define the database, table, and url policy name
     * @param table Table name. It is used to define the table policy name and the url policy name
     * @param url Location of the data
-    * @param ownerRoleName Role name to act as owners of the resources, having read/write access. These will be mapped to CDP roles using the RoleRepository
-    * @param userRoleName Role name to access the resources, having only read access. These will be mapped to CDP roles using the RoleRepository
+    * @param ownerRoleName Role name to act as owners of the resources, having read/write access.
+    * @param userRoleName Role name to access the resources, having only read access.
     * @param defaultUsersOwners List of default users to act as owners of the resources. These typically include `admin` and the services like hue or impala
     * @param zoneName Ranger Security Zone name to which the policy will be associated
     * @return Either a [[RangerPolicyGatewayError]] if there was an error upserting the policy,
@@ -31,7 +31,7 @@ class RangerPolicyGateway(
       table: String,
       url: String,
       ownerRoleName: String,
-      userRoleName: String,
+      userRoleName: Option[String],
       defaultUsersOwners: Seq[String],
       zoneName: String
   ): Either[RangerPolicyGatewayError, Seq[PolicyAttachment]] = {
@@ -55,12 +55,12 @@ class RangerPolicyGateway(
   }
 
   /** Deletes the policies that allowed access to a specific table to a set of owners and users.
-    * Updates policies at data product level removing the user role from them.
+    * Updates policies at data product level removing the user role (if passed) from them.
     *
     * @param database           Database name. It is used to define the table policy names to be deleted
     * @param table              Table name. It is used to define the table policy name and the url policy name to be deleted
     * @param url                Location of the data of the policy to be deleted
-    * @param userRoleName        Role name to access the resources, having only read access. These will be mapped to CDP roles using the RoleRepository
+    * @param userRoleName       Role name to access the resources, having only read access.
     * @param zoneName           Ranger Security Zone name to which the policy to be deleted is associated
     * @return Either a [[RangerPolicyGatewayError]] if there was an error deleting the policy,
     *         or the list of deleted [[PolicyAttachment]] for table.
@@ -70,7 +70,7 @@ class RangerPolicyGateway(
       database: String,
       table: String,
       url: String,
-      userRoleName: String,
+      userRoleName: Option[String],
       zoneName: String
   ): Either[RangerPolicyGatewayError, Seq[PolicyAttachment]] = {
     val dbPolicy = RangerPolicyGenerator.impalaDb(database, "", userRoleName, Seq.empty, zoneName)
@@ -81,11 +81,12 @@ class RangerPolicyGateway(
         .findPolicyByName(dbPolicy.service, dbPolicy.name, getSafeZoneName(Some(zoneName)))
         .leftMap(e => UpsertPolicyErr(e))
       _ <- optP
-        .map { registeredPolicy =>
-          rangerClient
-            .updatePolicy(
-              RangerPolicyGenerator.policyWithRemovedRole(registeredPolicy, userRoleName))
-            .leftMap(e => UpsertPolicyErr(e))
+        .flatMap { registeredPolicy =>
+          userRoleName.map { roleName =>
+            rangerClient
+              .updatePolicy(RangerPolicyGenerator.policyWithRemovedRole(registeredPolicy, roleName))
+              .leftMap(e => UpsertPolicyErr(e))
+          }
         }
         .getOrElse(Right(()))
       tblPl <- removePolicy(tablePolicy, Some(zoneName))

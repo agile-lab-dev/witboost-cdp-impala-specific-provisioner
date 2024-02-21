@@ -33,7 +33,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
   it should "return a 200 with COMPLETED on a successful provision with info" in {
 
-    val resource: ImpalaTableOutputPortResource = ImpalaTableOutputPortResource(
+    val resource: ImpalaTableResource = ImpalaTableResource(
       ExternalTable(
         "database",
         "tableName",
@@ -50,8 +50,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
           decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] =
-        Right(
-          ApiResponse.completed("a-fake-id", Some(toJson[ImpalaTableOutputPortResource](resource))))
+        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaTableResource](resource))))
     }
     val handler = new SpecificProvisionerHandler(controllerMock)
     val response: IO[Response[IO]] = new Resource[IO]()

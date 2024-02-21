@@ -17,42 +17,43 @@ import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.{
   ImpalaAccessControlGateway
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
-import it.agilelab.provisioning.mesh.self.service.api.model.Component.OutputPort
+import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ OutputPort, StorageArea }
 import it.agilelab.provisioning.mesh.self.service.core.gateway.{
   ComponentGateway,
-  ComponentGatewayError
+  ComponentGatewayError,
+  PermissionlessComponentGateway
 }
 import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 
 import scala.util.Try
 
-class CDPPrivateImpalaTableOutputPortGateway(
+class CDPPrivateImpalaTableStorageAreaGateway(
     serviceRole: String,
     hostProvider: ConfigHostProvider,
     externalTableGateway: ExternalTableGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaAccessControlGateway
-) extends ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals] {
+) extends PermissionlessComponentGateway[Json, Json, ImpalaTableResource] {
 
-  /** Creates all the resources for the Output Port.
+  /** Creates all the resources for the Storage Area.
     *
     * It creates the Impala external table based on the location defined in the descriptor;
     * creates or updates the necessary security zones;
-    * database, table and location policies for the defined owners and users in the component descriptor,
+    * database, table and location policies for the defined owners in the component descriptor,
     *
     * @param provisionCommand A Provision Command including the provisioning request containing the data product descriptor
-    * @return Either a [[ComponentGatewayError]] if an error occurred while creating the output port,
-    *         or an [[ImpalaTableResource]] that includes the information of the newly deployed Output Port.
+    * @return Either a [[ComponentGatewayError]] if an error occurred while creating the storage area,
+    *         or an [[ImpalaTableResource]] that includes the information of the newly deployed Storage Area.
     */
   override def create(
       provisionCommand: ProvisionCommand[Json, Json]
   ): Either[ComponentGatewayError, ImpalaTableResource] = for {
     // Extract necessary information
-    opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PrivateImpalaCdw]
+    storageAreaRequest <- provisionCommand.provisionRequest
+      .getStorageAreaRequest[ImpalaStorageAreaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     // Upsert output port
-    externalTable <- createAndGetExternalTable(opRequest)
+    externalTable <- createAndGetExternalTable(storageAreaRequest)
     // Upsert security and access
     rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -63,11 +64,11 @@ class CDPPrivateImpalaTableOutputPortGateway(
       AccessControlInfo(
         provisionCommand.provisionRequest.dataProduct.dataProductOwner,
         provisionCommand.provisionRequest.dataProduct.devGroup,
-        opRequest.id),
+        storageAreaRequest.id),
       rangerClient,
       externalTable,
       "",
-      provisionUserRole = true
+      provisionUserRole = false
     )
   } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
 
@@ -75,8 +76,8 @@ class CDPPrivateImpalaTableOutputPortGateway(
       unprovisionCommand: ProvisionCommand[Json, Json]
   ): Either[ComponentGatewayError, ImpalaTableResource] = for {
     // Extract necessary information
-    opRequest <- unprovisionCommand.provisionRequest
-      .getOutputPortRequest[PrivateImpalaCdw]
+    storageAreaRequest <- unprovisionCommand.provisionRequest
+      .getStorageAreaRequest[ImpalaStorageAreaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     dropOnUnprovision <- Try {
       ApplicationConfiguration.impalaConfig.getBoolean(ApplicationConfiguration.DROP_ON_UNPROVISION)
@@ -87,9 +88,11 @@ class CDPPrivateImpalaTableOutputPortGateway(
     // Upsert/delete output port
     externalTable <-
       if (dropOnUnprovision) {
-        dropAndGetExternalTable(opRequest)
+        dropAndGetExternalTable(storageAreaRequest)
       } else {
-        ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
+        ExternalTableMapper.map(
+          storageAreaRequest.specific.tableSchema,
+          storageAreaRequest.specific)
       }
     // Update security and access
     rangerHost <- hostProvider.getRangerHost
@@ -101,46 +104,20 @@ class CDPPrivateImpalaTableOutputPortGateway(
       AccessControlInfo(
         unprovisionCommand.provisionRequest.dataProduct.dataProductOwner,
         unprovisionCommand.provisionRequest.dataProduct.devGroup,
-        opRequest.id),
+        storageAreaRequest.id),
       rangerClient,
       externalTable,
       "",
-      unprovisionUserRole = true
+      unprovisionUserRole = false
     )
   } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
-
-  override def updateAcl(
-      provisionCommand: ProvisionCommand[Json, Json],
-      refs: Set[CdpIamPrincipals]
-  ): Either[ComponentGatewayError, Set[CdpIamPrincipals]] = for {
-    opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PrivateImpalaCdw]
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    rangerHost <- hostProvider.getRangerHost
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    rangerClient <- rangerGatewayProvider
-      .getRangerClient(rangerHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    _ <- impalaAccessControlGateway.updateAcl(
-      AccessControlInfo(
-        provisionCommand.provisionRequest.dataProduct.dataProductOwner,
-        provisionCommand.provisionRequest.dataProduct.devGroup,
-        opRequest.id),
-      refs,
-      rangerClient
-    )
-  } yield refs
 
   private def createExternalTable(
       connectionConfig: ConnectionConfig,
       externalTable: ExternalTable
   ): Either[ComponentGatewayError, Unit] =
     externalTableGateway
-      .create(
-        connectionConfig,
-        externalTable,
-        ifNotExists = true
-      )
+      .create(connectionConfig, externalTable, ifNotExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def dropExternalTable(
@@ -148,20 +125,16 @@ class CDPPrivateImpalaTableOutputPortGateway(
       externalTable: ExternalTable
   ): Either[ComponentGatewayError, Unit] =
     externalTableGateway
-      .drop(
-        connectionConfig,
-        externalTable,
-        ifExists = true
-      )
+      .drop(connectionConfig, externalTable, ifExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def createAndGetExternalTable(
-      opRequest: OutputPort[PrivateImpalaCdw]
+      opRequest: StorageArea[ImpalaStorageAreaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
+    externalTable <- ExternalTableMapper.map(opRequest.specific.tableSchema, opRequest.specific)
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
@@ -171,12 +144,12 @@ class CDPPrivateImpalaTableOutputPortGateway(
   } yield externalTable
 
   private def dropAndGetExternalTable(
-      opRequest: OutputPort[PrivateImpalaCdw]
+      opRequest: StorageArea[ImpalaStorageAreaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(opRequest.dataContract.schema, opRequest.specific)
+    externalTable <- ExternalTableMapper.map(opRequest.specific.tableSchema, opRequest.specific)
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),

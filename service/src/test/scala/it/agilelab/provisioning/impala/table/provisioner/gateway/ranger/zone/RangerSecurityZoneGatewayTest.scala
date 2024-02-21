@@ -50,7 +50,7 @@ class RangerSecurityZoneGatewayTest
       "cm_hive" -> RangerSecurityZoneResources(
         Seq(
           Map(
-            "database" -> Seq("domain_dpName_0_*"),
+            "database" -> Seq("domain_dpName_0*"),
             "column"   -> Seq("*"),
             "table"    -> Seq("*")
           ),
@@ -139,7 +139,7 @@ class RangerSecurityZoneGatewayTest
                 "cm_hive" -> RangerSecurityZoneResources(
                   Seq(
                     Map(
-                      "database" -> Seq("domain_dpName_0_*"),
+                      "database" -> Seq("domain_dpName_0*"),
                       "column"   -> Seq("*"),
                       "table"    -> Seq("*")
                     ),
@@ -180,7 +180,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -207,7 +207,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -247,7 +247,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -279,7 +279,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),
@@ -333,7 +333,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -468,7 +468,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0_*"),
+                "database" -> Seq("domain_dpName_0*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),

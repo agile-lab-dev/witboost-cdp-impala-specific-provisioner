@@ -26,7 +26,9 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 
 ## Overview
 
-This project implements a Specific Provisioner deploying Output Ports as external tables on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports on existing csv or Parquet tables leveraging an existing Impala instance.
+This project implements a Specific Provisioner deploying Output Ports and Storage Areas* as external tables on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports and Storage Areas* on existing csv or Parquet tables leveraging an existing Impala instance.
+
+> As of now, this provisioner can only deploy Storage Areas on CDP Private Cloud environments.
 
 ### What's a Specific Provisioner?
 
@@ -41,11 +43,11 @@ This microservice is written in Scala 2.13, using HTTP4s and Guardrail for the H
 This is a multi module sbt project:
 
 * **api**: Contains the API layer of the service. The latter can be invoked synchronously in 3 different ways:
-    1. POST /provision: provision the impala output port specified in the payload request. It will synchronously call the `service` logic to perform the provisioning logic.
+    1. POST /provision: provision the impala output port/storage area specified in the payload request. It will synchronously call the `service` logic to perform the provisioning logic.
     2. POST /validate: validate the payload request and return a validation result. It should be invoked before provisioning a resource in order to understand if the request is correct.
-    3. POST /updateacl: Updates the access to users to the provisioned resources. 
+    3. POST /updateacl: Updates the access to users to the provisioned resources, only for output ports. 
 * **core**: Contains model case classes and shared logic among the projects
-* **service**: Contains the Provisioner Service logic. Is called from the API layer after some check on the request and return the deployed resource. This is the module on which we provision the output port
+* **service**: Contains the Provisioner Service logic. Is called from the API layer after some check on the request and return the deployed resource. This is the module on which we provision the output port/storage area
 
 In this project we are using the following sbt plugins: 
 1. **scalaformat**: To keep the scala style aligned with all collaborators
@@ -197,7 +199,7 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 2. Retrieve impala coordinator host and ranger host from either the CDP environment (CDP Public), or the provisioner configuration (CDP Private).
 3. Create the impala table
 4. Upsert the ranger security zone for the specific data product version
-5. Upsert ranger roles for owner and users of the component.
+5. Upsert ranger roles for owners of the component; and only for Output Ports, a role for users.
 6. Upsert access policies for said roles, granting read/write access to the owner role, and read-only to the user role
 7. Return the deployed resource
 
@@ -208,7 +210,9 @@ The specific field shape must correspond to the format below. Specially, the dat
 - Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 - Table name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 
-### CDP Public Cloud
+### Output Ports
+
+#### CDP Public Cloud
 
 **Simple table on CDP Public Cloud:**
 
@@ -278,7 +282,7 @@ components:
       - country
 ```
 
-### CDP Private Cloud
+#### CDP Private Cloud
 
 When working with a Private Cloud, the descriptor holds the same schema as the ones presented above, excepting some fields in the `specific` section:
 
@@ -297,8 +301,40 @@ components:
       - country
 ```
 
+### Storage Area
+
+#### CDP Private Cloud
+
+```yaml
+id: urn:dmb:dp:platform:demo-dp:0
+name: demo-dp
+domain: platform
+environment: dev
+version: 0.0.1
+dataProductOwner: dataProductOwner
+specific: {}
+components:
+- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
+  name: witboost_table_impala
+  description: description
+  owners: []
+  specific: 
+    databaseName: platform_demo_dp_0
+    tableName: platform_demo_dp_0_witboost_table_impala_poc
+    format: CSV
+    location: /bucket/path/to/folder # Specifies the HDFS folder path
+    tableSchema:
+    - name: id
+      dataType: STRING
+    - name: name
+      dataType: STRING
+    - name: surname
+      dataType: STRING
+```
+
 ## Limitations
 
+* Storage Areas can currently be provisioned only on CDP Private Cloud.
 * Only PARQUET and CSV are supported as `format`
   * CSV files must NOT start with a header row
 * On CDP Public Cloud, `location` needs to be expressed as `s3a://` and always ending with a slash `/`.

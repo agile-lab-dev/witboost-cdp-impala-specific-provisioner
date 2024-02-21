@@ -14,6 +14,10 @@ import it.agilelab.provisioning.impala.table.provisioner.common.{
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model._
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
+import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.{
+  AccessControlInfo,
+  ImpalaAccessControlGateway
+}
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.DataContract
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
@@ -52,9 +56,9 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       .when(*, *, *)
       .returns(Right())
 
-    val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *)
+      .when(*, *, *, *, true)
       .returns(
         Right(
           Seq(
@@ -85,7 +89,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaTableOutputPortResource(
+      ImpalaTableResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -166,9 +170,9 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       .when(*, *, *)
       .returns(Right())
 
-    val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *)
+      .when(*, *, *, *, true)
       .returns(
         Right(
           Seq(
@@ -200,7 +204,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaTableOutputPortResource(
+      ImpalaTableResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -252,9 +256,9 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       .when(*, *, *)
       .returns(Right())
 
-    val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.unprovisionAccessControl _)
-      .when(*, *, *, *)
+      .when(*, *, *, *, true)
       .returns(
         Right(
           Seq(
@@ -284,7 +288,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
     val actual = impalaTableOutputPortGateway.destroy(provisionCommand)
 
     val expected = Right(
-      ImpalaTableOutputPortResource(
+      ImpalaTableResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -337,9 +341,15 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
 
     val externalTableGateway = stub[ExternalTableGateway]
 
-    val impalaAccessControlGateway = stub[ImpalaOutputPortAccessControlGateway]
+    val accessControlInfo = AccessControlInfo(
+      dataProductOwner = "dataProductOwner",
+      devGroup = "devGroup",
+      componentId = "urn:dmb:cmp:domain:dp-name:0:cmp-name"
+    )
+
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.updateAcl _)
-      .when(request, refs, rangerClient)
+      .when(accessControlInfo, refs, rangerClient)
       .returns(
         Right(
           RangerRole(

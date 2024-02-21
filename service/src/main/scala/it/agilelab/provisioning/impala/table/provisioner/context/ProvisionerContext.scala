@@ -5,7 +5,6 @@ import it.agilelab.provisioning.commons.client.cdp.dl.CdpDlClient
 import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClient
 import it.agilelab.provisioning.commons.config.Conf
 import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
-import it.agilelab.provisioning.commons.principalsmapping.{ CdpIamPrincipals, PrincipalsMapper }
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
   ClientError,
   ConfigurationError
@@ -17,8 +16,7 @@ class ProvisionerContext(
     val deployRoleUser: String,
     val deployRolePwd: String,
     val rangerRoleUser: String,
-    val rangerRolePwd: String,
-    val principalsMapper: PrincipalsMapper[CdpIamPrincipals]
+    val rangerRolePwd: String
 )
 
 class CDPPublicProvisionerContext(
@@ -26,15 +24,9 @@ class CDPPublicProvisionerContext(
     deployRolePwd: String,
     rangerRoleUser: String,
     rangerRolePwd: String,
-    principalsMapper: PrincipalsMapper[CdpIamPrincipals],
     val cdpEnvClient: CdpEnvClient,
     val cdpDlClient: CdpDlClient
-) extends ProvisionerContext(
-      deployRoleUser,
-      deployRolePwd,
-      rangerRoleUser,
-      rangerRolePwd,
-      principalsMapper)
+) extends ProvisionerContext(deployRoleUser, deployRolePwd, rangerRoleUser, rangerRolePwd)
 
 object ProvisionerContext {
 
@@ -57,14 +49,11 @@ object ProvisionerContext {
         ConfigurationError(ConfKeyNotFoundErr(ApplicationConfiguration.RANGER_PASSWORD)))
       cdpEnvClient <- CdpEnvClient.defaultWithAudit().leftMap(e => ClientError("CdpEnvClient", e))
       cdpDlClient  <- CdpDlClient.defaultWithAudit().leftMap(e => ClientError("CdpDlClient", e))
-      principalsMapper <- new PrincipalsMapperPluginLoader().load(
-        ApplicationConfiguration.principalsMapperConfig)
     } yield new CDPPublicProvisionerContext(
       deployRoleUser,
       deployRolePwd,
       rangerRoleUser,
       rangerRolePwd,
-      principalsMapper,
       cdpEnvClient,
       cdpDlClient
     )
@@ -82,13 +71,10 @@ object ProvisionerContext {
       ApplicationConfiguration.rangerConfig.getString(
         ApplicationConfiguration.RANGER_PASSWORD)).toEither.leftMap(_ =>
       ConfigurationError(ConfKeyNotFoundErr(ApplicationConfiguration.RANGER_PASSWORD)))
-    principalsMapper <- new PrincipalsMapperPluginLoader().load(
-      ApplicationConfiguration.principalsMapperConfig)
   } yield new ProvisionerContext(
     deployRoleUser,
     deployRolePwd,
     rangerRoleUser,
-    rangerRolePwd,
-    principalsMapper
+    rangerRolePwd
   )
 }

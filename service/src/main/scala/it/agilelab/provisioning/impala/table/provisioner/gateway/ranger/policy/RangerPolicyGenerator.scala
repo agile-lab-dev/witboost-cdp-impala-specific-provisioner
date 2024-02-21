@@ -20,7 +20,7 @@ object RangerPolicyGenerator {
   def impalaDb(
       database: String,
       ownerRole: String,
-      userRole: String,
+      userRole: Option[String],
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -43,7 +43,7 @@ object RangerPolicyGenerator {
       database: String,
       table: String,
       ownerRole: String,
-      userRole: String,
+      userRole: Option[String],
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -66,7 +66,7 @@ object RangerPolicyGenerator {
       table: String,
       url: String,
       ownerRole: String,
-      userRole: String,
+      userRole: Option[String],
       usersOwners: Seq[String],
       zoneName: String
   ): RangerPolicy =
@@ -87,25 +87,24 @@ object RangerPolicyGenerator {
   private def defineDataPolicyItems(
       ownerRole: String,
       ownerUsers: Seq[String],
-      userRole: String
+      userRole: Option[String]
   ): Seq[RangerPolicyItem] =
     Seq(
-      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole)),
-      RangerPolicyItem
-        .userLevel(Seq.empty, Seq.empty[String], List(userRole))
-    )
+      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole))
+    ) ++ userRole.map(userRoleName =>
+      RangerPolicyItem.userLevel(Seq.empty, Seq.empty[String], Seq(userRoleName)))
 
   private def defineDbPolicyItems(
       ownerRole: String,
       ownerUsers: Seq[String],
-      userRole: String
+      userRole: Option[String]
   ): Seq[RangerPolicyItem] =
     Seq(
-      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole)),
+      RangerPolicyItem.ownerLevel(Seq.empty, ownerUsers, List(ownerRole))
+    ) ++ userRole.map(userRoleName =>
       RangerPolicyItem
-        .userLevel(Seq.empty, Seq.empty[String], List(userRole))
-        .copy(accesses = Seq(Access.select))
-    )
+        .userLevel(Seq.empty, Seq.empty[String], Seq(userRoleName))
+        .copy(accesses = Seq(Access.select)))
 
   def policyWithMergedPolicyItems(
       rangerPolicy: RangerPolicy,
