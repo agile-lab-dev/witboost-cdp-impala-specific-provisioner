@@ -23,7 +23,8 @@ class RangerSecurityZoneGateway(
     * @param auditUser User to be added as part of the audits of the Security Zone
     * @param auditGroup Group to be added as part of the audit groups of the Security Zone
     * @param serviceType The service type related to the security zone
-    * @param dlName Data lake name
+    * @param clusterName Cluster name
+    * @param databaseName Database name
     * @param folderUrl Location of the folder data to be included as part of the security zone
     * @param isDestroy Whether to include the received folder URL or to delete all folder references (both on creation and update)
     * @return Either a [[RangerSecurityZoneGatewayError]] error while upserting the security zone, or the newly created or updated [[RangerSecurityZone]]
@@ -34,22 +35,24 @@ class RangerSecurityZoneGateway(
       auditUser: String,
       auditGroup: Option[String],
       serviceType: String,
-      dlName: String,
+      clusterName: String,
+      databaseName: String,
       folderUrl: Seq[String],
       isDestroy: Boolean = false
   ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] = for {
     zoneOpt <- rangerClient
       .findSecurityZoneByName(securityZoneName)
       .leftMap(e => UpsertSecurityZoneErr(e))
-    service <- getService(serviceType, dlName)
+    service <- getService(serviceType, clusterName)
     zoneUpdated <- zoneOpt.fold(
       createSecurityZone(
         securityZoneName,
         service.name,
+        databaseName,
         if (isDestroy) Seq.empty[String] else folderUrl.map(u => safelyRemove(u, "/")),
         auditUser,
         auditGroup,
-        deployUser))(z => updateSC(z, service.name, folderUrl, isDestroy))
+        deployUser))(z => updateSC(z, service.name, databaseName, folderUrl, isDestroy))
   } yield zoneUpdated
 
   private def getService(
@@ -67,6 +70,7 @@ class RangerSecurityZoneGateway(
   private def createSecurityZone(
       zoneName: String,
       serviceName: String,
+      databaseName: String,
       folderUrl: Seq[String],
       auditUser: String,
       auditGroup: Option[String],
@@ -77,7 +81,7 @@ class RangerSecurityZoneGateway(
         RangerSecurityZoneGenerator.securityZone(
           zoneName = zoneName,
           serviceName = serviceName,
-          databaseResources = Seq(s"${zoneName}*"),
+          databaseResources = Seq(s"${databaseName}*"),
           tableResources = Seq("*"),
           columnResources = Seq("*"),
           urlResources = folderUrl.map(u => s"$u/*"),
@@ -91,6 +95,7 @@ class RangerSecurityZoneGateway(
   private def updateSC(
       zone: RangerSecurityZone,
       serviceName: String,
+      databaseName: String,
       folderUrl: Seq[String],
       isDestroy: Boolean
   ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] =
@@ -100,19 +105,19 @@ class RangerSecurityZoneGateway(
           RangerSecurityZoneGenerator.securityZoneWithoutUrlResources(
             zone,
             serviceName,
-            Seq(s"${zone.name}*"),
+            Seq(s"${databaseName}*"),
             Seq("*"),
             Seq("*"),
-            folderUrl.map(u => s"$u/*")
+            folderUrl.map(u => s"${safelyRemove(u, "/")}/*")
           )
         else
           RangerSecurityZoneGenerator.securityZoneWithMergedServiceResources(
             zone,
             serviceName,
-            Seq(s"${zone.name}*"),
+            Seq(s"${databaseName}*"),
             Seq("*"),
             Seq("*"),
-            folderUrl.map(u => s"$u/*")
+            folderUrl.map(u => s"${safelyRemove(u, "/")}/*")
           )
       )
       .leftMap(e => UpsertSecurityZoneErr(e))

@@ -4,7 +4,8 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
-  ImpalaDataType
+  ImpalaDataType,
+  ImpalaView
 }
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -117,6 +118,72 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       ifNotExists = true
     )
     val expected = "CREATE DATABASE IF NOT EXISTS xyz"
+
+    assert(actual == expected)
+  }
+
+  test("create view ifNotExists=true") {
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq(
+        Field("id", ImpalaDataType.ImpalaInt, None),
+        Field("name", ImpalaDataType.ImpalaInt, None)),
+      readsFromTableName = "originalTableName"
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = true)
+    val expected =
+      "CREATE VIEW IF NOT EXISTS database.viewName AS SELECT id,name FROM database.originalTableName"
+
+    assert(actual == expected)
+  }
+
+  test("create view ifNotExists=false") {
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq(
+        Field("id", ImpalaDataType.ImpalaInt, None),
+        Field("name", ImpalaDataType.ImpalaInt, None)),
+      readsFromTableName = "originalTableName"
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = false)
+    val expected =
+      "CREATE VIEW database.viewName AS SELECT id,name FROM database.originalTableName"
+
+    assert(actual == expected)
+  }
+
+  test("drop view ifExists=true") {
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq(
+        Field("id", ImpalaDataType.ImpalaInt, None),
+        Field("name", ImpalaDataType.ImpalaInt, None)),
+      readsFromTableName = "originalTableName"
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.dropView(view, ifExists = true)
+    val expected = "DROP VIEW IF EXISTS database.viewName"
+
+    assert(actual == expected)
+  }
+
+  test("drop view ifExists=false") {
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq(
+        Field("id", ImpalaDataType.ImpalaInt, None),
+        Field("name", ImpalaDataType.ImpalaInt, None)),
+      readsFromTableName = "originalTableName"
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.dropView(view, ifExists = false)
+    val expected = "DROP VIEW database.viewName"
 
     assert(actual == expected)
   }

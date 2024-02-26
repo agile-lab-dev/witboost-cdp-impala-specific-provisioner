@@ -33,7 +33,7 @@ class CDPPrivateImpalaTableStorageAreaGateway(
     externalTableGateway: ExternalTableGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaAccessControlGateway
-) extends PermissionlessComponentGateway[Json, Json, ImpalaTableResource] {
+) extends PermissionlessComponentGateway[Json, Json, ImpalaEntityResource] {
 
   /** Creates all the resources for the Storage Area.
     *
@@ -43,14 +43,14 @@ class CDPPrivateImpalaTableStorageAreaGateway(
     *
     * @param provisionCommand A Provision Command including the provisioning request containing the data product descriptor
     * @return Either a [[ComponentGatewayError]] if an error occurred while creating the storage area,
-    *         or an [[ImpalaTableResource]] that includes the information of the newly deployed Storage Area.
+    *         or an [[ImpalaEntityResource]] that includes the information of the newly deployed Storage Area.
     */
   override def create(
       provisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaTableResource] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     // Extract necessary information
     storageAreaRequest <- provisionCommand.provisionRequest
-      .getStorageAreaRequest[ImpalaStorageAreaCdw]
+      .getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     // Upsert output port
     externalTable <- createAndGetExternalTable(storageAreaRequest)
@@ -70,14 +70,14 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       "",
       provisionUserRole = false
     )
-  } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
+  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
 
   override def destroy(
       unprovisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaTableResource] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     // Extract necessary information
     storageAreaRequest <- unprovisionCommand.provisionRequest
-      .getStorageAreaRequest[ImpalaStorageAreaCdw]
+      .getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     dropOnUnprovision <- Try {
       ApplicationConfiguration.impalaConfig.getBoolean(ApplicationConfiguration.DROP_ON_UNPROVISION)
@@ -110,7 +110,7 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       "",
       unprovisionUserRole = false
     )
-  } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
+  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
 
   private def createExternalTable(
       connectionConfig: ConnectionConfig,
@@ -129,7 +129,7 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def createAndGetExternalTable(
-      opRequest: StorageArea[ImpalaStorageAreaCdw]
+      opRequest: StorageArea[PrivateImpalaStorageAreaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
@@ -144,7 +144,7 @@ class CDPPrivateImpalaTableStorageAreaGateway(
   } yield externalTable
 
   private def dropAndGetExternalTable(
-      opRequest: StorageArea[ImpalaStorageAreaCdw]
+      opRequest: StorageArea[PrivateImpalaStorageAreaCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()

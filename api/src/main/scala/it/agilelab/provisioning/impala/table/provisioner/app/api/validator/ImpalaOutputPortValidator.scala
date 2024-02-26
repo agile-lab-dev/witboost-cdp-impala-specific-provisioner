@@ -4,8 +4,10 @@ import io.circe.Json
 import it.agilelab.provisioning.commons.validator.Validator
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator.withinOutputPortReq
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  PrivateImpalaCdw,
-  PublicImpalaCdw
+  ImpalaCdw,
+  PrivateImpalaTableCdw,
+  PrivateImpalaViewCdw,
+  PublicImpalaTableCdw
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.OutputPort
 import it.agilelab.provisioning.mesh.self.service.api.model.ProvisionRequest
@@ -34,19 +36,19 @@ object ImpalaOutputPortValidator {
         _ => "The provided component is not accepted by this provisioner"
       )
       .rule(
-        r => withinOutputPortReq[PublicImpalaCdw](r)((_, _) => true),
+        r => withinOutputPortReq[PublicImpalaTableCdw](r)((_, _) => true),
         _ => "The provided component's specific section does not match the structure expected by this provisioner"
       )
       .rule(
         r =>
-          withinOutputPortReq[PublicImpalaCdw](r) { (_, op) =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             cdpValidator.cdpEnvironmentExists(op.specific.cdpEnvironment)
           },
         _ => s"CDP Environment does not exist"
       )
       .rule(
         r =>
-          withinOutputPortReq[PublicImpalaCdw](r) { (_, op) =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             cdpValidator.cdwVirtualClusterExists(
               op.specific.cdpEnvironment,
               op.specific.cdwVirtualWarehouse)
@@ -56,14 +58,14 @@ object ImpalaOutputPortValidator {
       )
       .rule(
         r =>
-          withinOutputPortReq[PublicImpalaCdw](r) { (_, op) =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             locationValidator.isValidLocation(op.specific.location)
           },
         _ => "Location is wrongly formatted. Correct location should be formatted as \"s3a://$bucket/$pathToFolder/\""
       )
       .rule(
         r =>
-          withinOutputPortReq[PublicImpalaCdw](r) { (_, op) =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             locationValidator.locationExists(op.specific.location)
           },
         _ => s"Location does not exist on provided Amazon S3 bucket"
@@ -94,7 +96,7 @@ object ImpalaOutputPortValidator {
       )
       .rule(
         r =>
-          withinOutputPortReq[PublicImpalaCdw](r) { (_, op) =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             SchemaValidator
               .arePartitionsValid(op.dataContract.schema, op.specific.partitions)
           },
@@ -123,15 +125,24 @@ object ImpalaOutputPortValidator {
         _ => "The provided component is not accepted by this provisioner"
       )
       .rule(
-        r => withinOutputPortReq[PrivateImpalaCdw](r)((_, _) => true),
+        r =>
+          withinOutputPortReq[ImpalaCdw](r)((_, op) =>
+            op.specific match {
+              case _: PrivateImpalaTableCdw | _: PrivateImpalaViewCdw => true
+              case _                                                  => false
+            }),
         _ => "The provided component specific is not accepted by this provisioner"
       )
       .rule(
         r =>
-          withinOutputPortReq[PrivateImpalaCdw](r) { (_, op) =>
-            locationValidator.isValidLocation(op.specific.location)
+          withinOutputPortReq[ImpalaCdw](r) { (_, op) =>
+            op.specific match {
+              case sp: PrivateImpalaTableCdw => locationValidator.isValidLocation(sp.location)
+              case _: PrivateImpalaViewCdw   => true
+              case _                         => false
+            }
           },
-        _ => "Location is wrongly formatted. Correct location should be formatted as \"/$pathToFolder\""
+        _ => "External table location is wrongly formatted. Correct location should be formatted as \"/$pathToFolder\""
       )
       // Commented as we don't have authentication configured for Kerberos (See WIT-1364)
       /*.rule(
@@ -168,11 +179,15 @@ object ImpalaOutputPortValidator {
       )
       .rule(
         r =>
-          withinOutputPortReq[PrivateImpalaCdw](r) { (_, op) =>
-            SchemaValidator
-              .arePartitionsValid(op.dataContract.schema, op.specific.partitions)
+          withinOutputPortReq[ImpalaCdw](r) { (_, op) =>
+            op.specific match {
+              case sp: PrivateImpalaTableCdw =>
+                SchemaValidator.arePartitionsValid(op.dataContract.schema, sp.partitions)
+              case _: PrivateImpalaViewCdw => true
+              case _                       => false
+            }
           },
         _ =>
-          s"Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
+          s"External table partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
       )
 }

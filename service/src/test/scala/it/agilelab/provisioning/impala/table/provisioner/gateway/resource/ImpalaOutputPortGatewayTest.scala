@@ -35,7 +35,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          PublicImpalaCdw(
+          PublicImpalaTableCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -109,7 +109,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -137,7 +137,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(PublicImpalaCdw(
+        OutputPortFaker(PublicImpalaTableCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           cdpEnvironment = "cdpEnv",
@@ -243,7 +243,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -270,7 +270,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          PublicImpalaCdw(
+          PublicImpalaTableCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",
@@ -343,7 +343,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.destroy(provisionCommand)
 
     val expected = Right(
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -367,7 +367,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          PublicImpalaCdw(
+          PublicImpalaTableCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             cdpEnvironment = "cdpEnv",

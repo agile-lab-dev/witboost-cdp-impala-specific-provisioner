@@ -1,29 +1,32 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.mapper
 
 import cats.data.NonEmptyList
-import io.circe.Json
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaDataType.{
   ImpalaInt,
   ImpalaString,
   ImpalaStruct,
   StructType
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
-import it.agilelab.provisioning.impala.table.provisioner.core.model._
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  Field,
+  ImpalaDataType,
+  ImpalaView,
+  PrivateImpalaViewCdw
+}
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
-import it.agilelab.provisioning.mesh.self.service.api.model.DataProduct
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{
   Column,
   ColumnConstraint,
   ColumnDataType
 }
 import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
-import org.scalatest.EitherValues._
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.EitherValues._
 
-class ExternalTableMapperTest extends AnyFunSuite {
-  test("genExternalTable return Right(ExternalTable)") {
-    val component: OutputPort[PublicImpalaTableCdw] = OutputPort[PublicImpalaTableCdw](
+class ImpalaViewMapperTest extends AnyFunSuite {
+
+  test("map correct ImpalaView returns Right(ImpalaView)") {
+    val component: OutputPort[PrivateImpalaViewCdw] = OutputPort[PrivateImpalaViewCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
       description = "description",
@@ -47,22 +50,20 @@ class ExternalTableMapperTest extends AnyFunSuite {
           )
         )
       ),
-      specific = PublicImpalaTableCdw(
+      specific = PrivateImpalaViewCdw(
         databaseName = "databaseName",
         tableName = "tableName",
-        cdpEnvironment = "cdpEnvironment",
-        cdwVirtualWarehouse = "service",
-        format = Csv,
-        location = "location",
-        partitions = Some(Seq("name", "surname"))
+        viewName = "viewName"
       )
     )
-    val actual = ExternalTableMapper.map(component.dataContract.schema, component.specific)
+    val actual = ImpalaViewMapper.map(component.dataContract.schema, component.specific)
     val expected = Right(
-      ExternalTable(
+      ImpalaView(
         database = "databaseName",
-        name = "tableName",
+        name = "viewName",
         schema = Seq(
+          Field("name", ImpalaString, None),
+          Field("surname", ImpalaString, None),
           Field("age", ImpalaDataType.ImpalaInt, None),
           Field("sex", ImpalaDataType.ImpalaChar(1), None),
           Field(
@@ -78,16 +79,14 @@ class ExternalTableMapperTest extends AnyFunSuite {
             None
           )
         ),
-        partitions = Seq(Field("name", ImpalaString, None), Field("surname", ImpalaString, None)),
-        location = "location",
-        format = Csv
+        readsFromTableName = "tableName"
       ))
 
     assert(actual == expected)
   }
 
-  test("genExternalTable return Left") {
-    val component: OutputPort[PublicImpalaTableCdw] = OutputPort[PublicImpalaTableCdw](
+  test("map incorrect ImpalaView returns return Left") {
+    val component: OutputPort[PrivateImpalaViewCdw] = OutputPort[PrivateImpalaViewCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
       description = "description",
@@ -101,17 +100,13 @@ class ExternalTableMapperTest extends AnyFunSuite {
           getC("jobExperiences", ColumnDataType.ARRAY)
         )
       ),
-      specific = PublicImpalaTableCdw(
+      specific = PrivateImpalaViewCdw(
         databaseName = "databaseName",
         tableName = "tableName",
-        cdpEnvironment = "cdpEnvironment",
-        cdwVirtualWarehouse = "service",
-        format = Csv,
-        location = "location",
-        partitions = Some(Seq("name", "surname"))
+        viewName = "viewName"
       )
     )
-    val actual = ExternalTableMapper.map(component.dataContract.schema, component.specific)
+    val actual = ImpalaViewMapper.map(component.dataContract.schema, component.specific)
 
     assert(actual.isLeft)
     assert(actual.left.value.isInstanceOf[ComponentGatewayError])

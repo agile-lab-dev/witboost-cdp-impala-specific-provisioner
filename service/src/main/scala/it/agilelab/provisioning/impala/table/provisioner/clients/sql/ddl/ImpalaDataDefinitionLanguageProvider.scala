@@ -2,26 +2,38 @@ package it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl
 
 import cats.implicits._
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.{ Csv, Parquet }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, Field }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  Field,
+  ImpalaEntity,
+  ImpalaView
+}
 
 class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvider {
 
   private val CREATE_DATABASE_PATTERN = "%s %s"
   private val CREATE_TABLE_PATTERN = "%s %s (%s) %s%s"
+  private val CREATE_VIEW_PATTERN = "%s %s AS %s"
   private val CREATE_PARTITIONED_TABLE_PATTERN = "%s %s (%s) PARTITIONED BY (%s) %s%s"
   private val DROP_TABLE_PATTERN = "%s %s"
+  private val DROP_VIEW_PATTERN = "%s %s"
 
   private val CREATE_DATABASE_KEY = "CREATE DATABASE"
   private val CREATE_EXTERNAL_TABLE_KEY = "CREATE EXTERNAL TABLE"
+  private val CREATE_VIEW_KEY = "CREATE VIEW"
   private val TBLPROPERTIES_KEY = "TBLPROPERTIES"
   private val IF_NOT_EXISTS_KEY = "IF NOT EXISTS"
   private val IF_EXISTS_KEY = "IF EXISTS"
 
   private val DROP_TABLE_KEY = "DROP TABLE"
+  private val DROP_VIEW_KEY = "DROP VIEW"
 
   private val STORED_AS_PATTERN = "STORED AS %s"
   private val ROW_FORMAT_PATTERN = "ROW FORMAT %s"
   private val LOCATION_PATTERN = "LOCATION '%s'"
+
+  private val SELECT_PATTERN = "SELECT %s"
+  private val FROM_PATTERN = "FROM %s"
 
   private val defaultTblProperties: Seq[(String, String)] = Seq(("impala.disableHmsSync", "false"))
 
@@ -44,13 +56,26 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   override def dropExternalTable(externalTable: ExternalTable, ifExists: Boolean): String =
     DROP_TABLE_PATTERN.format(
       serializeDropTableDDL(ifExists),
-      serializeTableName(externalTable)
+      serializeName(externalTable)
+    )
+
+  override def createView(impalaView: ImpalaView, ifNotExists: Boolean): String =
+    CREATE_VIEW_PATTERN.format(
+      serializeCreateViewDDL(ifNotExists),
+      serializeName(impalaView),
+      serializeSelectFromTableDDL(impalaView)
+    )
+
+  override def dropView(impalaView: ImpalaView, ifExists: Boolean): String =
+    DROP_VIEW_PATTERN.format(
+      serializeDropViewDDL(ifExists),
+      serializeName(impalaView)
     )
 
   private def createDefaultExternalTable(externalTable: ExternalTable, ifNotExists: Boolean) =
     CREATE_TABLE_PATTERN.format(
       serializeCreateTableDDL(ifNotExists),
-      serializeTableName(externalTable),
+      serializeName(externalTable),
       serializeSchema(externalTable),
       serializeTableProperties(externalTable),
       serializeDefaultTblKeyValueProperties()
@@ -62,7 +87,7 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   ) =
     CREATE_PARTITIONED_TABLE_PATTERN.format(
       serializeCreateTableDDL(ifNotExists),
-      serializeTableName(externalTable),
+      serializeName(externalTable),
       serializeSchema(externalTable),
       serializePartitions(externalTable),
       serializeTableProperties(externalTable),
@@ -81,13 +106,13 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     if (ifNotExists) asString(" ", CREATE_DATABASE_KEY, IF_NOT_EXISTS_KEY)
     else CREATE_DATABASE_KEY
 
-  private def serializeTableName(externalTable: ExternalTable): String =
-    asString(".", externalTable.database, externalTable.tableName)
+  private def serializeName(impalaEntity: ImpalaEntity): String =
+    asString(".", impalaEntity.database, impalaEntity.name)
 
-  private def serializeSchema(externalTable: ExternalTable): String =
+  private def serializeSchema(impalaEntity: ImpalaEntity): String =
     asString(
       ",",
-      externalTable.schema.map {
+      impalaEntity.schema.map {
         case Field(n, t, Some(d)) => asString(" ", n, t.show, s"COMMENT '$d'")
         case Field(n, t, None)    => asString(" ", n, t.show)
       }: _*
@@ -119,6 +144,23 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     defaultTblProperties
       .map(p => s"'${p._1}'='${p._2}'")
       .mkString(s" $TBLPROPERTIES_KEY (", ", ", ")")
+
+  def serializeCreateViewDDL(ifNotExists: Boolean): String =
+    if (ifNotExists) asString(" ", CREATE_VIEW_KEY, IF_NOT_EXISTS_KEY)
+    else CREATE_VIEW_KEY
+
+  private def serializeDropViewDDL(ifExists: Boolean): String =
+    if (ifExists) asString(" ", DROP_VIEW_KEY, IF_EXISTS_KEY)
+    else DROP_VIEW_KEY
+
+  private def serializeSelectFromTableDDL(impalaView: ImpalaView): String =
+    asString(
+      " ",
+      SELECT_PATTERN.format(
+        asString(",", impalaView.schema.map(_.name): _*)
+      ),
+      FROM_PATTERN.format(asString(".", impalaView.database, impalaView.readsFromTableName))
+    )
 
   private def asString(separator: String, values: String*): String =
     values.mkString(separator)

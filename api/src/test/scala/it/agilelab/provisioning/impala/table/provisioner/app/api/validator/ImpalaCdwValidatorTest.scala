@@ -13,8 +13,8 @@ import it.agilelab.provisioning.impala.table.provisioner.common.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  ImpalaStorageAreaCdw,
-  PrivateImpalaCdw
+  PrivateImpalaStorageAreaCdw,
+  PrivateImpalaTableCdw
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{
   OutputPort,
@@ -34,7 +34,7 @@ class ImpalaCdwValidatorTest extends AnyFunSuite with MockFactory {
   val opRequest = ProvisionRequestFaker[Json, Json](Json.obj())
     .withComponent(
       OutputPortFaker(
-        PrivateImpalaCdw(
+        PrivateImpalaTableCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -47,7 +47,7 @@ class ImpalaCdwValidatorTest extends AnyFunSuite with MockFactory {
   val saRequest = ProvisionRequestFaker[Json, Json](Json.obj())
     .withComponent(
       StorageAreaFaker(
-        ImpalaStorageAreaCdw(
+        PrivateImpalaStorageAreaCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -177,13 +177,13 @@ class ImpalaCdwValidatorTest extends AnyFunSuite with MockFactory {
   }
 
   test("withinOutputPortReq returns rule outcome if component is output port") {
-    val trueRule = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaCdw](opRequest) {
+    val trueRule = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaTableCdw](opRequest) {
       case (_, _) =>
         true
     }
     assert(trueRule)
 
-    val falseRule = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaCdw](opRequest) {
+    val falseRule = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaTableCdw](opRequest) {
       case (_, _) =>
         false
     }
@@ -191,7 +191,7 @@ class ImpalaCdwValidatorTest extends AnyFunSuite with MockFactory {
   }
 
   test("withinOutputPortReq returns error if component is not and output port") {
-    val falseComponent = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaCdw](saRequest) {
+    val falseComponent = ImpalaCdwValidator.withinOutputPortReq[PrivateImpalaTableCdw](saRequest) {
       case (_, _) =>
         true
     }
@@ -199,23 +199,25 @@ class ImpalaCdwValidatorTest extends AnyFunSuite with MockFactory {
   }
 
   test("withinStorageAreaReq returns rule outcome if component is storage area") {
-    val trueRule = ImpalaCdwValidator.withinStorageAreaReq[ImpalaStorageAreaCdw](saRequest) {
+    val trueRule = ImpalaCdwValidator.withinStorageAreaReq[PrivateImpalaStorageAreaCdw](saRequest) {
       case (_, _) =>
         true
     }
     assert(trueRule)
 
-    val falseRule = ImpalaCdwValidator.withinStorageAreaReq[ImpalaStorageAreaCdw](saRequest) {
-      case (_, _) =>
-        false
-    }
+    val falseRule =
+      ImpalaCdwValidator.withinStorageAreaReq[PrivateImpalaStorageAreaCdw](saRequest) {
+        case (_, _) =>
+          false
+      }
     assert(!falseRule)
   }
 
   test("withinStorageAreaReq returns error if component is not and output port") {
-    val falseComponent = ImpalaCdwValidator.withinStorageAreaReq[ImpalaStorageAreaCdw](opRequest) {
-      case (_, _) => true
-    }
+    val falseComponent =
+      ImpalaCdwValidator.withinStorageAreaReq[PrivateImpalaStorageAreaCdw](opRequest) {
+        case (_, _) => true
+      }
     assert(!falseComponent)
   }
 

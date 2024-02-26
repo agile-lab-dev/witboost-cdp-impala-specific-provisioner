@@ -63,7 +63,7 @@ class DefaultSQLGatewayTest extends AnyFunSuite with MockFactory {
       .expects(UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true))
       .returns(Right(connection))
 
-    (connection.createStatement _: () => Statement).expects().returns(statement)
+    (connection.createStatement _: () => Statement).expects().returns(statement).once()
     (statement.executeUpdate(_: String)).expects("xyz").once().throws(new SQLException("err"))
     (connection.close _).expects().once()
 
@@ -83,17 +83,16 @@ class DefaultSQLGatewayTest extends AnyFunSuite with MockFactory {
       .expects(UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true))
       .returns(Right(connection))
 
-    (connection.createStatement _: () => Statement).expects().returns(statement)
+    (connection.createStatement _: () => Statement).expects().returns(statement).once()
     (statement.executeUpdate(_: String)).expects("abc").once()
     (statement.executeUpdate(_: String)).expects("xyz").once()
     (connection.close _).expects().once()
 
-    assert(
-      new DefaultSQLGateway(connectionProvider)
-        .executeDDLs(
-          UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true),
-          Seq("abc", "xyz"))
-        .isRight)
+    val actual = new DefaultSQLGateway(connectionProvider)
+      .executeDDLs(
+        UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true),
+        Seq("abc", "xyz"))
+    assert(actual.isRight)
   }
 
   test("execute DDLs fail getting the connection and returns Left()") {

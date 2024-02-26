@@ -186,7 +186,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.upsertPolicies(
       "db",
       "tbl",
-      "url",
       "owner2CdpRole",
       Some("user1CdpRole"),
       Seq("x"),
@@ -305,7 +304,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.upsertPolicies(
       "db",
       "tbl",
-      "url",
       "owner1CdpRole",
       Some("user1CdpRole"),
       Seq("x"),
@@ -456,7 +454,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.deletePolicies(
       "db",
       "tbl",
-      "url",
       Some("user1CdpRole"),
       "szName"
     )
@@ -525,7 +522,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.deletePolicies(
       "db",
       "tbl",
-      "url",
       Some("user1CdpRole"),
       "szName"
     )
@@ -668,7 +664,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.upsertPolicies(
       "db",
       "tbl",
-      "url",
       "owner2CdpRole",
       None,
       Seq("x"),
@@ -766,7 +761,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.upsertPolicies(
       "db",
       "tbl",
-      "url",
       "owner1CdpRole",
       None,
       Seq("x"),
@@ -862,7 +856,6 @@ class RangerPolicyGatewayTest extends AnyFunSuite with MockFactory {
     val actual = rangerTablePolicyGateway.deletePolicies(
       "db",
       "tbl",
-      "url",
       None,
       "szName"
     )

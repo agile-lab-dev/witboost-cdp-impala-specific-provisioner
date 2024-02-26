@@ -50,7 +50,7 @@ class RangerSecurityZoneGatewayTest
       "cm_hive" -> RangerSecurityZoneResources(
         Seq(
           Map(
-            "database" -> Seq("domain_dpName_0*"),
+            "database" -> Seq("databaseName*"),
             "column"   -> Seq("*"),
             "table"    -> Seq("*")
           ),
@@ -120,7 +120,8 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
-      Seq("url1", "url2"))
+      "databaseName",
+      Seq("url1", "url2/"))
     val expected = Right(zoneUpdated)
     assert(actual == expected)
   }
@@ -139,7 +140,7 @@ class RangerSecurityZoneGatewayTest
                 "cm_hive" -> RangerSecurityZoneResources(
                   Seq(
                     Map(
-                      "database" -> Seq("domain_dpName_0*"),
+                      "database" -> Seq("databaseName*"),
                       "column"   -> Seq("*"),
                       "table"    -> Seq("*")
                     ),
@@ -180,7 +181,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -207,7 +208,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -236,6 +237,7 @@ class RangerSecurityZoneGatewayTest
         Some("devGroup"),
         "hive",
         "cdpDlName",
+        "databaseName",
         Seq("url1"),
         isDestroy = true)
 
@@ -247,7 +249,7 @@ class RangerSecurityZoneGatewayTest
           "cm_hive" -> RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -279,7 +281,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),
@@ -318,6 +320,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"))
     val expected = Right(newZone)
     assert(actual == expected)
@@ -333,7 +336,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               )
@@ -369,6 +372,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"),
       isDestroy = true)
     val expected = Right(newZone)
@@ -393,6 +397,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"))
 
     assertUpsertZoneWithFindZoneErr(
@@ -417,6 +422,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"))
     val expected = Left(
       FindServiceErr("Unable to find service with type hive in cluster cdpDlName.")
@@ -451,6 +457,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"))
 
     assertUpsertZoneWithUpdateZoneErr(
@@ -468,7 +475,7 @@ class RangerSecurityZoneGatewayTest
           RangerSecurityZoneResources(
             Seq(
               Map(
-                "database" -> Seq("domain_dpName_0*"),
+                "database" -> Seq("databaseName*"),
                 "column"   -> Seq("*"),
                 "table"    -> Seq("*")
               ),
@@ -512,6 +519,7 @@ class RangerSecurityZoneGatewayTest
       Some("devGroup"),
       "hive",
       "cdpDlName",
+      "databaseName",
       Seq("url1", "url2"))
 
     assertUpsertZoneWithCreateZoneErr(

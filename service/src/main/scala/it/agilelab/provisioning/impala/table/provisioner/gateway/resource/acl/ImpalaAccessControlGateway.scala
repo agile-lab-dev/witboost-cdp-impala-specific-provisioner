@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl
 
-import cats.implicits.{ catsSyntaxEitherId, showInterpolator, toBifunctorOps }
+import cats.implicits.{ showInterpolator, toBifunctorOps }
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.model.RangerRole
 import it.agilelab.provisioning.commons.principalsmapping.{
@@ -11,6 +11,7 @@ import it.agilelab.provisioning.commons.principalsmapping.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
+  ImpalaEntity,
   PolicyAttachment
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.{
@@ -41,7 +42,7 @@ class ImpalaAccessControlGateway(
     *   The operation is idempotent, so if any of these resources exist, they're not recreated
     * @param accessControlInfo Information of the data product and component to be provisioned required to provision the necessary access control resources
     * @param rangerClient Ranger Client to be used for contacting Ranger
-    * @param externalTable External table to which access will be managed
+    * @param impalaEntity Impala entity to which access will be managed
     * @param clusterName Cluster name used to create Security Zones on Ranger. On CDP Public it refers to the Datalake name
     * @param provisionUserRole Whether to provision or not a user role (useful for storage components) TODO Improve this so StorageArea use a specific gateway
     * @return Either a [[ComponentGatewayError]] if an error occurs, or a sequence of [[PolicyAttachment]] with the access policies
@@ -49,7 +50,7 @@ class ImpalaAccessControlGateway(
   def provisionAccessControl(
       accessControlInfo: AccessControlInfo,
       rangerClient: RangerClient,
-      externalTable: ExternalTable,
+      impalaEntity: ImpalaEntity,
       clusterName: String,
       provisionUserRole: Boolean
   ): Either[ComponentGatewayError, Seq[PolicyAttachment]] =
@@ -71,7 +72,11 @@ class ImpalaAccessControlGateway(
           Some(owners._2.groupName),
           "hive",
           clusterName,
-          Seq(externalTable.location)
+          impalaEntity.database,
+          impalaEntity match {
+            case table: ExternalTable => Seq(table.location)
+            case _                    => Seq.empty
+          }
         )
         .leftMap(e => ComponentGatewayError(show"$e"))
       ownerRole <- gtwys.roleGateway
@@ -82,7 +87,7 @@ class ImpalaAccessControlGateway(
           serviceRole,
           ownerUsers = List.empty,
           ownerGroups = List.empty,
-          users = List(owners._1.workloadUsername),
+          users = List(owners._1.workloadUsername, "impala"),
           groups = List(owners._2.groupName)
         )
         .leftMap(e => ComponentGatewayError(show"$e"))
@@ -104,9 +109,8 @@ class ImpalaAccessControlGateway(
         else Right(None)
       policies <- gtwys.policyGateway
         .upsertPolicies(
-          externalTable.database,
-          externalTable.tableName,
-          externalTable.location,
+          impalaEntity.database,
+          impalaEntity.name,
           ownerRole.name,
           userRole.map(_.name),
           serviceRole +: Seq(
@@ -129,7 +133,7 @@ class ImpalaAccessControlGateway(
     *
     * @param accessControlInfo Information of the data product and component to be provisioned required to unprovision the necessary access control resources
     * @param rangerClient      Ranger Client to be used for contacting Ranger
-    * @param externalTable     External table to which access will be managed
+    * @param impalaEntity     Impala entity to which access will be managed
     * @param clusterName       Cluster name used to update Security Zones on Ranger. On CDP Public it refers to the Datalake name
     * @param unprovisionUserRole Whether to unprovision or not a user role (useful for storageareas) TODO Improve this so Storagearea use a specific gateway
     * @return Either a [[ComponentGatewayError]] if an error occurs, or a sequence of [[PolicyAttachment]] with the unprovisioned access policies
@@ -138,7 +142,7 @@ class ImpalaAccessControlGateway(
   def unprovisionAccessControl(
       accessControlInfo: AccessControlInfo,
       rangerClient: RangerClient,
-      externalTable: ExternalTable,
+      impalaEntity: ImpalaEntity,
       clusterName: String,
       unprovisionUserRole: Boolean
   ): Either[ComponentGatewayError, Seq[PolicyAttachment]] = for {
@@ -159,7 +163,11 @@ class ImpalaAccessControlGateway(
         Some(owners._2.groupName),
         "hive",
         clusterName,
-        Seq(externalTable.location),
+        impalaEntity.database,
+        impalaEntity match {
+          case table: ExternalTable => Seq(table.location)
+          case _                    => Seq.empty
+        },
         isDestroy = true
       )
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -167,9 +175,8 @@ class ImpalaAccessControlGateway(
       s"${identifiers.domain}_${identifiers.dataProductName}_${identifiers.dataProductMajorVersion}_${identifiers.componentName}"))
     policies <- gtwys.policyGateway
       .deletePolicies(
-        externalTable.database,
-        externalTable.tableName,
-        externalTable.location,
+        impalaEntity.database,
+        impalaEntity.name,
         userRoleName,
         securityZone.name
       )

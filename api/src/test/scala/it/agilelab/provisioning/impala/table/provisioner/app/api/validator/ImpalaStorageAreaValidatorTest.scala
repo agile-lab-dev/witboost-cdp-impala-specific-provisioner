@@ -10,9 +10,9 @@ import it.agilelab.provisioning.impala.table.provisioner.common.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
-  ImpalaStorageAreaCdw,
-  PrivateImpalaCdw,
-  PublicImpalaCdw
+  PrivateImpalaStorageAreaCdw,
+  PrivateImpalaTableCdw,
+  PublicImpalaTableCdw
 }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -69,7 +69,7 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
   test("test a public descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -95,7 +95,7 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
   test("test a valid private descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -124,7 +124,7 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         StorageAreaFaker(
-          ImpalaStorageAreaCdw(
+          PrivateImpalaStorageAreaCdw(
             databaseName = "domain_dp_name_0",
             tableName = "domain_dp_name_0_cmp_name_poc",
             format = Csv,
@@ -153,7 +153,7 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
   test("test a invalid private descriptor which sets inexistent partitions") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -182,7 +182,7 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          PrivateImpalaCdw(
+          PrivateImpalaTableCdw(
             databaseName = "domain_dp_name_0",
             tableName = "domain_dp_name_0_cmp_name_poc",
             format = Csv,

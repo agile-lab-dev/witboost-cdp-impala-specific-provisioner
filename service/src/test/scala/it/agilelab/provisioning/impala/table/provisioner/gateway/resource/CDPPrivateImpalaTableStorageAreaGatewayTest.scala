@@ -27,7 +27,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
   test("provision simple storage area table") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           format = Csv,
@@ -99,7 +99,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.create(provisionCommand)
 
     val expected =
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -127,7 +127,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           format = Csv,
@@ -213,7 +213,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -239,7 +239,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(ImpalaStorageAreaCdw(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           format = Csv,
@@ -311,7 +311,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.destroy(provisionCommand)
 
     val expected = Right(
-      ImpalaTableResource(
+      ImpalaEntityResource(
         ExternalTable(
           "databaseName",
           "tableName",
@@ -335,7 +335,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
-          PrivateImpalaCdw(
+          PrivateImpalaTableCdw(
             databaseName = "databaseName",
             tableName = "tableName",
             format = Csv,

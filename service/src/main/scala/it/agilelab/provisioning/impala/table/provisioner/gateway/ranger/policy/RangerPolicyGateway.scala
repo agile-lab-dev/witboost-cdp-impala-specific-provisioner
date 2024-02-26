@@ -18,7 +18,6 @@ class RangerPolicyGateway(
     * Otherwise, a new one is created.
     * @param database Database name. It is used to define the database, table, and url policy name
     * @param table Table name. It is used to define the table policy name and the url policy name
-    * @param url Location of the data
     * @param ownerRoleName Role name to act as owners of the resources, having read/write access.
     * @param userRoleName Role name to access the resources, having only read access.
     * @param defaultUsersOwners List of default users to act as owners of the resources. These typically include `admin` and the services like hue or impala
@@ -29,7 +28,6 @@ class RangerPolicyGateway(
   def upsertPolicies(
       database: String,
       table: String,
-      url: String,
       ownerRoleName: String,
       userRoleName: Option[String],
       defaultUsersOwners: Seq[String],
@@ -59,7 +57,6 @@ class RangerPolicyGateway(
     *
     * @param database           Database name. It is used to define the table policy names to be deleted
     * @param table              Table name. It is used to define the table policy name and the url policy name to be deleted
-    * @param url                Location of the data of the policy to be deleted
     * @param userRoleName       Role name to access the resources, having only read access.
     * @param zoneName           Ranger Security Zone name to which the policy to be deleted is associated
     * @return Either a [[RangerPolicyGatewayError]] if there was an error deleting the policy,
@@ -69,7 +66,6 @@ class RangerPolicyGateway(
   def deletePolicies(
       database: String,
       table: String,
-      url: String,
       userRoleName: Option[String],
       zoneName: String
   ): Either[RangerPolicyGatewayError, Seq[PolicyAttachment]] = {

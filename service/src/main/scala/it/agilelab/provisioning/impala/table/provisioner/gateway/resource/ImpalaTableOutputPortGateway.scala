@@ -33,7 +33,7 @@ class ImpalaTableOutputPortGateway(
     externalTableGateway: ExternalTableGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaAccessControlGateway
-) extends ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals] {
+) extends ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals] {
 
   /** Creates all the resources for the Output Port.
     *
@@ -43,14 +43,14 @@ class ImpalaTableOutputPortGateway(
     *
     * @param provisionCommand A Provision Command including the provisioning request containing the data product descriptor
     * @return Either a [[ComponentGatewayError]] if an error occurred while creating the output port,
-    *         or an [[ImpalaTableResource]] that includes the information of the newly deployed Output Port.
+    *         or an [[ImpalaEntityResource]] that includes the information of the newly deployed Output Port.
     */
   override def create(
       provisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaTableResource] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     // Extract necessary information
     opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+      .getOutputPortRequest[PublicImpalaTableCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     env <- hostProvider
       .getEnvironment(opRequest.specific.cdpEnvironment)
@@ -75,7 +75,7 @@ class ImpalaTableOutputPortGateway(
       dl.getDatalakeName,
       provisionUserRole = true
     )
-  } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
+  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
 
   /** Destroys all the resources for the Output Port.
     *
@@ -84,13 +84,13 @@ class ImpalaTableOutputPortGateway(
     *
     * @param unprovisionCommand A Provision Command including the unprovisioning request containing the data product descriptor
     * @return Either a [[ComponentGatewayError]] if an error occurred while destroying the output port,
-    *         or an [[ImpalaTableResource]] that includes the information of the deleted Output Port.
+    *         or an [[ImpalaEntityResource]] that includes the information of the deleted Output Port.
     */
   override def destroy(
       unprovisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaTableResource] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     opRequest <- unprovisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+      .getOutputPortRequest[PublicImpalaTableCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     env <- hostProvider
       .getEnvironment(opRequest.specific.cdpEnvironment)
@@ -124,14 +124,14 @@ class ImpalaTableOutputPortGateway(
       dl.getDatalakeName,
       unprovisionUserRole = true
     )
-  } yield ImpalaTableResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
+  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
 
   override def updateAcl(
       provisionCommand: ProvisionCommand[Json, Json],
       refs: Set[CdpIamPrincipals]
   ): Either[ComponentGatewayError, Set[CdpIamPrincipals]] = for {
     opRequest <- provisionCommand.provisionRequest
-      .getOutputPortRequest[PublicImpalaCdw]
+      .getOutputPortRequest[PublicImpalaTableCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     env <- hostProvider
       .getEnvironment(opRequest.specific.cdpEnvironment)
@@ -179,7 +179,7 @@ class ImpalaTableOutputPortGateway(
 
   private def createAndGetExternalTable(
       env: Environment,
-      opRequest: OutputPort[PublicImpalaCdw]
+      opRequest: OutputPort[PublicImpalaTableCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost(env, opRequest.specific.cdwVirtualWarehouse)
@@ -195,7 +195,7 @@ class ImpalaTableOutputPortGateway(
 
   private def dropAndGetExternalTable(
       env: Environment,
-      opRequest: OutputPort[PublicImpalaCdw]
+      opRequest: OutputPort[PublicImpalaTableCdw]
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost(env, opRequest.specific.cdwVirtualWarehouse)

@@ -1,7 +1,7 @@
 package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
 import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.core.model.PublicImpalaCdw
+import it.agilelab.provisioning.impala.table.provisioner.core.model.PublicImpalaTableCdw
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Parquet
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
 import it.agilelab.provisioning.mesh.self.service.api.model.DataProduct
@@ -23,7 +23,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         specific = Json.obj(),
         components = Seq.empty
       ),
-      OutputPort[PublicImpalaCdw](
+      OutputPort[PublicImpalaTableCdw](
         id = "urn:dmb:cmp:domain:dataProductName:0:outputPortName",
         name = "outputPortName",
         description = "description",
@@ -31,7 +31,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         dataContract = DataContract(
           schema = Seq.empty
         ),
-        specific = PublicImpalaCdw(
+        specific = PublicImpalaTableCdw(
           databaseName = "domain_dataProductName_0",
           tableName = "tableName",
           cdpEnvironment = "cdpEnvironment",
@@ -59,7 +59,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         specific = Json.obj(),
         components = Seq.empty
       ),
-      OutputPort[PublicImpalaCdw](
+      OutputPort[PublicImpalaTableCdw](
         id = "urn:dmb:cmp:domain:dataProductName:0:outputPortName",
         name = "outputPortName",
         description = "description",
@@ -67,7 +67,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         dataContract = DataContract(
           schema = Seq.empty
         ),
-        specific = PublicImpalaCdw(
+        specific = PublicImpalaTableCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           cdpEnvironment = "cdpEnvironment",
@@ -95,7 +95,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         specific = Json.obj(),
         components = Seq.empty
       ),
-      OutputPort[PublicImpalaCdw](
+      OutputPort[PublicImpalaTableCdw](
         id = "urn:dmb:cmp:domain:dataProductName:0:outputPortName",
         name = "outputPortName",
         description = "description",
@@ -103,7 +103,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         dataContract = DataContract(
           schema = Seq.empty
         ),
-        specific = PublicImpalaCdw(
+        specific = PublicImpalaTableCdw(
           databaseName = "databaseName",
           tableName = "domain_dataProductName_0_outputPortName_environment",
           cdpEnvironment = "cdpEnvironment",
@@ -131,7 +131,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         specific = Json.obj(),
         components = Seq.empty
       ),
-      OutputPort[PublicImpalaCdw](
+      OutputPort[PublicImpalaTableCdw](
         id = "urn:dmb:cmp:domain:dataProductName:0:outputPortName",
         name = "outputPortName",
         description = "description",
@@ -139,7 +139,7 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
         dataContract = DataContract(
           schema = Seq.empty
         ),
-        specific = PublicImpalaCdw(
+        specific = PublicImpalaTableCdw(
           databaseName = "databaseName",
           tableName = "tableName",
           cdpEnvironment = "cdpEnvironment",

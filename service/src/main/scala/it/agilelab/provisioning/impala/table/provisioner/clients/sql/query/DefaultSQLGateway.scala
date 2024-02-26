@@ -6,6 +6,7 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
   ConnectionProvider
 }
 import SqlGatewayError.{ ConnectionErr, ExecuteDDLErr }
+import com.typesafe.scalalogging.StrictLogging
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.{
   ConnectionConfig,
   ConnectionProvider
@@ -13,7 +14,9 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
 
 import scala.util.Using
 
-class DefaultSQLGateway(connectionProvider: ConnectionProvider) extends SqlGateway {
+class DefaultSQLGateway(connectionProvider: ConnectionProvider)
+    extends SqlGateway
+    with StrictLogging {
 
   override def executeDDL(
       connectionConfig: ConnectionConfig,
@@ -21,6 +24,7 @@ class DefaultSQLGateway(connectionProvider: ConnectionProvider) extends SqlGatew
   ): Either[SqlGatewayError, Int] =
     connectionProvider.get(connectionConfig).leftMap(ConnectionErr).flatMap {
       Using(_) { c =>
+        logger.debug("Executing SQL Statement: {}", ddl)
         c.createStatement().executeUpdate(ddl)
       }.toEither.leftMap(e => ExecuteDDLErr(e))
     }
@@ -31,7 +35,11 @@ class DefaultSQLGateway(connectionProvider: ConnectionProvider) extends SqlGatew
   ): Either[SqlGatewayError, Int] =
     connectionProvider.get(connectionConfig).leftMap(ConnectionErr).flatMap {
       Using(_) { c =>
-        ddls.map(c.createStatement().executeUpdate).sum
+        val statement = c.createStatement()
+        ddls.map { ddl =>
+          logger.debug("Executing SQL Statement: {}", ddl)
+          statement.executeUpdate(ddl)
+        }.sum
       }.toEither.leftMap(e => ExecuteDDLErr(e))
     }
 }

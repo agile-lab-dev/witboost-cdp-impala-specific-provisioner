@@ -15,16 +15,17 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.{
 import it.agilelab.provisioning.impala.table.provisioner.context.CloudType.CloudType
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.ConfigurationError
 import it.agilelab.provisioning.impala.table.provisioner.context._
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaTableResource
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaEntityResource
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.ImpalaAccessControlGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.{
-  CDPPrivateImpalaTableOutputPortGateway,
+  CDPPrivateImpalaOutputPortGateway,
   CDPPrivateImpalaTableStorageAreaGateway,
   ImpalaGateway,
   ImpalaTableOutputPortGateway
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
+import it.agilelab.provisioning.impala.table.provisioner.gateway.view.ViewGateway
 import it.agilelab.provisioning.mesh.self.service.api.controller.ProvisionerController
 import it.agilelab.provisioning.mesh.self.service.api.model.ProvisionRequest
 import it.agilelab.provisioning.mesh.self.service.core.gateway.{
@@ -84,16 +85,16 @@ object ImpalaProvisionerController {
       rangerGatewayProvider,
       aclGateway
     ),
-    storageAreaGateway = new PermissionlessComponentGateway[Json, Json, ImpalaTableResource] {
-      val error: Either[ComponentGatewayError, ImpalaTableResource] = Left(
+    storageAreaGateway = new PermissionlessComponentGateway[Json, Json, ImpalaEntityResource] {
+      val error: Either[ComponentGatewayError, ImpalaEntityResource] = Left(
         ComponentGatewayError(
           "The provisioner currently doesn't support storage areas on CDP Public Cloud"))
       override def create(
           provisionCommand: ProvisionCommand[Json, Json]
-      ): Either[ComponentGatewayError, ImpalaTableResource] = error
+      ): Either[ComponentGatewayError, ImpalaEntityResource] = error
       override def destroy(
           provisionCommand: ProvisionCommand[Json, Json]
-      ): Either[ComponentGatewayError, ImpalaTableResource] = error
+      ): Either[ComponentGatewayError, ImpalaEntityResource] = error
     }
   )
 
@@ -103,6 +104,7 @@ object ImpalaProvisionerController {
   ): Either[ContextError, ComponentGateway[Json, Json, Json, CdpIamPrincipals]] = for {
     ctx          <- ProvisionerContext.initPrivate(conf)
     tableGateway <- getExternalTableGateway(ctx)
+    viewGateway  <- getViewGateway(ctx)
     rangerGatewayProvider = new RangerGatewayProvider(ctx.rangerRoleUser, ctx.rangerRolePwd)
     aclGateway = new ImpalaAccessControlGateway(
       serviceRole = ctx.deployRoleUser,
@@ -111,10 +113,11 @@ object ImpalaProvisionerController {
     )
     hostProvider = new ConfigHostProvider()
   } yield new ImpalaGateway(
-    outputPortGateway = new CDPPrivateImpalaTableOutputPortGateway(
+    outputPortGateway = new CDPPrivateImpalaOutputPortGateway(
       ctx.deployRoleUser,
       hostProvider,
       tableGateway,
+      viewGateway,
       rangerGatewayProvider,
       aclGateway
     ),
@@ -138,6 +141,28 @@ object ImpalaProvisionerController {
         Right(ExternalTableGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd))
       case Success(ApplicationConfiguration.JDBC_KERBEROS_AUTH) =>
         Right(ExternalTableGateway.kerberizedImpalaWithAudit())
+      case Success(value) =>
+        Left(
+          ConfigurationError(
+            ConfDecodeErr(s"JDBC Authentication type not supported. Received '$value'")))
+      case Failure(_) =>
+        Left(
+          ConfigurationError(ConfKeyNotFoundErr(
+            s"${ApplicationConfiguration.JDBC_CONFIG}.${ApplicationConfiguration.JDBC_AUTH_TYPE}")))
+    }
+
+  private def getViewGateway(
+      ctx: ProvisionerContext
+  ): Either[ContextError, ViewGateway] =
+    Try {
+      ApplicationConfiguration.impalaConfig
+        .getConfig(ApplicationConfiguration.JDBC_CONFIG)
+        .getString(ApplicationConfiguration.JDBC_AUTH_TYPE)
+    } match {
+      case Success(ApplicationConfiguration.JDBC_SIMPLE_AUTH) =>
+        Right(ViewGateway.impalaWithAudit(ctx.deployRoleUser, ctx.deployRolePwd))
+      case Success(ApplicationConfiguration.JDBC_KERBEROS_AUTH) =>
+        Right(ViewGateway.kerberizedImpalaWithAudit())
       case Success(value) =>
         Left(
           ConfigurationError(

@@ -4,7 +4,7 @@ import cats.implicits._
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
-  ImpalaCdw
+  ImpalaTableCdw
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.support.ImpalaDataTypeSupport
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
@@ -13,7 +13,7 @@ import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayE
 object ExternalTableMapper extends ImpalaDataTypeSupport {
   def map(
       schema: Seq[Column],
-      impalaSpecific: ImpalaCdw
+      impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ExternalTable] = for {
     tableSchema <- schema
       .filter(c => impalaSpecific.partitions.forall(seq => !seq.contains(c.name)))
@@ -25,7 +25,7 @@ object ExternalTableMapper extends ImpalaDataTypeSupport {
       .sequence
   } yield ExternalTable(
     database = impalaSpecific.databaseName,
-    tableName = impalaSpecific.tableName,
+    name = impalaSpecific.tableName,
     schema = tableSchema,
     partitions = partitions,
     location = impalaSpecific.location,

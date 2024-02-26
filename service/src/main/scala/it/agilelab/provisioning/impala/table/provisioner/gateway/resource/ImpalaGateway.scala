@@ -16,11 +16,11 @@ import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 import cats.implicits.showInterpolator
 import io.circe.generic.auto.exportEncoder
 import io.circe.syntax.EncoderOps
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaTableResource
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaEntityResource
 
 class ImpalaGateway(
-    outputPortGateway: ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals],
-    storageAreaGateway: ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals]
+    outputPortGateway: ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals],
+    storageAreaGateway: ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals]
 ) extends ComponentGateway[Json, Json, Json, CdpIamPrincipals] {
 
   override def create(

@@ -5,7 +5,7 @@ import cats.data.Validated.Invalid
 import io.circe.Json
 import it.agilelab.provisioning.commons.validator.{ ValidationFail, Validator }
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator.withinStorageAreaReq
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaStorageAreaCdw
+import it.agilelab.provisioning.impala.table.provisioner.core.model.PrivateImpalaStorageAreaCdw
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.StorageArea
 import it.agilelab.provisioning.mesh.self.service.api.model.ProvisionRequest
 import io.circe.generic.auto._
@@ -128,12 +128,12 @@ object ImpalaStorageAreaValidator {
         _ => "The provided component is not accepted by this provisioner"
       )
       .rule(
-        r => withinStorageAreaReq[ImpalaStorageAreaCdw](r)((_, _) => true),
+        r => withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r)((_, _) => true),
         _ => "The provided component specific is not accepted by this provisioner"
       )
       .rule(
         r =>
-          withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, sa) =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, sa) =>
             locationValidator.isValidLocation(sa.specific.location)
           },
         _ => "Location is wrongly formatted. Correct location should be formatted as \"/$pathToFolder\""
@@ -149,28 +149,28 @@ object ImpalaStorageAreaValidator {
        */
       .rule(
         r =>
-          withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, sa) =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, sa) =>
             SchemaValidator.nonEmptySchema(sa.specific.tableSchema)
           },
         _ => s"Schema is empty"
       )
       .rule(
         r =>
-          withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, sa) =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, sa) =>
             SchemaValidator.validateColumnNames(sa.specific.tableSchema)
           },
         _ => s"Schema contains duplicated and/or empty column names"
       )
       .rule(
         r =>
-          withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, sa) =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, sa) =>
             SchemaValidator.isValidSchema(sa.specific.tableSchema)
           },
         _ => s"Schema is not compliant with Impala Data Types specifications"
       )
       .rule(
         r =>
-          withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, sa) =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, sa) =>
             SchemaValidator
               .arePartitionsValid(sa.specific.tableSchema, sa.specific.partitions)
           },

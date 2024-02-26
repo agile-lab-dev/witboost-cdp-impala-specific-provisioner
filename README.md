@@ -26,9 +26,9 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 
 ## Overview
 
-This project implements a Specific Provisioner deploying Output Ports and Storage Areas* as external tables on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports and Storage Areas* on existing csv or Parquet tables leveraging an existing Impala instance.
+This project implements a Specific Provisioner deploying Output Ports (as External Tables or Views) and Storage Areas* on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports and Storage Areas* on existing csv or Parquet tables leveraging an existing Impala instance.
 
-> As of now, this provisioner can only deploy Storage Areas on CDP Private Cloud environments.
+> As of now, this provisioner can only deploy View Output Ports and Storage Areas on CDP Private Cloud environments.
 
 ### What's a Specific Provisioner?
 
@@ -197,18 +197,18 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 
 1. Parse the request body
 2. Retrieve impala coordinator host and ranger host from either the CDP environment (CDP Public), or the provisioner configuration (CDP Private).
-3. Create the impala table
+3. Create the impala resource (table or view)
 4. Upsert the ranger security zone for the specific data product version
-5. Upsert ranger roles for owners of the component; and only for Output Ports, a role for users.
+5. Upsert ranger roles for owners of the component; and for Output Ports a role for users as well.
 6. Upsert access policies for said roles, granting read/write access to the owner role, and read-only to the user role
 7. Return the deployed resource
 
 ## Example input
 
-The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention:
+The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention below. However, this convention is not enforced.
 
 - Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
-- Table name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
+- Table/View name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
 
 ### Output Ports
 
@@ -284,6 +284,8 @@ components:
 
 #### CDP Private Cloud
 
+##### External Table
+
 When working with a Private Cloud, the descriptor holds the same schema as the ones presented above, excepting some fields in the `specific` section:
 
 ```yaml
@@ -300,6 +302,22 @@ components:
     partitions:
       - country
 ```
+
+##### View
+
+The provisioner allows to create simple views based on an origin table and the data contract schema. The specific field is as follows:
+
+```yaml
+...
+components:
+- id: ...
+  specific:
+    databaseName: platform_demo_dp_0
+    tableName: platform_demo_dp_0_witboost_table_impala_poc # Table to be exposed through the view, belonging to the same DB 
+    viewName: platform_demo_dp_0_witboost_external_view_poc
+```
+
+The database and tables must exist before provisioning the view. Currently, the provisioner only exposes existing columns (either all of them or a subset) based on the `dataContract.schema` field, so the column names must match to the names of the columns in the source `tableName`.
 
 ### Storage Area
 

@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.core.model
 
-final case class ImpalaTableResource(
-    table: ExternalTable,
+final case class ImpalaEntityResource(
+    impalaEntity: ImpalaEntity,
     policies: ImpalaCdpAcl
 )

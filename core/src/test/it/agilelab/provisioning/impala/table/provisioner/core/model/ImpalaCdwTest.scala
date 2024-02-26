@@ -1,18 +1,22 @@
 package it.agilelab.provisioning.impala.table.provisioner.core.model
 
-import io.circe.generic.auto.{exportDecoder, exportEncoder}
+import io.circe.generic.auto.{ exportDecoder, exportEncoder }
 import io.circe.syntax.EncoderOps
-import io.circe.{Json, yaml}
+import io.circe.{ yaml, Json }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ComponentDecodeError.DecodeErr
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw.ImpalaProvisionRequestOps
-import it.agilelab.provisioning.mesh.self.service.api.model.Component.{DataContract, OutputPort, StorageArea}
-import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{Column, ColumnDataType}
-import it.agilelab.provisioning.mesh.self.service.api.model.{DataProduct, ProvisionRequest}
+import it.agilelab.provisioning.mesh.self.service.api.model.Component.{
+  DataContract,
+  OutputPort,
+  StorageArea
+}
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
+import it.agilelab.provisioning.mesh.self.service.api.model.{ DataProduct, ProvisionRequest }
 import org.scalatest.funsuite.AnyFunSuite
 
 class ImpalaCdwTest extends AnyFunSuite {
 
-  test("decode output port specific") {
+  test("decode output port table specific") {
     val specificJson = yaml.parser
       .parse("""
         | databaseName: finance_salary_test_cdp_0
@@ -26,7 +30,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val expected = PublicImpalaCdw(
+    val expected = PublicImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       cdpEnvironment = "cdp-env",
@@ -40,7 +44,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == Right(expected))
   }
 
-  test("encode output port specific") {
+  test("encode output port table specific") {
     val expected = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -54,7 +58,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val specific: ImpalaCdw = PublicImpalaCdw(
+    val specific: ImpalaCdw = PublicImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       cdpEnvironment = "cdp-env",
@@ -68,7 +72,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == expected)
   }
 
-  test("decode private output port specific") {
+  test("decode private output port table specific") {
     val specificJson = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -80,7 +84,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val expected = PrivateImpalaCdw(
+    val expected = PrivateImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -92,7 +96,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == Right(expected))
   }
 
-  test("encode private output port specific") {
+  test("encode private output port table specific") {
     val expected = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -104,7 +108,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val specific: ImpalaCdw = PrivateImpalaCdw(
+    val specific: ImpalaCdw = PrivateImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -116,8 +120,48 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == expected)
   }
 
-  test("test get output port request") {
-    val specific = PublicImpalaCdw(
+  test("decode private output port view specific") {
+    val specificJson = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
+          | viewName: finance_salary_test_cdp_0_impala_cdp_op_view_development
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val expected = PrivateImpalaViewCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
+      viewName = "finance_salary_test_cdp_0_impala_cdp_op_view_development"
+    )
+    val actual = specificJson.as[ImpalaCdw]
+
+    assert(actual == Right(expected))
+  }
+
+  test("encode private output port view specific") {
+    val expected = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
+          | viewName: finance_salary_test_cdp_0_impala_cdp_op_view_development
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val specific: ImpalaCdw = PrivateImpalaViewCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
+      viewName = "finance_salary_test_cdp_0_impala_cdp_op_view_development"
+    )
+    val actual = specific.asJson
+
+    assert(actual == expected)
+  }
+
+  test("test get output port table request") {
+    val specific = PublicImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       cdpEnvironment = "cdp-env",
@@ -155,7 +199,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     )
 
     val expected = Right(op.copy(specific = specific))
-    val actual = request.getOutputPortRequest[PublicImpalaCdw]
+    val actual = request.getOutputPortRequest[PublicImpalaTableCdw]
 
     assert(actual == expected)
   }
@@ -179,7 +223,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val expected = ImpalaStorageAreaCdw(
+    val expected = PrivateImpalaStorageAreaCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -255,7 +299,7 @@ class ImpalaCdwTest extends AnyFunSuite {
       .toOption
       .get
 
-    val specific: ImpalaCdw = ImpalaStorageAreaCdw(
+    val specific: ImpalaCdw = PrivateImpalaStorageAreaCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -312,7 +356,7 @@ class ImpalaCdwTest extends AnyFunSuite {
   }
 
   test("test get storage area request") {
-    val specific = ImpalaStorageAreaCdw(
+    val specific = PrivateImpalaStorageAreaCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -391,13 +435,13 @@ class ImpalaCdwTest extends AnyFunSuite {
     )
 
     val expected = Right(op.copy(specific = specific))
-    val actual = request.getStorageAreaRequest[ImpalaStorageAreaCdw]
+    val actual = request.getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
 
     assert(actual == expected)
   }
 
   test("test get output port request fails on wrong component type") {
-    val specific = ImpalaStorageAreaCdw(
+    val specific = PrivateImpalaStorageAreaCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
@@ -448,7 +492,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     )
 
     val expected = Left(DecodeErr("The provided component is not accepted by this provisioner"))
-    val actual = request.getOutputPortRequest[ImpalaStorageAreaCdw]
+    val actual = request.getOutputPortRequest[PrivateImpalaStorageAreaCdw]
 
     assert(actual == expected)
   }

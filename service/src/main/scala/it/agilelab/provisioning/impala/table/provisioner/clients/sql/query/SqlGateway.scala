@@ -6,7 +6,6 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
 }
 
 trait SqlGateway {
-
   def executeDDL(connectionConfig: ConnectionConfig, ddl: String): Either[SqlGatewayError, Int]
   def executeDDLs(
       connectionConfig: ConnectionConfig,

@@ -4,7 +4,11 @@ import cats.Show
 import cats.implicits.toShow
 import io.circe.{ Decoder, Json, JsonObject }
 import it.agilelab.provisioning.api.generated.definitions.Info
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaTableResource
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource,
+  ImpalaView
+}
 
 object ProvisioningInfoMapper {
 
@@ -18,18 +22,31 @@ object ProvisioningInfoMapper {
     )
   }
 
-  final case class ImpalaTableInfo(resource: ImpalaTableResource) extends InfoObject {
-    override def toJson: Json = Json.obj(
-      "impalaTable"    -> StringInfoObject("table", resource.table.tableName).toJson,
-      "impalaDatabase" -> StringInfoObject("database", resource.table.database).toJson,
-      "impalaLocation" -> StringInfoObject("location", resource.table.location).toJson,
-      "impalaFormat"   -> StringInfoObject("format", resource.table.format.show).toJson
-    )
+  final case class ImpalaEntityInfo(resource: ImpalaEntityResource) extends InfoObject {
+    override def toJson: Json = {
+      val baseFields = Seq(
+        "impalaDatabase" -> StringInfoObject("database", resource.impalaEntity.database).toJson
+      )
+      val fields = resource.impalaEntity match {
+        case ExternalTable(database, name, schema, partitions, location, format) =>
+          baseFields ++ Seq(
+            "impalaTable"    -> StringInfoObject("table", name).toJson,
+            "impalaLocation" -> StringInfoObject("location", location).toJson,
+            "impalaFormat"   -> StringInfoObject("format", format.show).toJson
+          )
+        case ImpalaView(database, name, schema, readsFromTableName) =>
+          baseFields ++ Seq(
+            "impalaView" -> StringInfoObject("view", name).toJson
+          )
+      }
+
+      Json.fromFields(fields)
+    }
   }
 
-  def fromImpalaTableResource(resource: ImpalaTableResource): Info =
+  def fromImpalaTableResource(resource: ImpalaEntityResource): Info =
     Info(
-      publicInfo = ImpalaTableInfo(resource).toJson,
+      publicInfo = ImpalaEntityInfo(resource).toJson,
       privateInfo = Json.obj()
     )
 

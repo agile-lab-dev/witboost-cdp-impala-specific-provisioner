@@ -33,7 +33,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
   it should "return a 200 with COMPLETED on a successful provision with info" in {
 
-    val resource: ImpalaTableResource = ImpalaTableResource(
+    val resource: ImpalaEntityResource = ImpalaEntityResource(
       ExternalTable(
         "database",
         "tableName",
@@ -50,7 +50,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
           decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] =
-        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaTableResource](resource))))
+        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaEntityResource](resource))))
     }
     val handler = new SpecificProvisionerHandler(controllerMock)
     val response: IO[Response[IO]] = new Resource[IO]()
@@ -74,6 +74,55 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
             |   "impalaFormat": { "type": "string", "label": "format", "value": "CSV" }
             | }
             |""".stripMargin)
+            .toOption
+            .get,
+          privateInfo = Json.obj()
+        )
+      )
+    )
+
+    check[ProvisioningStatus](response, Status.Ok, Some(expected)) shouldBe true
+  }
+
+  it should "return a 200 with COMPLETED on a successful provision output port view with info" in {
+
+    val resource: ImpalaEntityResource = ImpalaEntityResource(
+      ImpalaView(
+        "database",
+        "viewName",
+        Seq.empty,
+        "fromTable"
+      ),
+      ImpalaCdpAcl.apply(Seq.empty, Seq.empty)
+    )
+
+    val controllerMock = new ProvisionerControllerMock {
+      override def provision(request: ApiRequest.ProvisioningRequest)(implicit
+          decoderPd: Decoder[ProvisioningDescriptor[Json]],
+          decoderCmp: Decoder[Component[Json]]
+      ): Either[ApiError, ApiResponse.ProvisioningStatus] =
+        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaEntityResource](resource))))
+    }
+    val handler = new SpecificProvisionerHandler(controllerMock)
+    val response: IO[Response[IO]] = new Resource[IO]()
+      .routes(handler)
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/v1/provision")
+          .withEntity(ProvisioningRequest(DescriptorKind.ComponentDescriptor, "a-yaml-descriptor"))
+      )
+    val expected = ProvisioningStatus(
+      ProvisioningStatus.Status.Completed,
+      "",
+      Some(
+        Info(
+          publicInfo = parser
+            .parse("""
+                | {
+                |   "impalaDatabase": { "type": "string", "label": "database", "value": "database" },
+                |   "impalaView": { "type": "string", "label": "view", "value": "viewName" }
+                | }
+                |""".stripMargin)
             .toOption
             .get,
           privateInfo = Json.obj()

@@ -15,10 +15,10 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
   ImpalaCdpAcl,
   ImpalaDataType,
-  ImpalaStorageAreaCdw,
-  ImpalaTableResource,
+  ImpalaEntityResource,
   PolicyAttachment,
-  PrivateImpalaCdw
+  PrivateImpalaStorageAreaCdw,
+  PrivateImpalaTableCdw
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.Workload
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
@@ -32,13 +32,14 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
 
-  val opGatewayMock = mock[ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals]]
-  val storageGatewayMock = mock[ComponentGateway[Json, Json, ImpalaTableResource, CdpIamPrincipals]]
+  val opGatewayMock = mock[ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals]]
+  val storageGatewayMock =
+    mock[ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals]]
 
   val opRequest = ProvisionRequestFaker[Json, Json](Json.obj())
     .withComponent(
       OutputPortFaker(
-        PrivateImpalaCdw(
+        PrivateImpalaTableCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -51,7 +52,7 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
   val saRequest = ProvisionRequestFaker[Json, Json](Json.obj())
     .withComponent(
       StorageAreaFaker(
-        ImpalaStorageAreaCdw(
+        PrivateImpalaStorageAreaCdw(
           databaseName = "domain_dp_name_0",
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
@@ -118,7 +119,7 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
     )
     .build()
 
-  val tableResource = ImpalaTableResource(
+  val tableResource = ImpalaEntityResource(
     ExternalTable(
       "databaseName",
       "tableName",
