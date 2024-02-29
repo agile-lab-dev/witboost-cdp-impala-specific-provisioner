@@ -14,7 +14,7 @@ stages:
   - package
 
 variables:
-  SBT_OPTS: "-Dsbt.global.base=sbt-cache/sbtboot -Dsbt.boot.directory=sbt-cache/boot -Dsbt.ivy.home=sbt-cache/ivy"
+  SBT_OPTS: "-Dsbt.global.base=sbt-cache/sbtboot -Dsbt.boot.directory=sbt-cache/boot -Dsbt.ivy.home=sbt-cache/ivy -Xmx2G -Xss16M"
 
 cache:
   untracked: true
@@ -57,12 +57,12 @@ witboost.helm.checks:
 check:
   stage: check
   script:
-    - sbt scalafmtSbtCheck scalafmtCheckAll ${SBT_OPTS}
+    - sbt scalafmtSbtCheck scalafmtCheckAll
 
 test:
   stage: test
   script:
-    - sbt clean coverage test coverageAggregate ${SBT_OPTS}
+    - sbt clean coverage test coverageAggregate
   coverage: '/Statement coverage[A-Za-z\.*]\s*:\s*([^%]+)/'
   artifacts:
     paths:
@@ -81,7 +81,7 @@ test:
 #JarBuild:
 #  stage: build
 #  script:
-#    - sbt 'set test in assembly := {}' clean assembly ${SBT_OPTS}
+#    - sbt 'set test in assembly := {}' clean assembly
 #  artifacts:
 #    paths:
 #      - api/target/scala-2.13/*.jar
@@ -102,7 +102,7 @@ build:
     apt-get install -yqq docker-ce-cli
     docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     echo "VERSION: $VERSION"
-    sbt clean compile k8tyGitlabCIPublish docker:publish ${SBT_OPTS}
+    sbt clean compile k8tyGitlabCIPublish docker:publish
 
 witboost.helm.deploy:
   stage: package

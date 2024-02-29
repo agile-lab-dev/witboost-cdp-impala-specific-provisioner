@@ -1,6 +1,11 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl
 
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.{ Csv, Parquet }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.{
+  Avro,
+  Csv,
+  Parquet,
+  Textfile
+}
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
@@ -24,7 +29,10 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
           Field("aaa", ImpalaDataType.ImpalaInt, None)),
         Seq.empty,
         "location",
-        Csv
+        Csv,
+        None,
+        Map.empty,
+        header = false
       ),
       ifNotExists = true
     )
@@ -43,7 +51,10 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
         Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
         Seq(Field("p1", ImpalaDataType.ImpalaString, None)),
         "location",
-        Csv
+        Csv,
+        None,
+        Map.empty,
+        header = false
       ),
       ifNotExists = true
     )
@@ -62,13 +73,39 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
         Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
         Seq.empty,
         "location",
-        Csv
+        Csv,
+        None,
+        Map.empty,
+        header = false
       ),
       ifNotExists = false
     )
     val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
       "(id INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' " +
       "STORED AS TEXTFILE LOCATION 'location' TBLPROPERTIES ('impala.disableHmsSync'='false')"
+
+    assert(expected == actual)
+  }
+
+  test("createExternalTable on CSV if header=true and extra tblProperties") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Csv,
+        None,
+        Map("extra.property" -> "value", "impala.disableHmsSync" -> "true"),
+        header = true
+      ),
+      ifNotExists = false
+    )
+    val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
+      "(id INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' " +
+      "STORED AS TEXTFILE LOCATION 'location' " +
+      "TBLPROPERTIES ('extra.property'='value', 'impala.disableHmsSync'='true', 'skip.header.line.count'='1')"
 
     assert(expected == actual)
   }
@@ -83,7 +120,10 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
           Field("desc", ImpalaDataType.ImpalaInt, None)),
         Seq.empty,
         "location",
-        Parquet
+        Parquet,
+        None,
+        Map.empty,
+        header = false
       ),
       ifNotExists = true
     )
@@ -101,13 +141,133 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
         Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
         Seq(Field("p1", ImpalaDataType.ImpalaString, None)),
         "location",
-        Parquet
+        Parquet,
+        None,
+        Map.empty,
+        header = false
       ),
       ifNotExists = true
     )
     val expected = "CREATE EXTERNAL TABLE IF NOT EXISTS test_db.test_table " +
       "(id INT) PARTITIONED BY (p1 STRING) " +
       "STORED AS PARQUET LOCATION 'location' TBLPROPERTIES ('impala.disableHmsSync'='false')"
+
+    assert(expected == actual)
+  }
+
+  test("createExternalTable on TEXTFILE without delim, if header=true and extra tblProperties") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Textfile,
+        None,
+        Map("extra.property" -> "value", "impala.disableHmsSync" -> "true"),
+        header = true
+      ),
+      ifNotExists = false
+    )
+    val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
+      "(id INT)  " +
+      "STORED AS TEXTFILE LOCATION 'location' " +
+      "TBLPROPERTIES ('extra.property'='value', 'impala.disableHmsSync'='true', 'skip.header.line.count'='1')"
+
+    assert(expected == actual)
+  }
+
+  test("createExternalTable on TEXTFILE without delim, if header=false and extra tblProperties") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Textfile,
+        None,
+        Map("extra.property" -> "value", "impala.disableHmsSync" -> "true"),
+        header = false
+      ),
+      ifNotExists = false
+    )
+    val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
+      "(id INT)  " +
+      "STORED AS TEXTFILE LOCATION 'location' " +
+      "TBLPROPERTIES ('extra.property'='value', 'impala.disableHmsSync'='true')"
+
+    assert(expected == actual)
+  }
+
+  test(
+    "createExternalTable on TEXTFILE with printable delim, if header=true and extra tblProperties") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Textfile,
+        Some('|'.toByte),
+        Map("extra.property" -> "value", "impala.disableHmsSync" -> "true"),
+        header = true
+      ),
+      ifNotExists = false
+    )
+    val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
+      "(id INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' " +
+      "STORED AS TEXTFILE LOCATION 'location' " +
+      "TBLPROPERTIES ('extra.property'='value', 'impala.disableHmsSync'='true', 'skip.header.line.count'='1')"
+
+    assert(expected == actual)
+  }
+
+  test(
+    "createExternalTable on TEXTFILE with non-printable delim, if header=true and extra tblProperties") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Textfile,
+        Some(0xfe.toByte),
+        Map("extra.property" -> "value", "impala.disableHmsSync" -> "true"),
+        header = true
+      ),
+      ifNotExists = false
+    )
+    val expected = "CREATE EXTERNAL TABLE test_db.test_table " +
+      "(id INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY '-2' " +
+      "STORED AS TEXTFILE LOCATION 'location' " +
+      "TBLPROPERTIES ('extra.property'='value', 'impala.disableHmsSync'='true', 'skip.header.line.count'='1')"
+
+    assert(expected == actual)
+  }
+
+  test("createExternalTable on AVRO ifNotExists=true") {
+    val actual = impalaDataDefinitionLanguageProvider.createExternalTable(
+      ExternalTable(
+        "test_db",
+        "test_table",
+        Seq(
+          Field("id", ImpalaDataType.ImpalaInt, None),
+          Field("desc", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "location",
+        Avro,
+        None,
+        Map.empty,
+        header = false
+      ),
+      ifNotExists = true
+    )
+    val expected = "CREATE EXTERNAL TABLE IF NOT EXISTS test_db.test_table " +
+      "(id INT,desc INT) STORED AS AVRO LOCATION 'location' TBLPROPERTIES ('impala.disableHmsSync'='false')"
 
     assert(expected == actual)
   }

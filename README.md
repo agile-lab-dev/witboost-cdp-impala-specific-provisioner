@@ -203,162 +203,20 @@ This microservice is meant to be deployed to a Kubernetes cluster.
 6. Upsert access policies for said roles, granting read/write access to the owner role, and read-only to the user role
 7. Return the deployed resource
 
-## Example input
+## Descriptor Input
 
-The specific field shape must correspond to the format below. Specially, the database and table name should follow the convention below. However, this convention is not enforced.
+The Impala Specific Provisioner receives a yaml-descriptor containing a data contract schema and a specific field with the information of the table or view to be deployed. It allows defining
 
-- Database name: Impala Database name must be equal to `$Domain_$DataProductName_$MajorVersion` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
-- Table/View name: Impala Table name must be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName_$Environment` and must contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).
+- Data contract schema. OpenMetadata Column schema defining the schema of the table or view to be created
+- Database name: Database to be created to handle the component tables
+- Table name: Table name to be created, or when provisioning a view, the name of the table exposed by the view
+- View name: Sent when provisioning a view to define its name
+- Format: Format of the data files an external table exposes. Only required for table creation
+- Location: Location in S3 (CDP Public) or HDFS (CDP Private) where the data files are located
+- Partitions: List of columns used to partition the data
+- Table parameters: Extra table parameters to define TBLPROPERTIES, text file delimiter and header, etc.
 
-### Output Ports
-
-#### CDP Public Cloud
-
-**Simple table on CDP Public Cloud:**
-
-```yaml
-id: urn:dmb:dp:platform:demo-dp:0
-name: demo-dp
-domain: platform
-environment: dev
-version: 0.0.1
-dataProductOwner: dataProductOwner
-specific: {}
-components:
-- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
-  name: witboost_table_impala
-  description: description
-  version: 0.0.1
-  dataContract:
-    schema:
-    - name: id
-      dataType: STRING
-    - name: name
-      dataType: STRING
-    - name: surname
-      dataType: STRING
-  specific: 
-    databaseName: platform_demo_dp_0
-    tableName: platform_demo_dp_0_witboost_table_impala_poc
-    cdpEnvironment: sdp-aw-d-ir-env1
-    cdwVirtualWarehouse: sdpawdir-sfs-i
-    format: CSV
-    location: s3a://bucket/path/to/folder/
-```
-
-**Partitioned table on CDP Public Cloud:**
-
-Partitions are defined as a list of column names to be used as partitions. These columns must exist in the `dataContract.schema` field, which will be validated before deploying any resource.
-
-```yaml
-id: urn:dmb:dp:platform:demo-dp:0
-name: demo-dp
-domain: platform
-environment: dev
-version: 0.0.1
-dataProductOwner: dataProductOwner
-specific: {}
-components:
-- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
-  name: witboost_table_impala
-  description: description
-  version: 0.0.1
-  dataContract:
-    schema:
-    - name: id
-      dataType: STRING
-    - name: name
-      dataType: STRING
-    - name: country
-      dataType: STRING
-  specific: 
-    databaseName: platform_demo_dp_0
-    tableName: platform_demo_dp_0_witboost_table_impala_poc
-    cdpEnvironment: sdp-aw-d-ir-env1
-    cdwVirtualWarehouse: sdpawdir-sfs-i
-    format: CSV
-    location: s3a://bucket/path/to/folder/
-    partitions:
-      - country
-```
-
-#### CDP Private Cloud
-
-##### External Table
-
-When working with a Private Cloud, the descriptor holds the same schema as the ones presented above, excepting some fields in the `specific` section:
-
-```yaml
-...
-components:
-- id: ...
-  specific:
-    databaseName: platform_demo_dp_0
-    tableName: platform_demo_dp_0_witboost_table_impala_poc
-    # cdpEnvironment: Omitted on CDP Private
-    # cdwVirtualWarehouse: Omitted on CDP Private 
-    format: CSV
-    location: /path/to/folder # Specifies the HDFS folder path
-    partitions:
-      - country
-```
-
-##### View
-
-The provisioner allows to create simple views based on an origin table and the data contract schema. The specific field is as follows:
-
-```yaml
-...
-components:
-- id: ...
-  specific:
-    databaseName: platform_demo_dp_0
-    tableName: platform_demo_dp_0_witboost_table_impala_poc # Table to be exposed through the view, belonging to the same DB 
-    viewName: platform_demo_dp_0_witboost_external_view_poc
-```
-
-The database and tables must exist before provisioning the view. Currently, the provisioner only exposes existing columns (either all of them or a subset) based on the `dataContract.schema` field, so the column names must match to the names of the columns in the source `tableName`.
-
-### Storage Area
-
-#### CDP Private Cloud
-
-```yaml
-id: urn:dmb:dp:platform:demo-dp:0
-name: demo-dp
-domain: platform
-environment: dev
-version: 0.0.1
-dataProductOwner: dataProductOwner
-specific: {}
-components:
-- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
-  name: witboost_table_impala
-  description: description
-  owners: []
-  specific: 
-    databaseName: platform_demo_dp_0
-    tableName: platform_demo_dp_0_witboost_table_impala_poc
-    format: CSV
-    location: /bucket/path/to/folder # Specifies the HDFS folder path
-    tableSchema:
-    - name: id
-      dataType: STRING
-    - name: name
-      dataType: STRING
-    - name: surname
-      dataType: STRING
-```
-
-## Limitations
-
-* Storage Areas can currently be provisioned only on CDP Private Cloud.
-* Only PARQUET and CSV are supported as `format`
-  * CSV files must NOT start with a header row
-* On CDP Public Cloud, `location` needs to be expressed as `s3a://` and always ending with a slash `/`.
-  * Each Data Product data must be located in a different bucket 
-* On CDP Private Cloud, `location` is expressed as the directory path on HDFS in the form `/path/to/folder`.
-* Schema data types only support primitive types TINYINT, SMALLINT, INT, BIGINT, DOUBLE, DECIMAL, TIMESTAMP, DATE, STRING, CHAR, VARCHAR and BOOLEAN, and ARRAY, MAP and STRUCT with these types
+For the specification of schema of this object, check out [Descriptor Input](docs/DescriptorInput.md)
 
 ## License
 

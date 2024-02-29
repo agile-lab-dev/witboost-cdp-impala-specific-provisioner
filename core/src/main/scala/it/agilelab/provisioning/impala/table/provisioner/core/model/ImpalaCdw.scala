@@ -20,6 +20,7 @@ sealed trait ImpalaTableCdw extends ImpalaCdw {
   def format: ImpalaFormat
   def location: String
   def partitions: Option[Seq[String]]
+  def tableParams: Option[TableParams]
 }
 
 sealed trait ImpalaViewCdw extends ImpalaCdw {
@@ -43,10 +44,10 @@ object ComponentDecodeError {
 
 object ImpalaCdw {
   implicit val encodeImpalaCdw: Encoder[ImpalaCdw] = Encoder.instance {
-    case publicCdw @ PublicImpalaTableCdw(_, _, _, _, _, _, _)          => publicCdw.asJson
-    case storageAreaCdw @ PrivateImpalaStorageAreaCdw(_, _, _, _, _, _) => storageAreaCdw.asJson
-    case privateCdw @ PrivateImpalaTableCdw(_, _, _, _, _)              => privateCdw.asJson
-    case privateViewCdw @ PrivateImpalaViewCdw(_, _, _)                 => privateViewCdw.asJson
+    case publicCdw @ PublicImpalaTableCdw(_, _, _, _, _, _, _, _)          => publicCdw.asJson
+    case storageAreaCdw @ PrivateImpalaStorageAreaCdw(_, _, _, _, _, _, _) => storageAreaCdw.asJson
+    case privateCdw @ PrivateImpalaTableCdw(_, _, _, _, _, _)              => privateCdw.asJson
+    case privateViewCdw @ PrivateImpalaViewCdw(_, _, _)                    => privateViewCdw.asJson
 
   }
 
@@ -92,6 +93,12 @@ object ImpalaCdw {
   }
 }
 
+final case class TableParams(
+    header: Option[Boolean],
+    delimiter: Option[String],
+    tblProperties: Map[String, String]
+)
+
 final case class PublicImpalaTableCdw(
     override val databaseName: String,
     override val tableName: String,
@@ -99,7 +106,8 @@ final case class PublicImpalaTableCdw(
     cdwVirtualWarehouse: String,
     override val format: ImpalaFormat,
     override val location: String,
-    override val partitions: Option[Seq[String]]
+    override val partitions: Option[Seq[String]],
+    override val tableParams: Option[TableParams]
 ) extends ImpalaTableCdw
 
 final case class PrivateImpalaTableCdw(
@@ -107,7 +115,8 @@ final case class PrivateImpalaTableCdw(
     override val tableName: String,
     override val format: ImpalaFormat,
     override val location: String,
-    override val partitions: Option[Seq[String]]
+    override val partitions: Option[Seq[String]],
+    override val tableParams: Option[TableParams]
 ) extends ImpalaTableCdw
 
 final case class PrivateImpalaStorageAreaCdw(
@@ -116,6 +125,7 @@ final case class PrivateImpalaStorageAreaCdw(
     override val format: ImpalaFormat,
     override val location: String,
     override val partitions: Option[Seq[String]],
+    override val tableParams: Option[TableParams],
     tableSchema: Seq[Column]
 ) extends ImpalaTableCdw
 

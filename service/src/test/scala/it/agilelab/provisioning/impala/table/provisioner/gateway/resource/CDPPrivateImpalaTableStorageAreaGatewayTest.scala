@@ -47,7 +47,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
               None,
               None,
               None)
-          )
+          ),
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -106,7 +107,10 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -160,7 +164,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
               None,
               None,
               None)
-          )
+          ),
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -220,7 +225,10 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
           "loc",
-          Csv
+          Csv,
+          None,
+          Map.empty,
+          header = false
         ),
         ImpalaCdpAcl(
           Seq(
@@ -259,7 +267,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
               None,
               None,
               None)
-          )
+          ),
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -318,7 +327,10 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
@@ -340,7 +352,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
             tableName = "tableName",
             format = Csv,
             location = "loc",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()

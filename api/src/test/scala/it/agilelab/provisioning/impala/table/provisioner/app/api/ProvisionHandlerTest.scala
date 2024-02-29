@@ -40,7 +40,10 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
         Seq.empty,
         Seq.empty,
         "location",
-        ImpalaFormat.Csv
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false
       ),
       ImpalaCdpAcl.apply(Seq.empty, Seq.empty)
     )

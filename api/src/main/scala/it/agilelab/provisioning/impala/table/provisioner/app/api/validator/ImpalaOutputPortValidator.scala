@@ -7,11 +7,13 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaCdw,
   PrivateImpalaTableCdw,
   PrivateImpalaViewCdw,
-  PublicImpalaTableCdw
+  PublicImpalaTableCdw,
+  TableParams
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.OutputPort
 import it.agilelab.provisioning.mesh.self.service.api.model.ProvisionRequest
 import io.circe.generic.auto._
+import it.agilelab.provisioning.impala.table.provisioner.gateway.mapper.ExternalTableMapper
 
 object ImpalaOutputPortValidator {
   def outputPortImpalaCdwValidator(
@@ -103,6 +105,18 @@ object ImpalaOutputPortValidator {
         _ =>
           s"Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
       )
+      .rule(
+        r =>
+          withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
+            op.specific.tableParams match {
+              case Some(TableParams(_, Some(delimiter), _)) =>
+                ExternalTableMapper.hexStringToByte(delimiter).isDefined
+              case _ => true
+            }
+          },
+        _ =>
+          s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
+      )
 
   def privateOutputPortImpalaCdwValidator(
       locationValidator: LocationValidator
@@ -189,5 +203,17 @@ object ImpalaOutputPortValidator {
           },
         _ =>
           s"External table partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
+      )
+      .rule(
+        r =>
+          withinOutputPortReq[ImpalaCdw](r) { (_, op) =>
+            op.specific match {
+              case PrivateImpalaTableCdw(_, _, _, _, _, Some(TableParams(_, Some(delimiter), _))) =>
+                ExternalTableMapper.hexStringToByte(delimiter).isDefined
+              case _ => true
+            }
+          },
+        _ =>
+          s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
       )
 }

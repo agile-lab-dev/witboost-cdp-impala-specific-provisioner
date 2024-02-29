@@ -13,7 +13,8 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   PrivateImpalaStorageAreaCdw,
   PrivateImpalaTableCdw,
   PrivateImpalaViewCdw,
-  PublicImpalaTableCdw
+  PublicImpalaTableCdw,
+  TableParams
 }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -29,7 +30,14 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "service",
           format = Csv,
           location = "s3a://bucket/path/",
-          partitions = None
+          partitions = None,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some(","),
+              tblProperties = Map.empty
+            )
+          )
         ).asJson).build()
       )
       .build()
@@ -61,7 +69,7 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
     assert(actual)
   }
 
-  test("test a invalid public descriptor") {
+  test("test an invalid public descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(PublicImpalaTableCdw(
@@ -71,7 +79,8 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "service",
           format = Csv,
           location = "loc",
-          partitions = None
+          partitions = None,
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -99,17 +108,68 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
     assert(actual)
   }
 
+  test("test an invalid public descriptor due to a wrong delimiter") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        OutputPortFaker(PublicImpalaTableCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          cdpEnvironment = "cdpEnv",
+          cdwVirtualWarehouse = "service",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some("DELIM"),
+              tblProperties = Map.empty
+            )
+          )
+        ).asJson).build()
+      )
+      .build()
+
+    val cdpValidator = stub[CdpValidator]
+    (cdpValidator.cdpEnvironmentExists _)
+      .when("cdpEnv")
+      .returns(true)
+
+    (cdpValidator.cdwVirtualClusterExists _)
+      .when("cdpEnv", "service")
+      .returns(true)
+
+    val locationValidator = stub[LocationValidator]
+    (locationValidator.locationExists _)
+      .when("loc")
+      .returns(true)
+
+    val validator =
+      ImpalaOutputPortValidator.outputPortImpalaCdwValidator(cdpValidator, locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isInvalid
+      case Left(_)      => false
+    }
+    assert(actual)
+  }
+
   test("test a valid private op table descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PrivateImpalaTableCdw(
-            databaseName = "domain_dp_name_0",
-            tableName = "domain_dp_name_0_cmp_name_poc",
-            format = Csv,
-            location = "/hdfs/path",
-            partitions = None
-          ).asJson).build()
+        OutputPortFaker(PrivateImpalaTableCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          format = Csv,
+          location = "/hdfs/path",
+          partitions = None,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some(","),
+              tblProperties = Map.empty
+            )
+          )
+        ).asJson).build()
       )
       .build()
 
@@ -126,7 +186,7 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
     assert(actual)
   }
 
-  test("test a invalid private op table descriptor") {
+  test("test an invalid private op table descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
         OutputPortFaker(
@@ -135,7 +195,8 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
             tableName = "domain_dp_name_0_cmp_name_poc",
             format = Csv,
             location = "loc",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()
@@ -144,6 +205,39 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
     (locationValidator.isValidLocation _)
       .when("loc")
       .returns(false)
+
+    val validator = ImpalaOutputPortValidator.privateOutputPortImpalaCdwValidator(locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isInvalid
+      case Left(_)      => false
+    }
+    assert(actual)
+  }
+
+  test("test an invalid private op table descriptor due to a wrong delimiter") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        OutputPortFaker(PrivateImpalaTableCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some("DELIM"),
+              tblProperties = Map.empty
+            )
+          )
+        ).asJson).build()
+      )
+      .build()
+
+    val locationValidator = stub[LocationValidator]
+    (locationValidator.isValidLocation _)
+      .when("loc")
+      .returns(true)
 
     val validator = ImpalaOutputPortValidator.privateOutputPortImpalaCdwValidator(locationValidator)
     val actual = validator.validate(request) match {
@@ -181,15 +275,15 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
   test("test a storage area descriptor fails as this is an output port validator") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(
-          PrivateImpalaStorageAreaCdw(
-            databaseName = "domain_dp_name_0",
-            tableName = "domain_dp_name_0_cmp_name_poc",
-            format = Csv,
-            location = "loc",
-            partitions = None,
-            tableSchema = Seq.empty
-          ).asJson).build()
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableSchema = Seq.empty,
+          tableParams = None
+        ).asJson).build()
       )
       .build()
 

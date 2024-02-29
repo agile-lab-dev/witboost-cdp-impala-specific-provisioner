@@ -20,7 +20,16 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
 
     (gatewayMock.create _).expects(connectionConfig, externalTable, *).returns(Right(()))
 
@@ -38,7 +47,16 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
 
     (gatewayMock.drop _).expects(connectionConfig, externalTable, *).returns(Right(()))
 

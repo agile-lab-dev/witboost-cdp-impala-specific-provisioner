@@ -29,7 +29,16 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         "deployPassword",
         useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
 
     inSequence(
       (mockDDLProvider.createDataBase _)
@@ -63,7 +72,16 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         "deployPassword",
         useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
 
     val error = ExecuteDDLErr(new SQLException("Error!"))
     inSequence(
@@ -98,7 +116,16 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         "deployPassword",
         useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
 
     (mockDDLProvider.dropExternalTable _)
       .expects(*, *)
@@ -128,7 +155,16 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         "deployPassword",
         useSSL = true)
     val externalTable =
-      ExternalTable("database", "tableName", Seq.empty, Seq.empty, "location", ImpalaFormat.Csv)
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
     val error = ExecuteDDLErr(new SQLException("Error!"))
 
     (mockDDLProvider.dropExternalTable _)

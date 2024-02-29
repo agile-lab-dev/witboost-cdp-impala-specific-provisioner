@@ -1,11 +1,12 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl
 
 import cats.implicits._
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.{ Csv, Parquet }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat._
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
   ImpalaEntity,
+  ImpalaFormat,
   ImpalaView
 }
 
@@ -36,13 +37,16 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   private val FROM_PATTERN = "FROM %s"
 
   private val defaultTblProperties: Seq[(String, String)] = Seq(("impala.disableHmsSync", "false"))
+  private val headerTblProperty: (String, String) = "skip.header.line.count" -> "1"
+
+  private val HADOOP_DEFAULT_DELIMITER: Byte = 0x01
 
   override def createExternalTable(
       externalTable: ExternalTable,
       ifNotExists: Boolean
   ): String =
     externalTable match {
-      case ExternalTable(_, _, _, partitions, _, _) if partitions.nonEmpty =>
+      case e if e.partitions.nonEmpty =>
         createPartitionedExternalTable(externalTable, ifNotExists)
       case _ => createDefaultExternalTable(externalTable, ifNotExists)
     }
@@ -78,7 +82,7 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
       serializeName(externalTable),
       serializeSchema(externalTable),
       serializeTableProperties(externalTable),
-      serializeDefaultTblKeyValueProperties()
+      serializeTblKeyValueProperties(externalTable, addDefaultTblProperties = true)
     )
 
   private def createPartitionedExternalTable(
@@ -86,12 +90,15 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
       ifNotExists: Boolean
   ) =
     CREATE_PARTITIONED_TABLE_PATTERN.format(
-      serializeCreateTableDDL(ifNotExists),
-      serializeName(externalTable),
-      serializeSchema(externalTable),
-      serializePartitions(externalTable),
-      serializeTableProperties(externalTable),
-      serializeDefaultTblKeyValueProperties()
+      serializeCreateTableDDL(ifNotExists), // CREATE TABLE [IF NOT EXISTS]
+      serializeName(externalTable), // <DB>.<NAME>
+      serializeSchema(externalTable), //  columns
+      serializePartitions(externalTable), // PARTITIONED BY ( columns )
+      serializeTableProperties(externalTable), // STORED AS, ROWS DELIMITED ...
+      serializeTblKeyValueProperties(
+        externalTable,
+        addDefaultTblProperties = true
+      ) // TBLPROPERTIES( ... )
     )
 
   private def serializeCreateTableDDL(ifNotExists: Boolean): String =
@@ -119,33 +126,71 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     )
 
   private def serializePartitions(externalTable: ExternalTable): String =
-    asString(",", externalTable.partitions.map(e => asString(" ", e.name, e.`type`.show)).toSeq: _*)
+    asString(",", externalTable.partitions.map(e => asString(" ", e.name, e.`type`.show)): _*)
 
   private def serializeTableProperties(externalTable: ExternalTable): String =
     externalTable.format match {
-      case Csv     => serializeCsvTableProperties(externalTable)
-      case Parquet => serializeParquetTableProperties(externalTable)
+      case Csv | Textfile => serializeDelimitedFileTableProperties(externalTable)
+      case Parquet | Avro => serializeBasicFileTableProperties(externalTable)
     }
 
-  private def serializeCsvTableProperties(externalTable: ExternalTable) = {
-    val rowFormat = ROW_FORMAT_PATTERN.format("DELIMITED FIELDS TERMINATED BY ','")
-    val storedAs = STORED_AS_PATTERN.format("TEXTFILE")
+  /** Creates the DDL statements for textfiles, converting the received delimiter to a format understandable by Impala.
+    * If no delimiter is given, the Hadoop default one is used.
+    * For Csv, a hardcoded "," delimiter is used, as we use Csv merely as a shorthand for comma-delimited TEXTFILEs.
+    * @param externalTable External table with the format and delimiter information
+    * @return DDL Statement [DELIMITED FIELDS TERMINATED BY '...'] STORED AS TEXTFILE
+    */
+  private def serializeDelimitedFileTableProperties(externalTable: ExternalTable): String = {
+    val delimiter: Option[String] = externalTable.format match {
+      case Parquet | Avro | Textfile => externalTable.delimiter.flatMap(byteToDelimiter)
+      case Csv                       => Some(",")
+    }
+
+    val rowFormat =
+      delimiter.fold("")(d => ROW_FORMAT_PATTERN.format(s"DELIMITED FIELDS TERMINATED BY '$d'"))
+    val storedAs = STORED_AS_PATTERN.format(show"${Textfile}")
     val location = LOCATION_PATTERN.format(externalTable.location)
     asString(" ", rowFormat, storedAs, location)
   }
 
-  private def serializeParquetTableProperties(externalTable: ExternalTable): String = {
-    val storedAs = STORED_AS_PATTERN.format("PARQUET")
+  private def serializeBasicFileTableProperties(externalTable: ExternalTable): String = {
+    val storedAs = STORED_AS_PATTERN.format(externalTable.format.show)
     val location = LOCATION_PATTERN.format(externalTable.location)
     asString(" ", storedAs, location)
   }
 
-  private def serializeDefaultTblKeyValueProperties(): String =
-    defaultTblProperties
+  /** Retrieves the properties to be used, and then merge them with the user custom table properties.
+    * On case of conflict between default table properties and user-defined table properties, user-defined properties take precedence
+    *
+    * @param externalTable External table defining he user table properties and whether the data files have a header
+    * @param addDefaultTblProperties Whether to add the default table properties
+    * @return DDL statement TBLPROPERTIES(...) as a String
+    */
+  def serializeTblKeyValueProperties(
+      externalTable: ExternalTable,
+      addDefaultTblProperties: Boolean
+  ): String = {
+
+    val properties: Seq[(String, String)] =
+      (if (addDefaultTblProperties) defaultTblProperties else Seq.empty[(String, String)]) ++
+        (
+          if (externalTable.header && Seq(Textfile, Csv).contains(externalTable.format))
+            Seq(headerTblProperty)
+          else Seq.empty[(String, String)]
+        )
+
+    properties
+      .foldLeft(externalTable.tblProperties) { (properties, p) =>
+        properties.updatedWith(p._1) {
+          case Some(value) => Some(value)
+          case None        => Some(p._2)
+        }
+      }
       .map(p => s"'${p._1}'='${p._2}'")
       .mkString(s" $TBLPROPERTIES_KEY (", ", ", ")")
+  }
 
-  def serializeCreateViewDDL(ifNotExists: Boolean): String =
+  private def serializeCreateViewDDL(ifNotExists: Boolean): String =
     if (ifNotExists) asString(" ", CREATE_VIEW_KEY, IF_NOT_EXISTS_KEY)
     else CREATE_VIEW_KEY
 
@@ -161,6 +206,23 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
       ),
       FROM_PATTERN.format(asString(".", impalaView.database, impalaView.readsFromTableName))
     )
+
+  /** Parses a Byte to an Impala delimiter that it can understand.
+    *
+    *  - For printable characters, the byte is transformed to String (e.g. 0x2c -> ",")
+    *  - For the Hadoop default delimiter, None is returned
+    *  - For other non-printable characters,
+    *   the byte is transformed to the String representation of the byte number in the range -127..128 (e.g. 0xFE -> "-2")
+    * @param b Byte to transform
+    * @return Some(String) for all characters excepting the [[HADOOP_DEFAULT_DELIMITER]], for which is returned None
+    */
+  private def byteToDelimiter(b: Byte): Option[String] =
+    if (b >= 32 && b <= 126) { // Printable characters, so let's print them for human readability
+      Some(b.toChar.toString)
+    } else if (b != HADOOP_DEFAULT_DELIMITER) { // Non-printable characters excluding Ctrl-A
+      Some(b.toInt.toString)
+    } else
+      None // Ctrl-A is None since we don't need to specify the row delimiter statement for default
 
   private def asString(separator: String, values: String*): String =
     values.mkString(separator)

@@ -59,7 +59,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
@@ -204,16 +207,16 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PublicImpalaTableCdw(
-            databaseName = "databaseName",
-            tableName = "tableName",
-            cdpEnvironment = "cdpEnv",
-            cdwVirtualWarehouse = "service",
-            format = Csv,
-            location = "loc",
-            partitions = None
-          ).asJson)
+        OutputPortFaker(PublicImpalaTableCdw(
+          databaseName = "databaseName",
+          tableName = "tableName",
+          cdpEnvironment = "cdpEnv",
+          cdwVirtualWarehouse = "service",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = None
+        ).asJson)
           .withId("urn:dmb:dp:domain:dp-name:0")
           .build()
       )
@@ -225,7 +228,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val rangerClient = stub[RangerClient]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
@@ -265,7 +271,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
@@ -400,7 +409,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val rangerClient = stub[RangerClient]
     val rangerGatewayProvider = stub[RangerGatewayProvider]
@@ -583,7 +595,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)
@@ -714,7 +729,10 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq.empty,
       "loc",
-      Csv)
+      Csv,
+      None,
+      Map.empty,
+      header = false)
 
     val hostProvider = stub[CDPPublicHostProvider]
     (hostProvider.getRangerHost _)

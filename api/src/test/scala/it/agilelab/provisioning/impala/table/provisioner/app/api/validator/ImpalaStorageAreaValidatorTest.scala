@@ -12,7 +12,8 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   PrivateImpalaStorageAreaCdw,
   PrivateImpalaTableCdw,
-  PublicImpalaTableCdw
+  PublicImpalaTableCdw,
+  TableParams
 }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -75,7 +76,8 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
           format = Csv,
           location = "s3a://bucket/path/",
           partitions = None,
-          tableSchema = Seq.empty
+          tableSchema = Seq.empty,
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -101,7 +103,14 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
           format = Csv,
           location = "/hdfs/path",
           partitions = None,
-          tableSchema = validTableSchema
+          tableSchema = validTableSchema,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some(","),
+              tblProperties = Map.empty
+            )
+          )
         ).asJson).build()
       )
       .build()
@@ -123,15 +132,15 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
   test("test a invalid private descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        StorageAreaFaker(
-          PrivateImpalaStorageAreaCdw(
-            databaseName = "domain_dp_name_0",
-            tableName = "domain_dp_name_0_cmp_name_poc",
-            format = Csv,
-            location = "loc",
-            partitions = None,
-            tableSchema = validTableSchema
-          ).asJson).build()
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableSchema = validTableSchema,
+          tableParams = None
+        ).asJson).build()
       )
       .build()
 
@@ -159,7 +168,8 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
           format = Csv,
           location = "loc",
           partitions = Some(Seq("inexistentColumn")),
-          tableSchema = validTableSchema
+          tableSchema = validTableSchema,
+          tableParams = None
         ).asJson).build()
       )
       .build()
@@ -178,6 +188,42 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
     assert(actual)
   }
 
+  test("test a invalid private descriptor due to a wrong delimiter") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(PrivateImpalaStorageAreaCdw(
+          databaseName = "domain_dp_name_0",
+          tableName = "domain_dp_name_0_cmp_name_poc",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableSchema = validTableSchema,
+          tableParams = Some(
+            TableParams(
+              header = Some(false),
+              delimiter = Some("DELIM"),
+              tblProperties = Map.empty
+            )
+          )
+        ).asJson).build()
+      )
+      .build()
+
+    val locationValidator = stub[LocationValidator]
+    (locationValidator.isValidLocation _)
+      .when("loc")
+      .returns(false)
+
+    val validator =
+      ImpalaStorageAreaValidator.privateStorageAreaImpalaCdwValidator(locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isInvalid
+      case Left(_)      => false
+    }
+    assert(actual)
+
+  }
+
   test("test an output port descriptor fails as this is an storage area validator") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
@@ -187,7 +233,8 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
             tableName = "domain_dp_name_0_cmp_name_poc",
             format = Csv,
             location = "s3a://bucket/path/",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()

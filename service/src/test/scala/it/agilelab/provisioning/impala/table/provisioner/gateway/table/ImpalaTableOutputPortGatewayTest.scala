@@ -42,7 +42,10 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
           "loc",
-          Parquet
+          Parquet,
+          None,
+          Map.empty,
+          header = false
         ),
         ifNotExists = false
       ) == Right())
@@ -76,7 +79,10 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
           "loc",
-          Parquet
+          Parquet,
+          None,
+          Map.empty,
+          header = false
         ),
         ifNotExists = true
       ) == Right())
@@ -106,7 +112,10 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
           "loc",
-          Parquet
+          Parquet,
+          None,
+          Map.empty,
+          header = false
         ),
         ifExists = false
       ) == Right())
@@ -136,7 +145,10 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
           "loc",
-          Parquet
+          Parquet,
+          None,
+          Map.empty,
+          header = false
         ),
         ifExists = true
       ) == Right())

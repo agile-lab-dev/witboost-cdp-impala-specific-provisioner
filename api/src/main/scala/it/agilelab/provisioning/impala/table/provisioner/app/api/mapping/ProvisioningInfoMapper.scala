@@ -28,7 +28,7 @@ object ProvisioningInfoMapper {
         "impalaDatabase" -> StringInfoObject("database", resource.impalaEntity.database).toJson
       )
       val fields = resource.impalaEntity match {
-        case ExternalTable(database, name, schema, partitions, location, format) =>
+        case ExternalTable(database, name, schema, partitions, location, format, _, _, _) =>
           baseFields ++ Seq(
             "impalaTable"    -> StringInfoObject("table", name).toJson,
             "impalaLocation" -> StringInfoObject("location", location).toJson,

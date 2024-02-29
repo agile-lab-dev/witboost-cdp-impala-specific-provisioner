@@ -5,10 +5,14 @@ import cats.data.Validated.Invalid
 import io.circe.Json
 import it.agilelab.provisioning.commons.validator.{ ValidationFail, Validator }
 import it.agilelab.provisioning.impala.table.provisioner.app.api.validator.ImpalaCdwValidator.withinStorageAreaReq
-import it.agilelab.provisioning.impala.table.provisioner.core.model.PrivateImpalaStorageAreaCdw
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  PrivateImpalaStorageAreaCdw,
+  TableParams
+}
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.StorageArea
 import it.agilelab.provisioning.mesh.self.service.api.model.ProvisionRequest
 import io.circe.generic.auto._
+import it.agilelab.provisioning.impala.table.provisioner.gateway.mapper.ExternalTableMapper
 
 object ImpalaStorageAreaValidator {
   def storageAreaImpalaCdwValidator(
@@ -104,6 +108,18 @@ object ImpalaStorageAreaValidator {
       _ =>
         s"Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
     )
+    .rule(
+      r =>
+        withinStorageAreaReq[ImpalaStorageAreaCdw](r) { (_, op) =>
+          op.specific.tableParams match {
+            case Some(TableParams(_, Some(delimiter), _)) =>
+              ExternalTableMapper.hexStringToByte(delimiter).isDefined
+            case _ => true
+          }
+        },
+      _ =>
+        s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
+    )
   }
    */
 
@@ -177,5 +193,16 @@ object ImpalaStorageAreaValidator {
         _ =>
           s"Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
       )
-
+      .rule(
+        r =>
+          withinStorageAreaReq[PrivateImpalaStorageAreaCdw](r) { (_, op) =>
+            op.specific.tableParams match {
+              case Some(TableParams(_, Some(delimiter), _)) =>
+                ExternalTableMapper.hexStringToByte(delimiter).isDefined
+              case _ => true
+            }
+          },
+        _ =>
+          s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
+      )
 }

@@ -34,16 +34,16 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PublicImpalaTableCdw(
-            databaseName = "databaseName",
-            tableName = "tableName",
-            cdpEnvironment = "cdpEnv",
-            cdwVirtualWarehouse = "service",
-            format = Csv,
-            location = "loc",
-            partitions = None
-          ).asJson).build()
+        OutputPortFaker(PublicImpalaTableCdw(
+          databaseName = "databaseName",
+          tableName = "tableName",
+          cdpEnvironment = "cdpEnv",
+          cdwVirtualWarehouse = "service",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = None
+        ).asJson).build()
       )
       .build()
 
@@ -116,7 +116,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -144,7 +147,8 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "service",
           format = Csv,
           location = "loc",
-          partitions = Some(Seq("part1"))
+          partitions = Some(Seq("part1")),
+          tableParams = None
         ).asJson)
           .withDataContract(DataContract(
             schema = Seq(
@@ -250,7 +254,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
           "loc",
-          Csv
+          Csv,
+          None,
+          Map.empty,
+          header = false
         ),
         ImpalaCdpAcl(
           Seq(
@@ -269,16 +276,16 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PublicImpalaTableCdw(
-            databaseName = "databaseName",
-            tableName = "tableName",
-            cdpEnvironment = "cdpEnv",
-            cdwVirtualWarehouse = "service",
-            format = Csv,
-            location = "loc",
-            partitions = None
-          ).asJson).build()
+        OutputPortFaker(PublicImpalaTableCdw(
+          databaseName = "databaseName",
+          tableName = "tableName",
+          cdpEnvironment = "cdpEnv",
+          cdwVirtualWarehouse = "service",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = None
+        ).asJson).build()
       )
       .build()
 
@@ -350,7 +357,10 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
@@ -366,16 +376,16 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
   test("updateacl") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PublicImpalaTableCdw(
-            databaseName = "databaseName",
-            tableName = "tableName",
-            cdpEnvironment = "cdpEnv",
-            cdwVirtualWarehouse = "service",
-            format = Csv,
-            location = "loc",
-            partitions = None
-          ).asJson).build()
+        OutputPortFaker(PublicImpalaTableCdw(
+          databaseName = "databaseName",
+          tableName = "tableName",
+          cdpEnvironment = "cdpEnv",
+          cdwVirtualWarehouse = "service",
+          format = Csv,
+          location = "loc",
+          partitions = None,
+          tableParams = None
+        ).asJson).build()
       )
       .build()
 

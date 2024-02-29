@@ -38,7 +38,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          partitions = None
+          partitions = None,
+          tableParams = None
         )
       )
     )
@@ -74,7 +75,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          partitions = None
+          partitions = None,
+          tableParams = None
         )
       )
     )
@@ -110,7 +112,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          partitions = None
+          partitions = None,
+          tableParams = None
         )
       )
     )
@@ -146,7 +149,8 @@ class NameValidatorTest extends AnyFunSuite with MockFactory {
           cdwVirtualWarehouse = "cdwVirtualWarehouse",
           format = Parquet,
           location = "location",
-          partitions = None
+          partitions = None,
+          tableParams = None
         )
       )
     )

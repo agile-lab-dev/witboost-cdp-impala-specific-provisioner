@@ -16,7 +16,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ImpalaCdwTest extends AnyFunSuite {
 
-  test("decode output port table specific") {
+  test("decode output port table specific without tableParams") {
     val specificJson = yaml.parser
       .parse("""
         | databaseName: finance_salary_test_cdp_0
@@ -37,14 +37,15 @@ class ImpalaCdwTest extends AnyFunSuite {
       cdwVirtualWarehouse = "impala-test-vw",
       format = ImpalaFormat.Csv,
       location = "s3a://path/to/folder/",
-      partitions = Some(List.empty)
+      partitions = Some(List.empty),
+      tableParams = None
     )
     val actual = specificJson.as[ImpalaCdw]
 
     assert(actual == Right(expected))
   }
 
-  test("encode output port table specific") {
+  test("encode output port table specific without tableParams") {
     val expected = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -65,9 +66,88 @@ class ImpalaCdwTest extends AnyFunSuite {
       cdwVirtualWarehouse = "impala-test-vw",
       format = ImpalaFormat.Csv,
       location = "s3a://path/to/folder/",
-      partitions = Some(List.empty)
+      partitions = Some(List.empty),
+      tableParams = None
     )
-    val actual = specific.asJson
+    val actual = specific.asJson.deepDropNullValues
+
+    assert(actual == expected)
+  }
+
+  test("decode output port table specific with tableParams") {
+    val specificJson = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
+          | cdpEnvironment: cdp-env
+          | cdwVirtualWarehouse: impala-test-vw
+          | format: CSV
+          | location: s3a://path/to/folder/
+          | partitions: []
+          | tableParams:
+          |   header: true
+          |   tblProperties:
+          |     key1: value1
+          |     key2: value2
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val expected = PublicImpalaTableCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
+      cdpEnvironment = "cdp-env",
+      cdwVirtualWarehouse = "impala-test-vw",
+      format = ImpalaFormat.Csv,
+      location = "s3a://path/to/folder/",
+      partitions = Some(List.empty),
+      tableParams = Some(
+        TableParams(
+          header = Some(true),
+          delimiter = None,
+          tblProperties = Map("key1" -> "value1", "key2" -> "value2"))
+      )
+    )
+    val actual = specificJson.as[ImpalaCdw]
+
+    assert(actual == Right(expected))
+  }
+
+  test("encode output port table specific with tableParams") {
+    val expected = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
+          | cdpEnvironment: cdp-env
+          | cdwVirtualWarehouse: impala-test-vw
+          | format: CSV
+          | location: s3a://path/to/folder/
+          | partitions: []
+          | tableParams:
+          |   header: true
+          |   tblProperties:
+          |     key1: value1
+          |     key2: value2
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val specific: ImpalaCdw = PublicImpalaTableCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
+      cdpEnvironment = "cdp-env",
+      cdwVirtualWarehouse = "impala-test-vw",
+      format = ImpalaFormat.Csv,
+      location = "s3a://path/to/folder/",
+      partitions = Some(List.empty),
+      tableParams = Some(
+        TableParams(
+          header = Some(true),
+          delimiter = None,
+          tblProperties = Map("key1" -> "value1", "key2" -> "value2"))
+      )
+    )
+    val actual = specific.asJson.deepDropNullValues
 
     assert(actual == expected)
   }
@@ -89,7 +169,8 @@ class ImpalaCdwTest extends AnyFunSuite {
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
       location = "s3a://path/to/folder/",
-      partitions = Some(List.empty)
+      partitions = Some(List.empty),
+      tableParams = None
     )
     val actual = specificJson.as[ImpalaCdw]
 
@@ -113,9 +194,10 @@ class ImpalaCdwTest extends AnyFunSuite {
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       format = ImpalaFormat.Csv,
       location = "s3a://path/to/folder/",
-      partitions = Some(List.empty)
+      partitions = Some(List.empty),
+      tableParams = None
     )
-    val actual = specific.asJson
+    val actual = specific.asJson.deepDropNullValues
 
     assert(actual == expected)
   }
@@ -168,7 +250,8 @@ class ImpalaCdwTest extends AnyFunSuite {
       cdwVirtualWarehouse = "impala-test-vw",
       format = ImpalaFormat.Csv,
       location = "s3a://path/to/folder/",
-      partitions = Some(List.empty)
+      partitions = Some(List.empty),
+      tableParams = None
     )
 
     val op = OutputPort(
@@ -272,7 +355,8 @@ class ImpalaCdwTest extends AnyFunSuite {
           None,
           None
         )
-      )
+      ),
+      tableParams = None
     )
 
     val actual = specificJson.as[ImpalaCdw]
@@ -348,7 +432,8 @@ class ImpalaCdwTest extends AnyFunSuite {
           None,
           None
         )
-      )
+      ),
+      tableParams = None
     )
     val actual = specific.asJson.deepDropNullValues
 
@@ -405,7 +490,8 @@ class ImpalaCdwTest extends AnyFunSuite {
           None,
           None
         )
-      )
+      ),
+      tableParams = None
     )
 
     val op = StorageArea(
@@ -462,7 +548,8 @@ class ImpalaCdwTest extends AnyFunSuite {
           None,
           None
         )
-      )
+      ),
+      tableParams = None
     )
 
     val op = StorageArea(

@@ -40,7 +40,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
             tableName = "tableName",
             format = Csv,
             location = "loc",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()
@@ -102,7 +103,10 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -126,7 +130,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
             tableName = "tableName",
             format = Csv,
             location = "loc",
-            partitions = Some(Seq("part1"))
+            partitions = Some(Seq("part1")),
+            tableParams = None
           ).asJson)
           .withDataContract(DataContract(
             schema = Seq(
@@ -220,7 +225,10 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
           "loc",
-          Csv
+          Csv,
+          None,
+          Map.empty,
+          header = false
         ),
         ImpalaCdpAcl(
           Seq(
@@ -245,7 +253,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
             tableName = "tableName",
             format = Csv,
             location = "loc",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()
@@ -307,7 +316,10 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
           Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
           Seq.empty,
           "loc",
-          Csv),
+          Csv,
+          None,
+          Map.empty,
+          header = false),
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
@@ -329,7 +341,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
             tableName = "tableName",
             format = Csv,
             location = "loc",
-            partitions = None
+            partitions = None,
+            tableParams = None
           ).asJson).build()
       )
       .build()
@@ -590,7 +603,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
               None,
               None,
               None)
-          )
+          ),
+          tableParams = None
         ).asJson).build()
       )
       .build()

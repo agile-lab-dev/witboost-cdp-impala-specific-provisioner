@@ -44,7 +44,8 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
           tableName = "domain_dp_name_0_cmp_name_poc",
           format = Csv,
           location = "s3a://bucket/path/",
-          partitions = None
+          partitions = None,
+          tableParams = None
         ).asJson).build()
     )
     .build()
@@ -101,7 +102,8 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
               None,
               None
             )
-          )
+          ),
+          tableParams = None
         ).asJson
       ).build()
     )
@@ -126,7 +128,10 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
       Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
       Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
       "loc",
-      Csv
+      Csv,
+      None,
+      Map.empty,
+      header = false
     ),
     ImpalaCdpAcl(
       Seq(
