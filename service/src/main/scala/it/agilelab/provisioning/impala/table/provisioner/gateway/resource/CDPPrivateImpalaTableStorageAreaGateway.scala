@@ -10,14 +10,19 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw.ImpalaProvisionRequestOps
 import it.agilelab.provisioning.impala.table.provisioner.core.model._
-import it.agilelab.provisioning.impala.table.provisioner.gateway.mapper.ExternalTableMapper
+import it.agilelab.provisioning.impala.table.provisioner.gateway.mapper.{
+  ExternalTableMapper,
+  ImpalaViewMapper
+}
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.{
   AccessControlInfo,
   ImpalaAccessControlGateway
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
+import it.agilelab.provisioning.impala.table.provisioner.gateway.view.ViewGateway
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ OutputPort, StorageArea }
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
 import it.agilelab.provisioning.mesh.self.service.core.gateway.{
   ComponentGateway,
   ComponentGatewayError,
@@ -31,6 +36,7 @@ class CDPPrivateImpalaTableStorageAreaGateway(
     serviceRole: String,
     hostProvider: ConfigHostProvider,
     externalTableGateway: ExternalTableGateway,
+    viewGateway: ViewGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaAccessControlGateway
 ) extends PermissionlessComponentGateway[Json, Json, ImpalaEntityResource] {
@@ -50,10 +56,23 @@ class CDPPrivateImpalaTableStorageAreaGateway(
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     // Extract necessary information
     storageAreaRequest <- provisionCommand.provisionRequest
-      .getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
+      .getStorageAreaRequest[ImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
-    // Upsert output port
-    externalTable <- createAndGetExternalTable(storageAreaRequest)
+    // Upsert storage area
+    impalaEntity <- {
+      val entity: Either[ComponentGatewayError, ImpalaEntity] = storageAreaRequest.specific match {
+        case table: PrivateImpalaStorageAreaCdw =>
+          createAndGetExternalTable(table.tableSchema, table)
+        case view: PrivateImpalaStorageAreaViewCdw =>
+          createAndGetView(view)
+        case other =>
+          Left(
+            ComponentGatewayError(
+              "Received wrongly formatted specific schema. " +
+                "The schema doesn't belong to a table or view storage area for CDP Private Cloud."))
+      }
+      entity
+    }
     // Upsert security and access
     rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -66,18 +85,18 @@ class CDPPrivateImpalaTableStorageAreaGateway(
         provisionCommand.provisionRequest.dataProduct.devGroup,
         storageAreaRequest.id),
       rangerClient,
-      externalTable,
+      impalaEntity,
       "",
       provisionUserRole = false
     )
-  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
+  } yield ImpalaEntityResource(impalaEntity, ImpalaCdpAcl(policies, List.empty[PolicyAttachment]))
 
   override def destroy(
       unprovisionCommand: ProvisionCommand[Json, Json]
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     // Extract necessary information
     storageAreaRequest <- unprovisionCommand.provisionRequest
-      .getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
+      .getStorageAreaRequest[ImpalaCdw]
       .leftMap(e => ComponentGatewayError(show"$e"))
     dropOnUnprovision <- Try {
       ApplicationConfiguration.impalaConfig.getBoolean(ApplicationConfiguration.DROP_ON_UNPROVISION)
@@ -86,14 +105,30 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       ComponentGatewayError(show"$confError")
     }
     // Upsert/delete output port
-    externalTable <-
-      if (dropOnUnprovision) {
-        dropAndGetExternalTable(storageAreaRequest)
-      } else {
-        ExternalTableMapper.map(
-          storageAreaRequest.specific.tableSchema,
-          storageAreaRequest.specific)
+    impalaEntity <- {
+      val entity: Either[ComponentGatewayError, ImpalaEntity] = storageAreaRequest.specific match {
+        case table: PrivateImpalaStorageAreaCdw =>
+          if (dropOnUnprovision) {
+            dropAndGetExternalTable(table.tableSchema, table)
+          } else {
+            ExternalTableMapper.map(table.tableSchema, table)
+          }
+        case view: PrivateImpalaStorageAreaViewCdw =>
+          if (dropOnUnprovision) {
+            dropAndGetView(view)
+          } else {
+            // SA Views don't receive a schema, but a query, so if not provided, schema is empty
+            ImpalaViewMapper.map(view.tableSchema.getOrElse(List.empty), view)
+          }
+        case other =>
+          Left(
+            ComponentGatewayError(
+              "Received wrongly formatted specific schema. " +
+                "The schema doesn't belong to a table or view storage area for CDP Private Cloud."))
       }
+      entity
+    }
+
     // Update security and access
     rangerHost <- hostProvider.getRangerHost
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -106,11 +141,11 @@ class CDPPrivateImpalaTableStorageAreaGateway(
         unprovisionCommand.provisionRequest.dataProduct.devGroup,
         storageAreaRequest.id),
       rangerClient,
-      externalTable,
+      impalaEntity,
       "",
       unprovisionUserRole = false
     )
-  } yield ImpalaEntityResource(externalTable, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
+  } yield ImpalaEntityResource(impalaEntity, ImpalaCdpAcl(List.empty[PolicyAttachment], policies))
 
   private def createExternalTable(
       connectionConfig: ConnectionConfig,
@@ -129,12 +164,13 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def createAndGetExternalTable(
-      opRequest: StorageArea[PrivateImpalaStorageAreaCdw]
+      schema: Seq[Column],
+      impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(opRequest.specific.tableSchema, opRequest.specific)
+    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
@@ -144,12 +180,13 @@ class CDPPrivateImpalaTableStorageAreaGateway(
   } yield externalTable
 
   private def dropAndGetExternalTable(
-      opRequest: StorageArea[PrivateImpalaStorageAreaCdw]
+      schema: Seq[Column],
+      impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ExternalTable] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(opRequest.specific.tableSchema, opRequest.specific)
+    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
@@ -157,4 +194,67 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       .leftMap(e => ComponentGatewayError(show"$e"))
     _ <- dropExternalTable(connectionConfig, externalTable)
   } yield externalTable
+
+  // View Storage Area
+
+  private def createView(
+      connectionConfig: ConnectionConfig,
+      impalaView: ImpalaView
+  ): Either[ComponentGatewayError, Unit] =
+    viewGateway
+      .create(
+        connectionConfig,
+        impalaView,
+        ifNotExists = true
+      )
+      .leftMap(e => ComponentGatewayError(show"$e"))
+
+  private def dropView(
+      connectionConfig: ConnectionConfig,
+      impalaView: ImpalaView
+  ): Either[ComponentGatewayError, Unit] =
+    viewGateway
+      .drop(
+        connectionConfig,
+        impalaView,
+        ifExists = true
+      )
+      .leftMap(e => ComponentGatewayError(show"$e"))
+
+  private def createAndGetView(
+      impalaSpecific: PrivateImpalaStorageAreaViewCdw
+  ): Either[ComponentGatewayError, ImpalaView] = for {
+    impalaHost <- hostProvider
+      .getImpalaCoordinatorHost()
+      .leftMap(e => ComponentGatewayError(show"$e"))
+    // SA Views don't receive a schema, but a query, so if not provided, schema is empty
+    impalaView <- ImpalaViewMapper.map(
+      impalaSpecific.tableSchema.getOrElse(List.empty),
+      impalaSpecific)
+    connectionConfig <- ConnectionConfig
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
+      .leftMap(e => ComponentGatewayError(show"$e"))
+    _ <- createView(connectionConfig, impalaView)
+  } yield impalaView
+
+  private def dropAndGetView(
+      impalaSpecific: PrivateImpalaStorageAreaViewCdw
+  ): Either[ComponentGatewayError, ImpalaView] = for {
+    impalaHost <- hostProvider
+      .getImpalaCoordinatorHost()
+      .leftMap(e => ComponentGatewayError(show"$e"))
+    // SA Views don't receive a schema, but a query, so if not provided, schema is empty
+    impalaView <- ImpalaViewMapper.map(
+      impalaSpecific.tableSchema.getOrElse(List.empty),
+      impalaSpecific)
+    connectionConfig <- ConnectionConfig
+      .getFromConfig(
+        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
+        impalaHost)
+      .leftMap(e => ComponentGatewayError(show"$e"))
+    _ <- dropView(connectionConfig, impalaView)
+  } yield impalaView
+
 }

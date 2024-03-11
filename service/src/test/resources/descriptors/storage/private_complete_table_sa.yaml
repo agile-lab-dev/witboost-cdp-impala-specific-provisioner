@@ -1,0 +1,68 @@
+componentIdToProvision: urn:dmb:cmp:finance:salary-test-cdp:0:impala-cdp-storage-area
+dataProduct:
+  dataProductOwnerDisplayName: John Doe
+  environment: development
+  domain: finance
+  kind: dataproduct
+  domainId: urn:dmb:dmn:finance
+  id: urn:dmb:dp:finance:salary-test-cdp:0
+  description: Description
+  devGroup: group:dev
+  ownerGroup: john.doe_agilelab.it
+  name: Salary test CDP
+  fullyQualifiedName: null
+  version: 0.0.0
+  useCaseTemplateId: urn:dmb:utm:aws-cdp-outputport-impala-template:0.0.0
+  infrastructureTemplateId: urn:dmb:itm:aws-cdp-outputport-impala-provisioner:1
+  dataProductOwner: user:john.doe_agilelab.it
+  email: contact@example.com
+  informationSLA: null
+  status: Draft
+  maturity: null
+  billing: {}
+  tags: []
+  specific: {}
+  components:
+    - kind: storage
+      id: urn:dmb:cmp:finance:salary-test-cdp:0:impala-cdp-storage-area
+      description: Attach the Storage Component to the Data Product
+      name: Impala CDP Storage Area
+      fullyQualifiedName: null
+      infrastructureTemplateId: urn:dmb:itm:cdp-private-storage-impala-provisioner:0
+      useCaseTemplateId: urn:dmb:utm:cdp-private-storage-impala-template:0.0.0
+      dependsOn: [ ]
+      platform: CDP Private
+      technology: Impala
+      StorageType: Database
+      tags: [ ]
+      owners: [ ]
+      specific:
+        databaseName: finance_salary_test_cdp_0
+        tableName: finance_salary_test_cdp_0_impala_cdp_storage_area
+        format: TEXTFILE
+        location: /data-products/finance/salary_test_cdp/0/file-landing-area/
+        partitions: [ Country ]
+        tableParams:
+          header: true
+          delimiter: "0x01"
+          tblProperties:
+            "metadata.name": "salaries_table"
+        tableSchema:
+          - name: Age
+            dataType: DOUBLE
+          - name: Gender
+            dataType: STRING
+          - name: Education_Level
+            dataType: INT
+          - name: Job_Title
+            dataType: STRING
+          - name: Years_of_Experience
+            dataType: DOUBLE
+          - name: Salary
+            dataType: DOUBLE
+          - name: Country
+            dataType: STRING
+          - name: Race
+            dataType: STRING
+          - name: Senior
+            dataType: INT

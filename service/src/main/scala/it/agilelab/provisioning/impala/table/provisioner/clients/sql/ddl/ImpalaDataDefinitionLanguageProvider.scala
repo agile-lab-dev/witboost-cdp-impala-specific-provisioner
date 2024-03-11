@@ -67,7 +67,7 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     CREATE_VIEW_PATTERN.format(
       serializeCreateViewDDL(ifNotExists),
       serializeName(impalaView),
-      serializeSelectFromTableDDL(impalaView)
+      serializeSelectFromViewDDL(impalaView)
     )
 
   override def dropView(impalaView: ImpalaView, ifExists: Boolean): String =
@@ -198,14 +198,18 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
     if (ifExists) asString(" ", DROP_VIEW_KEY, IF_EXISTS_KEY)
     else DROP_VIEW_KEY
 
-  private def serializeSelectFromTableDDL(impalaView: ImpalaView): String =
-    asString(
-      " ",
-      SELECT_PATTERN.format(
-        asString(",", impalaView.schema.map(_.name): _*)
-      ),
-      FROM_PATTERN.format(asString(".", impalaView.database, impalaView.readsFromTableName))
-    )
+  private def serializeSelectFromViewDDL(impalaView: ImpalaView): String =
+    impalaView match {
+      case ImpalaView(_, _, _, _, Some(sourceQueryStatement)) => sourceQueryStatement
+      case ImpalaView(database, _, schema, Some(sourceName), None) =>
+        asString(
+          " ",
+          SELECT_PATTERN.format(
+            asString(",", schema.map(_.name): _*)
+          ),
+          FROM_PATTERN.format(asString(".", database, sourceName))
+        )
+    }
 
   /** Parses a Byte to an Impala delimiter that it can understand.
     *

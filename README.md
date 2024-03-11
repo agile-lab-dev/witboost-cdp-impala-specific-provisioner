@@ -26,9 +26,18 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 
 ## Overview
 
-This project implements a Specific Provisioner deploying Output Ports (as External Tables or Views) and Storage Areas* on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports and Storage Areas* on existing csv or Parquet tables leveraging an existing Impala instance.
+This project implements a Specific Provisioner deploying Output Ports and Storage Areas* (as External Tables or Views) on Apache Impala hosted on a Cloudera Data Platform environment. It supports both CDP Public Cloud with Cloudera Data Warehouse (CDW) using Impala and Amazon Web Services (AWS) S3 storage, and CDP Private Cloud using Impala and HDFS. After deploying this microservice and configuring witboost to use it, the platform can create Output Ports and Storage Areas* on existing csv or Parquet tables leveraging an existing Impala instance.
 
 > As of now, this provisioner can only deploy View Output Ports and Storage Areas on CDP Private Cloud environments.
+
+Specifically, this provisioner can create:
+- CDP Public:
+  - Output Ports as External table allowing to define a schema, a HDFS/S3 location, format of the data files, and extra TBLPROPERTIES.
+- CDP Private:
+  - All components deployable on CDP Public mentioned above
+  - Storage Areas as External table allowing to define a schema, a HDFS/S3 location, format of the data files, and extra TBLPROPERTIES.
+  - Storage Areas as views, defined by a custom SQL statement provided by the user
+  - Output Ports as simple 1:1 views from a source table, defining a schema as the set of columns to be queried. 
 
 ### What's a Specific Provisioner?
 
@@ -215,6 +224,7 @@ The Impala Specific Provisioner receives a yaml-descriptor containing a data con
 - Location: Location in S3 (CDP Public) or HDFS (CDP Private) where the data files are located
 - Partitions: List of columns used to partition the data
 - Table parameters: Extra table parameters to define TBLPROPERTIES, text file delimiter and header, etc.
+- Custom DML Statement: Storage Areas as views can be created by using a query provided by the user.
 
 For the specification of schema of this object, check out [Descriptor Input](docs/DescriptorInput.md)
 

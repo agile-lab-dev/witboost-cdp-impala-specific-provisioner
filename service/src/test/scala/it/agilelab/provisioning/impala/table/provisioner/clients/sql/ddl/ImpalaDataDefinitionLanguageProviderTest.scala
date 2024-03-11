@@ -289,7 +289,8 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromTableName = "originalTableName"
+      readsFromSourceName = Some("originalTableName"),
+      querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = true)
@@ -306,7 +307,8 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromTableName = "originalTableName"
+      readsFromSourceName = Some("originalTableName"),
+      querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = false)
@@ -323,7 +325,8 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromTableName = "originalTableName"
+      readsFromSourceName = Some("originalTableName"),
+      querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.dropView(view, ifExists = true)
@@ -339,7 +342,8 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromTableName = "originalTableName"
+      readsFromSourceName = Some("originalTableName"),
+      querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.dropView(view, ifExists = false)
@@ -347,4 +351,42 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
 
     assert(actual == expected)
   }
+
+  // View with query statement
+
+  test("create view with custom query ifNotExists=true") {
+    val sql =
+      "SELECT id, field1, field2 FROM table1 INNER JOIN db.table2 ON db.table1.id = table2.fk_id"
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq.empty,
+      readsFromSourceName = None,
+      querySourceStatement = Some(sql)
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = true)
+    val expected =
+      s"CREATE VIEW IF NOT EXISTS database.viewName AS $sql"
+
+    assert(actual == expected)
+  }
+
+  test("create view with custom query ifNotExists=false") {
+    val sql =
+      "SELECT id, field1, field2 FROM table1 INNER JOIN db.table2 ON db.table1.id = table2.fk_id"
+    val view = ImpalaView(
+      database = "database",
+      name = "viewName",
+      schema = Seq.empty,
+      readsFromSourceName = None,
+      querySourceStatement = Some(sql)
+    )
+
+    val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = false)
+    val expected = s"CREATE VIEW database.viewName AS $sql"
+
+    assert(actual == expected)
+  }
+
 }

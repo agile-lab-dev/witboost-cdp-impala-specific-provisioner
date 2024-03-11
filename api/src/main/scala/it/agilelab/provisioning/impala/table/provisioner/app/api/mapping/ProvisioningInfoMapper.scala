@@ -34,7 +34,7 @@ object ProvisioningInfoMapper {
             "impalaLocation" -> StringInfoObject("location", location).toJson,
             "impalaFormat"   -> StringInfoObject("format", format.show).toJson
           )
-        case ImpalaView(database, name, schema, readsFromTableName) =>
+        case ImpalaView(_, name, _, _, _) =>
           baseFields ++ Seq(
             "impalaView" -> StringInfoObject("view", name).toJson
           )

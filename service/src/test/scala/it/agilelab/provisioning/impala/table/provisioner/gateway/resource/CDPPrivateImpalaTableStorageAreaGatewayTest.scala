@@ -16,6 +16,7 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model._
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.ImpalaAccessControlGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.ExternalTableGateway
+import it.agilelab.provisioning.impala.table.provisioner.gateway.view.ViewGateway
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{ Column, ColumnDataType }
 import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
 import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
@@ -87,11 +88,14 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
         Right(rangerClient)
       )
 
+    val viewGateway = stub[ViewGateway]
+
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        viewGateway,
         rangerGatewayProvider,
         impalaAccessControlGateway
       )
@@ -204,11 +208,14 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
         Right(rangerClient)
       )
 
+    val viewGateway = stub[ViewGateway]
+
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        viewGateway,
         rangerGatewayProvider,
         impalaAccessControlGateway
       )
@@ -307,11 +314,14 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
         Right(rangerClient)
       )
 
+    val viewGateway = stub[ViewGateway]
+
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        viewGateway,
         rangerGatewayProvider,
         impalaAccessControlGateway
       )
@@ -343,6 +353,265 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     assert(actual == expected)
   }
 
+  // View Storage Area
+
+  test("provision storage area view") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaStorageAreaViewCdw(
+            databaseName = "databaseName",
+            viewName = "viewName",
+            queryStatement = "SELECT * FROM otherDb.otherTableName",
+            tableSchema = None).asJson)
+          .build()
+      )
+      .build()
+
+    val hostProvider = stub[ConfigHostProvider]
+    (hostProvider.getImpalaCoordinatorHost _)
+      .when(*)
+      .returns(Right("impalaHost"))
+
+    (hostProvider.getRangerHost _)
+      .when()
+      .returns(Right("http://rangerHost/ranger/"))
+
+    val externalTableGateway = stub[ExternalTableGateway]
+
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
+    (impalaAccessControlGateway.provisionAccessControl _)
+      .when(*, *, *, *, false)
+      .returns(
+        Right(
+          Seq(
+            PolicyAttachment("123", "xy"),
+            PolicyAttachment("456", "ttt"),
+            PolicyAttachment("789", "loc")
+          ))
+      )
+
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when("http://rangerHost/ranger/")
+      .returns(
+        Right(rangerClient)
+      )
+
+    val viewGateway = stub[ViewGateway]
+    (viewGateway.create _)
+      .when(*, *, *)
+      .returns(Right())
+
+    val impalaTableStorageAreaGateway =
+      new CDPPrivateImpalaTableStorageAreaGateway(
+        "srvRole",
+        hostProvider,
+        externalTableGateway,
+        viewGateway,
+        rangerGatewayProvider,
+        impalaAccessControlGateway
+      )
+
+    val provisionCommand = ProvisionCommand("requestId", request)
+    val actual = impalaTableStorageAreaGateway.create(provisionCommand)
+
+    val expected =
+      ImpalaEntityResource(
+        ImpalaView(
+          "databaseName",
+          "viewName",
+          Seq.empty,
+          None,
+          Some("SELECT * FROM otherDb.otherTableName")),
+        ImpalaCdpAcl(
+          Seq(
+            PolicyAttachment("123", "xy"),
+            PolicyAttachment("456", "ttt"),
+            PolicyAttachment("789", "loc")
+          ),
+          Seq.empty[PolicyAttachment]
+        )
+      )
+
+    actual match {
+      case Right(value) => assert(value == expected)
+      case Left(value)  => fail(value.error, value)
+    }
+  }
+
+  test("drop storage area view") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaStorageAreaViewCdw(
+            databaseName = "databaseName",
+            viewName = "viewName",
+            queryStatement = "SELECT * FROM otherDb.otherTableName",
+            tableSchema = None).asJson)
+          .build()
+      )
+      .build()
+
+    val hostProvider = stub[ConfigHostProvider]
+
+    (hostProvider.getRangerHost _)
+      .when()
+      .returns(Right("rangerHost"))
+
+    (hostProvider.getImpalaCoordinatorHost _)
+      .when(*)
+      .returns(Right("impalaHost"))
+
+    val externalTableGateway = stub[ExternalTableGateway]
+
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
+    (impalaAccessControlGateway.unprovisionAccessControl _)
+      .when(*, *, *, *, false)
+      .returns(
+        Right(
+          Seq(
+            PolicyAttachment("456", "ttt"),
+            PolicyAttachment("789", "loc")
+          ))
+      )
+
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val rangerClient = stub[RangerClient]
+    (rangerGatewayProvider.getRangerClient _)
+      .when(*)
+      .returns(
+        Right(rangerClient)
+      )
+
+    val viewGateway = stub[ViewGateway]
+    (viewGateway.drop _)
+      .when(*, *, *)
+      .returns(Right())
+
+    val impalaTableStorageAreaGateway =
+      new CDPPrivateImpalaTableStorageAreaGateway(
+        "srvRole",
+        hostProvider,
+        externalTableGateway,
+        viewGateway,
+        rangerGatewayProvider,
+        impalaAccessControlGateway
+      )
+
+    val provisionCommand = ProvisionCommand("requestId", request)
+    val actual = impalaTableStorageAreaGateway.destroy(provisionCommand)
+
+    val expected =
+      ImpalaEntityResource(
+        ImpalaView(
+          "databaseName",
+          "viewName",
+          Seq.empty,
+          None,
+          Some("SELECT * FROM otherDb.otherTableName")),
+        ImpalaCdpAcl(
+          Seq.empty[PolicyAttachment],
+          Seq(
+            PolicyAttachment("456", "ttt"),
+            PolicyAttachment("789", "loc")
+          )
+        )
+      )
+
+    actual match {
+      case Right(value) => assert(value == expected)
+      case Left(value)  => fail(value.error, value)
+    }
+  }
+
+  // Wrong component
+
+  test("provision on unsupported specific for storage area results in error") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaViewCdw(
+            databaseName = "databaseName",
+            viewName = "viewName",
+            tableName = "tableNameNonSupported").asJson)
+          .build()
+      )
+      .build()
+
+    val hostProvider = stub[ConfigHostProvider]
+    val externalTableGateway = stub[ExternalTableGateway]
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val viewGateway = stub[ViewGateway]
+
+    val impalaTableStorageAreaGateway =
+      new CDPPrivateImpalaTableStorageAreaGateway(
+        "srvRole",
+        hostProvider,
+        externalTableGateway,
+        viewGateway,
+        rangerGatewayProvider,
+        impalaAccessControlGateway
+      )
+
+    val provisionCommand = ProvisionCommand("requestId", request)
+    val actual = impalaTableStorageAreaGateway.create(provisionCommand)
+
+    val expected =
+      ComponentGatewayError(
+        "Received wrongly formatted specific schema. " +
+          "The schema doesn't belong to a table or view storage area for CDP Private Cloud.")
+
+    actual match {
+      case Right(_)    => fail(s"Answer was $actual expected Left()")
+      case Left(value) => assert(value == expected)
+    }
+  }
+
+  test("drop on unsupported specific for storage area results in error") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaViewCdw(
+            databaseName = "databaseName",
+            viewName = "viewName",
+            tableName = "tableNameNonSupported").asJson)
+          .build()
+      )
+      .build()
+
+    val hostProvider = stub[ConfigHostProvider]
+    val externalTableGateway = stub[ExternalTableGateway]
+    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
+    val rangerGatewayProvider = stub[RangerGatewayProvider]
+    val viewGateway = stub[ViewGateway]
+
+    val impalaTableStorageAreaGateway =
+      new CDPPrivateImpalaTableStorageAreaGateway(
+        "srvRole",
+        hostProvider,
+        externalTableGateway,
+        viewGateway,
+        rangerGatewayProvider,
+        impalaAccessControlGateway
+      )
+
+    val provisionCommand = ProvisionCommand("requestId", request)
+    val actual = impalaTableStorageAreaGateway.destroy(provisionCommand)
+
+    val expected =
+      ComponentGatewayError(
+        "Received wrongly formatted specific schema. " +
+          "The schema doesn't belong to a table or view storage area for CDP Private Cloud.")
+
+    actual match {
+      case Right(_)    => fail(s"Answer was $actual expected Left()")
+      case Left(value) => assert(value == expected)
+    }
+  }
+
   test("updateacl") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
@@ -366,12 +635,14 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val rangerClient = stub[RangerClient]
     val externalTableGateway = stub[ExternalTableGateway]
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
+    val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
+        viewGateway,
         rangerGatewayProvider,
         impalaAccessControlGateway
       )

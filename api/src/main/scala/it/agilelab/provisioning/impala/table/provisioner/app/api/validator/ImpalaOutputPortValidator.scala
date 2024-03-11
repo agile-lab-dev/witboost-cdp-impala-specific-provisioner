@@ -46,7 +46,7 @@ object ImpalaOutputPortValidator {
           withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             cdpValidator.cdpEnvironmentExists(op.specific.cdpEnvironment)
           },
-        _ => s"CDP Environment does not exist"
+        _ => "CDP Environment does not exist"
       )
       .rule(
         r =>
@@ -56,7 +56,7 @@ object ImpalaOutputPortValidator {
               op.specific.cdwVirtualWarehouse)
 
           },
-        _ => s"CDW Virtual Warehouse does not exist in the specified environment"
+        _ => "CDW Virtual Warehouse does not exist in the specified environment"
       )
       .rule(
         r =>
@@ -70,7 +70,7 @@ object ImpalaOutputPortValidator {
           withinOutputPortReq[PublicImpalaTableCdw](r) { (_, op) =>
             locationValidator.locationExists(op.specific.location)
           },
-        _ => s"Location does not exist on provided Amazon S3 bucket"
+        _ => "Location does not exist on provided Amazon S3 bucket"
       )
       .rule(
         {
@@ -78,7 +78,7 @@ object ImpalaOutputPortValidator {
             SchemaValidator.nonEmptySchema(c.dataContract.schema)
           case _ => false
         },
-        _ => s"Schema is empty"
+        _ => "Schema is empty"
       )
       .rule(
         {
@@ -86,7 +86,7 @@ object ImpalaOutputPortValidator {
             SchemaValidator.validateColumnNames(c.dataContract.schema)
           case _ => false
         },
-        _ => s"Schema contains duplicated and/or empty column names"
+        _ => "Schema contains duplicated and/or empty column names"
       )
       .rule(
         {
@@ -94,7 +94,7 @@ object ImpalaOutputPortValidator {
             SchemaValidator.isValidSchema(c.dataContract.schema)
           case _ => false
         },
-        _ => s"Schema is not compliant with Impala Data Types specifications"
+        _ => "Schema is not compliant with Impala Data Types specifications"
       )
       .rule(
         r =>
@@ -102,8 +102,7 @@ object ImpalaOutputPortValidator {
             SchemaValidator
               .arePartitionsValid(op.dataContract.schema, op.specific.partitions)
           },
-        _ =>
-          s"Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
+        _ => "Partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
       )
       .rule(
         r =>
@@ -114,8 +113,7 @@ object ImpalaOutputPortValidator {
               case _ => true
             }
           },
-        _ =>
-          s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
+        _ => "tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
       )
 
   def privateOutputPortImpalaCdwValidator(
@@ -152,8 +150,7 @@ object ImpalaOutputPortValidator {
           withinOutputPortReq[ImpalaCdw](r) { (_, op) =>
             op.specific match {
               case sp: PrivateImpalaTableCdw => locationValidator.isValidLocation(sp.location)
-              case _: PrivateImpalaViewCdw   => true
-              case _                         => false
+              case _                         => true
             }
           },
         _ => "External table location is wrongly formatted. Correct location should be formatted as \"/$pathToFolder\""
@@ -171,25 +168,25 @@ object ImpalaOutputPortValidator {
         {
           case ProvisionRequest(_, Some(c: OutputPort[Json])) =>
             SchemaValidator.nonEmptySchema(c.dataContract.schema)
-          case _ => false
+          case _ => true
         },
-        _ => s"Schema is empty"
+        _ => "Schema is empty"
       )
       .rule(
         {
           case ProvisionRequest(_, Some(c: OutputPort[Json])) =>
             SchemaValidator.validateColumnNames(c.dataContract.schema)
-          case _ => false
+          case _ => true
         },
-        _ => s"Schema contains duplicated and/or empty column names"
+        _ => "Schema contains duplicated and/or empty column names"
       )
       .rule(
         {
           case ProvisionRequest(_, Some(c: OutputPort[Json])) =>
             SchemaValidator.isValidSchema(c.dataContract.schema)
-          case _ => false
+          case _ => true
         },
-        _ => s"Schema is not compliant with Impala Data Types specifications"
+        _ => "Schema is not compliant with Impala Data Types specifications"
       )
       .rule(
         r =>
@@ -197,12 +194,10 @@ object ImpalaOutputPortValidator {
             op.specific match {
               case sp: PrivateImpalaTableCdw =>
                 SchemaValidator.arePartitionsValid(op.dataContract.schema, sp.partitions)
-              case _: PrivateImpalaViewCdw => true
-              case _                       => false
+              case _ => true
             }
           },
-        _ =>
-          s"External table partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
+        _ => "External table partitions are not valid. Column does not exist on the contract schema or its type is not valid for partitioning"
       )
       .rule(
         r =>
@@ -213,7 +208,6 @@ object ImpalaOutputPortValidator {
               case _ => true
             }
           },
-        _ =>
-          s"tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
+        _ => "tableParams.delimiter is an unexpected value. It is not a hex number nor a single ASCII character"
       )
 }

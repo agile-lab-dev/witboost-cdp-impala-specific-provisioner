@@ -36,11 +36,14 @@ final case class ExternalTable(
   * @param database Database name
   * @param name View name
   * @param schema Seq of [[Field]] representing the columns to be queried from the underlying table/view
-  * @param readsFromTableName Name of the table (or view) from which this view queries data.
+  * @param readsFromSourceName If present, name of the table or view from which this view queries data.
+  *                            Ignored when a query statement for the source is given in querySourceStatement instead
+  * @param querySourceStatement If present, SELECT statement to use as the source for the View
   */
 final case class ImpalaView(
     override val database: String,
     override val name: String,
     override val schema: Seq[Field],
-    readsFromTableName: String
+    readsFromSourceName: Option[String],
+    querySourceStatement: Option[String]
 ) extends ImpalaEntity

@@ -237,12 +237,12 @@ class ImpalaCdwTest extends AnyFunSuite {
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
       viewName = "finance_salary_test_cdp_0_impala_cdp_op_view_development"
     )
-    val actual = specific.asJson
+    val actual = specific.asJson.deepDropNullValues
 
     assert(actual == expected)
   }
 
-  test("test get output port table request") {
+  test("test get output port request") {
     val specific = PublicImpalaTableCdw(
       databaseName = "finance_salary_test_cdp_0",
       tableName = "finance_salary_test_cdp_0_impala_cdp_output_port_development",
@@ -270,7 +270,7 @@ class ImpalaCdwTest extends AnyFunSuite {
         domain = "finance",
         environment = "development",
         version = "0.0.0",
-        dataProductOwner = "sergio.mejia",
+        dataProductOwner = "john.doe",
         devGroup = "dev",
         ownerGroup = "dev",
         specific = Json.obj(),
@@ -287,7 +287,31 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == expected)
   }
 
-  test("decode private storage area specific") {
+  test("test get output port request fails if there is no component") {
+    val request = ProvisionRequest[Json, Json](
+      DataProduct(
+        id = "id",
+        name = "test_cdp",
+        domain = "finance",
+        environment = "development",
+        version = "0.0.0",
+        dataProductOwner = "john.doe",
+        devGroup = "dev",
+        ownerGroup = "dev",
+        specific = Json.obj(),
+        components = List.empty
+      ),
+      None
+    )
+
+    val expected = Left(DecodeErr("Received provisioning request does not contain a component"))
+    val actual = request.getOutputPortRequest[PublicImpalaTableCdw]
+
+    assert(actual == expected)
+  }
+
+
+  test("decode private storage area table specific") {
     val specificJson = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -364,7 +388,7 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == Right(expected))
   }
 
-  test("encode private storage area specific") {
+  test("encode private storage area table specific") {
     val expected = yaml.parser
       .parse("""
           | databaseName: finance_salary_test_cdp_0
@@ -440,6 +464,50 @@ class ImpalaCdwTest extends AnyFunSuite {
     assert(actual == expected)
   }
 
+  test("decode private storage area view specific") {
+    val specificJson = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | viewName: finance_salary_test_cdp_0_sa_view
+          | queryStatement: "SELECT * FROM db.table"
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val expected = PrivateImpalaStorageAreaViewCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      viewName = "finance_salary_test_cdp_0_sa_view",
+      queryStatement = "SELECT * FROM db.table",
+      tableSchema = None
+    )
+
+    val actual = specificJson.as[ImpalaCdw]
+
+    assert(actual == Right(expected))
+  }
+
+  test("encode private storage area view specific") {
+    val expected = yaml.parser
+      .parse("""
+          | databaseName: finance_salary_test_cdp_0
+          | viewName: finance_salary_test_cdp_0_sa_view
+          | queryStatement: "SELECT * FROM db.table"
+          |""".stripMargin)
+      .toOption
+      .get
+
+    val specific = PrivateImpalaStorageAreaViewCdw(
+      databaseName = "finance_salary_test_cdp_0",
+      viewName = "finance_salary_test_cdp_0_sa_view",
+      queryStatement = "SELECT * FROM db.table",
+      tableSchema = None
+    )
+
+    val actual = specific.asJson.deepDropNullValues
+
+    assert(actual == expected)
+  }
+
   test("test get storage area request") {
     val specific = PrivateImpalaStorageAreaCdw(
       databaseName = "finance_salary_test_cdp_0",
@@ -509,7 +577,7 @@ class ImpalaCdwTest extends AnyFunSuite {
         domain = "finance",
         environment = "development",
         version = "0.0.0",
-        dataProductOwner = "sergio.mejia",
+        dataProductOwner = "john.doe",
         devGroup = "dev",
         ownerGroup = "dev",
         specific = Json.obj(),
@@ -522,6 +590,29 @@ class ImpalaCdwTest extends AnyFunSuite {
 
     val expected = Right(op.copy(specific = specific))
     val actual = request.getStorageAreaRequest[PrivateImpalaStorageAreaCdw]
+
+    assert(actual == expected)
+  }
+
+  test("test get storage area request fails if there is no component") {
+    val request = ProvisionRequest[Json, Json](
+      DataProduct(
+        id = "id",
+        name = "test_cdp",
+        domain = "finance",
+        environment = "development",
+        version = "0.0.0",
+        dataProductOwner = "john.doe",
+        devGroup = "dev",
+        ownerGroup = "dev",
+        specific = Json.obj(),
+        components = List.empty
+      ),
+      None
+    )
+
+    val expected = Left(DecodeErr("Received provisioning request does not contain a component"))
+    val actual = request.getStorageAreaRequest[PublicImpalaTableCdw]
 
     assert(actual == expected)
   }
@@ -567,7 +658,7 @@ class ImpalaCdwTest extends AnyFunSuite {
         domain = "finance",
         environment = "development",
         version = "0.0.0",
-        dataProductOwner = "sergio.mejia",
+        dataProductOwner = "john.doe",
         devGroup = "dev",
         ownerGroup = "dev",
         specific = Json.obj(),
@@ -583,5 +674,4 @@ class ImpalaCdwTest extends AnyFunSuite {
 
     assert(actual == expected)
   }
-
 }

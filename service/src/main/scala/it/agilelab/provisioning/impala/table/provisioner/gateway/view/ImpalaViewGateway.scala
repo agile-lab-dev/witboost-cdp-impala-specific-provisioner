@@ -20,6 +20,7 @@ class ImpalaViewGateway(
       impalaView: ImpalaView,
       ifNotExists: Boolean
   ): Either[SqlGatewayError, Unit] =
+    // TODO - Validate again the query if existent before executing it
     sqlQueryExecutor
       .executeDDL(
         connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),

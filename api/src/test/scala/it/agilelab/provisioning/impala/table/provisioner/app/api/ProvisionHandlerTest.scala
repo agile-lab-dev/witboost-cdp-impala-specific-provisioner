@@ -91,10 +91,11 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
     val resource: ImpalaEntityResource = ImpalaEntityResource(
       ImpalaView(
-        "database",
-        "viewName",
-        Seq.empty,
-        "fromTable"
+        database = "database",
+        name = "viewName",
+        schema = Seq.empty,
+        readsFromSourceName = Some("fromTable"),
+        querySourceStatement = None
       ),
       ImpalaCdpAcl.apply(Seq.empty, Seq.empty)
     )

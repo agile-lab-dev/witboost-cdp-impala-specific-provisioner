@@ -3,7 +3,12 @@ package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.OutputPort
 import it.agilelab.provisioning.mesh.self.service.api.model.DataProduct
 import io.circe.Json
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaCdw
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaCdw,
+  ImpalaTableCdw,
+  ImpalaViewCdw,
+  PrivateImpalaViewCdw
+}
 
 object NameValidator {
 
@@ -16,8 +21,11 @@ object NameValidator {
   def isTableNameValid[COMP_SPEC <: ImpalaCdw](
       dataProduct: DataProduct[Json],
       component: OutputPort[COMP_SPEC]
-  ): Boolean =
-    getTableName(dataProduct, component).equals(component.specific.tableName)
+  ): Boolean = component.specific match {
+    case sp: ImpalaTableCdw       => getTableName(dataProduct, component).equals(sp.tableName)
+    case sp: PrivateImpalaViewCdw => getTableName(dataProduct, component).equals(sp.tableName)
+    case _                        => true
+  }
 
   def getDatabaseName(dataProduct: DataProduct[Json]): String =
     sanitizeCDWString(extractDataProductId(dataProduct))

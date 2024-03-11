@@ -125,6 +125,7 @@ object ImpalaProvisionerController {
       ctx.deployRoleUser,
       hostProvider,
       tableGateway,
+      viewGateway,
       rangerGatewayProvider,
       aclGateway
     ))

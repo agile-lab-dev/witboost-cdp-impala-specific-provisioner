@@ -38,10 +38,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).create(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifNotExists = false
       ) == Right())
@@ -66,10 +67,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).create(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifNotExists = true
       ) == Right())
@@ -97,10 +99,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).create(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifNotExists = true
       ) == Left(ExecuteDDLErr(error)))
@@ -125,10 +128,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).drop(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifExists = false
       ) == Right())
@@ -153,10 +157,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).drop(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifExists = true
       ) == Right())
@@ -184,10 +189,11 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       ).drop(
         UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
         ImpalaView(
-          "db",
-          "view",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          "table"
+          database = "db",
+          name = "view",
+          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+          readsFromSourceName = Some("table"),
+          querySourceStatement = None
         ),
         ifExists = true
       ) == Left(ExecuteDDLErr(error)))

@@ -35,11 +35,11 @@ To enable the above orchestration a SP exposes an API made up of five main opera
 
 This Specific Provisioner interacts with a CDP Environment and provisions an Output Port based on an Impala external table created on a Cloudera Data Warehouse (CDW) Impala Virtual Warehouse. This table exposes data contained in a S3 bucket.
 
-The database name should be created using the domain name, data product name, and major version of the data product. The table instead should include these values plus the component name and environment it belongs to. Its schema and partitioning should be defined by the user using the appropriate descriptor fields.
+We recommend the following naming convention for the database name and table name, where the database name should be created using the domain name, data product name, and major version of the data product. The table instead should include these values plus the component name and environment it belongs to. Its schema and partitioning should be defined by the user using the appropriate descriptor fields.
 
 Resource names:
 - **Database**: `$Domain_$DPName_$MajorVersion`
-- **Table**: `$DBName_$ComponentName_$Environment`
+- **Table**: `$DBName_$ComponentName`
 
 Furthermore, this provisioner also needs to interact with the Apache Ranger instance of the CDP environment in order to create the necessary security zones at domain level to handle the resources, as well as the necessary access policies to allow owners to manage these resources (read-write), and users to consume the data (read-only).
 
@@ -137,8 +137,20 @@ The management of Storage Areas behaves equally to the Output Ports based on Sto
 
 #### Provisioning
 
-![Provisioning](./img/hld-Private-SA-Provisioning.png)
+**Provisioning External Table Storage Area**
+
+![Provisioning Table](./img/hld-Private-SATable-Provisioning.png)
+
+**Provisioning View Storage Area**
+
+![Provisioning View](./img/hld-Private-SAView-Provisioning.png)
 
 #### Unprovisioning
 
-![Unprovisioning](./img/hld-Private-SA-Unprovisioning.png)
+**Unprovisioning External Table Storage Area**
+
+![Unprovisioning Table](./img/hld-Private-SATable-Unprovisioning.png)
+
+**Unprovisioning View Storage Area**
+
+![Unprovisioning View](./img/hld-Private-SAView-Unprovisioning.png)

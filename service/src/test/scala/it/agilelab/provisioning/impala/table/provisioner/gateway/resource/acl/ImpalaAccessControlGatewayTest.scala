@@ -844,10 +844,11 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
     datalake.setDatalakeName("dlName")
 
     val impalaView = ImpalaView(
-      "databaseName",
-      "viewName",
-      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      "tableName"
+      database = "databaseName",
+      name = "viewName",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("tableName"),
+      querySourceStatement = None
     )
 
     val hostProvider = stub[CDPPublicHostProvider]
@@ -989,10 +990,11 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
   test("unprovision access control for view") {
 
     val impalaView = ImpalaView(
-      "databaseName",
-      "viewName",
-      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      "tableName"
+      database = "databaseName",
+      name = "viewName",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("tableName"),
+      querySourceStatement = None
     )
 
     val hostProvider = stub[CDPPublicHostProvider]

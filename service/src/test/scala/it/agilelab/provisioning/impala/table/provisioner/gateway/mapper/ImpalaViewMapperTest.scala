@@ -11,6 +11,7 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
   ImpalaDataType,
   ImpalaView,
+  PrivateImpalaStorageAreaViewCdw,
   PrivateImpalaViewCdw
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
@@ -25,7 +26,7 @@ import org.scalatest.EitherValues._
 
 class ImpalaViewMapperTest extends AnyFunSuite {
 
-  test("map correct ImpalaView returns Right(ImpalaView)") {
+  test("map correct basic ImpalaView returns Right(ImpalaView)") {
     val component: OutputPort[PrivateImpalaViewCdw] = OutputPort[PrivateImpalaViewCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
@@ -79,13 +80,14 @@ class ImpalaViewMapperTest extends AnyFunSuite {
             None
           )
         ),
-        readsFromTableName = "tableName"
+        readsFromSourceName = Some("tableName"),
+        querySourceStatement = None
       ))
 
     assert(actual == expected)
   }
 
-  test("map incorrect ImpalaView returns return Left") {
+  test("map incorrect basic ImpalaView returns return Left") {
     val component: OutputPort[PrivateImpalaViewCdw] = OutputPort[PrivateImpalaViewCdw](
       id = "urn:dmb:cmp:$DPDomain:$DPName:$DPMajorVersion:$OutputPortName",
       name = "name",
@@ -111,6 +113,45 @@ class ImpalaViewMapperTest extends AnyFunSuite {
     assert(actual.isLeft)
     assert(actual.left.value.isInstanceOf[ComponentGatewayError])
     assert(actual.left.value.error == "arrayDataType must be specified for ARRAY data type")
+  }
+
+  test("testing the validity of a basic view should return None") {
+    val schema = Seq(
+      getC("name", ColumnDataType.STRING),
+      getC("surname", ColumnDataType.STRING),
+      getC("age", ColumnDataType.INT),
+      getC("sex", ColumnDataType.CHAR, dl = Some(1)),
+      getC("jobExperiences", ColumnDataType.ARRAY)
+    )
+    val specific = PrivateImpalaViewCdw(
+      databaseName = "databaseName",
+      tableName = "tableName",
+      viewName = "viewName"
+    )
+    assert(ImpalaViewMapper.isValidView(schema, specific).isEmpty)
+  }
+
+  test("testing the validity of a custom query view should return None") {
+    val schema = None
+    val specific = PrivateImpalaStorageAreaViewCdw(
+      databaseName = "databaseName",
+      viewName = "viewName",
+      queryStatement = "SELECT * FROM table",
+      tableSchema = None
+    )
+    assert(ImpalaViewMapper.isValidView(Seq.empty, specific).isEmpty)
+  }
+
+  test("testing the validity of a basic invalid view should return error message") {
+    val schema = Seq.empty
+    val specific = PrivateImpalaStorageAreaViewCdw(
+      databaseName = "databaseName",
+      viewName = "viewName",
+      queryStatement = "",
+      tableSchema = None
+    )
+    val actual = ImpalaViewMapper.isValidView(schema, specific)
+    assert(actual.contains("Cannot create an Impala view with an empty query source statement"))
   }
 
   private def getC(

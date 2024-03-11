@@ -1,20 +1,20 @@
-componentIdToProvision: urn:dmb:cmp:organization:long-owner-text:0:impala-cdp-output-port
+componentIdToProvision: urn:dmb:cmp:finance:salary-test-cdp:0:impala-cdp-output-port
 dataProduct:
-  dataProductOwnerDisplayName: Sergio Mejia
+  dataProductOwnerDisplayName: John Doe
   environment: development
-  domain: organization
+  domain: finance
   kind: dataproduct
-  domainId: urn:dmb:dmn:organization
-  id: urn:dmb:dp:organization:long-owner-text:0
+  domainId: urn:dmb:dmn:finance
+  id: urn:dmb:dp:finance:salary-test-cdp:0
   description: Description
-  devGroup: witboost-technical-users
-  ownerGroup: sergio.mejia_agilelab.it
-  name: Long owner text
+  devGroup: bigData
+  ownerGroup: john.doe_agilelab.it
+  name: Salary test CDP
   fullyQualifiedName: null
   version: 0.0.0
   useCaseTemplateId: urn:dmb:utm:dataproduct-aws-cdp-template:0.0.0
   infrastructureTemplateId: urn:dmb:itm:cdp-aws-dataproduct-provisioner:1
-  dataProductOwner: user:sergio.mejia_agilelab.it
+  dataProductOwner: user:john.doe_agilelab.it
   email: contact@example.com
   informationSLA: null
   status: Draft
@@ -24,7 +24,7 @@ dataProduct:
   specific: {}
   components:
     - kind: outputport
-      id: urn:dmb:cmp:organization:long-owner-text:0:impala-cdp-output-port
+      id: urn:dmb:cmp:finance:salary-test-cdp:0:impala-cdp-output-port
       description: Description
       name: Impala CDP Output Port
       fullyQualifiedName: null
@@ -40,12 +40,24 @@ dataProduct:
       processDescription: null
       dataContract:
         schema:
-          - name: id
+          - name: Age
+            dataType: DOUBLE
+          - name: Gender
             dataType: STRING
-          - name: name
+          - name: Education_Level
+            dataType: INT
+          - name: Job_Title
             dataType: STRING
-          - name: surname
+          - name: Years_of_Experience
+            dataType: DOUBLE
+          - name: Salary
+            dataType: DOUBLE
+          - name: Country
             dataType: STRING
+          - name: Race
+            dataType: STRING
+          - name: Senior
+            dataType: INT
         termsAndConditions: null
         endpoint: null
         SLA:
@@ -64,10 +76,16 @@ dataProduct:
       sampleData: {}
       semanticLinking: []
       specific:
-        databaseName: organization_long_owner_text_0
-        tableName: organization_long_owner_text_0_impala_cdp_output_port_development
-        cdpEnvironment: aws-frankfurt-data-eng
+        databaseName: finance_salary_test_cdp_0
+        tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
+        cdpEnvironment: cdp-env-data-eng
         cdwVirtualWarehouse: impala-test-vw
-        format: PARQUET
-        location: s3a://bucketName/folderPath/
-        partitions: []
+        format: TEXTFILE
+        location: s3a://cdp-env/path/to/data-folder/
+        partitions: [ Country ]
+        tableParams:
+          header: true
+          delimiter: "0x01"
+          tblProperties:
+            bucketing_version: "2"
+

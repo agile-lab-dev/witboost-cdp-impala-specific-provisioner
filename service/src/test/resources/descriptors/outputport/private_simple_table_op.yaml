@@ -1,6 +1,6 @@
 componentIdToProvision: urn:dmb:cmp:finance:salary-test-cdp:0:impala-cdp-output-port
 dataProduct:
-  dataProductOwnerDisplayName: Sergio Mejia
+  dataProductOwnerDisplayName: John Doe
   environment: development
   domain: finance
   kind: dataproduct
@@ -8,13 +8,13 @@ dataProduct:
   id: urn:dmb:dp:finance:salary-test-cdp:0
   description: Description
   devGroup: bigData
-  ownerGroup: sergio.mejia_agilelab.it
+  ownerGroup: john.doe_agilelab.it
   name: Salary test CDP
   fullyQualifiedName: null
   version: 0.0.0
   useCaseTemplateId: urn:dmb:utm:dataproduct-aws-cdp-template:0.0.0
   infrastructureTemplateId: urn:dmb:itm:cdp-aws-dataproduct-provisioner:1
-  dataProductOwner: user:sergio.mejia_agilelab.it
+  dataProductOwner: user:john.doe_agilelab.it
   email: contact@example.com
   informationSLA: null
   status: Draft
@@ -29,11 +29,11 @@ dataProduct:
       name: Impala CDP Output Port
       fullyQualifiedName: null
       version: 0.0.0
-      infrastructureTemplateId: urn:dmb:itm:aws-cdp-outputport-impala-provisioner:1
-      useCaseTemplateId: urn:dmb:utm:aws-cdp-outputport-impala-template:0.0.0
+      infrastructureTemplateId: urn:dmb:itm:cdp-private-outputport-impala-provisioner:0
+      useCaseTemplateId: urn:dmb:utm:cdp-private-outputport-impala-template:0.0.0
       dependsOn: []
-      platform: CDP on AWS
-      technology: S3
+      platform: CDP Private
+      technology: Impala
       outputPortType: SQL
       creationDate: 2023-04-19T07:56:15.171Z
       startDate: 2023-04-19T07:56:15.171Z
@@ -78,8 +78,8 @@ dataProduct:
       specific:
         databaseName: finance_salary_test_cdp_0
         tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
-        cdpEnvironment: cdp-env-data-eng
-        cdwVirtualWarehouse: impala-test-vw
-        format: CSV
-        location: s3a://cdp-env/path/to/data-folder/
-        partitions: []
+        format: TEXTFILE
+        location: /data-products/finance/e2e_test_cdp/0/file-landing-area/
+        partitions: [ ]
+
+

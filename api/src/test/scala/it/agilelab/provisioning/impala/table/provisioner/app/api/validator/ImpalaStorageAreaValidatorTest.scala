@@ -11,6 +11,7 @@ import it.agilelab.provisioning.impala.table.provisioner.common.{
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   PrivateImpalaStorageAreaCdw,
+  PrivateImpalaStorageAreaViewCdw,
   PrivateImpalaTableCdw,
   PublicImpalaTableCdw,
   TableParams
@@ -221,7 +222,77 @@ class ImpalaStorageAreaValidatorTest extends AnyFunSuite with MockFactory {
       case Left(_)      => false
     }
     assert(actual)
+  }
 
+  test("test a valid view storage area descriptor") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaStorageAreaViewCdw(
+            databaseName = "domain_dp_name_0",
+            viewName = "domain_dp_name_0_cmp_name",
+            queryStatement = "SELECT * FROM otherDb.otherTable",
+            tableSchema = None
+          ).asJson).build()
+      )
+      .build()
+
+    val locationValidator = stub[LocationValidator]
+
+    val validator =
+      ImpalaStorageAreaValidator.privateStorageAreaImpalaCdwValidator(locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isValid
+      case Left(_)      => false
+    }
+    assert(actual)
+  }
+
+  test("test a valid view storage area descriptor with tableSchema") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(PrivateImpalaStorageAreaViewCdw(
+          databaseName = "domain_dp_name_0",
+          viewName = "domain_dp_name_0_cmp_name",
+          queryStatement = "SELECT * FROM otherDb.otherTable",
+          tableSchema = Some(validTableSchema)
+        ).asJson).build()
+      )
+      .build()
+
+    val locationValidator = stub[LocationValidator]
+
+    val validator =
+      ImpalaStorageAreaValidator.privateStorageAreaImpalaCdwValidator(locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isValid
+      case Left(_)      => false
+    }
+    assert(actual)
+  }
+
+  test("test an invalid view storage area descriptor") {
+    val request = ProvisionRequestFaker[Json, Json](Json.obj())
+      .withComponent(
+        StorageAreaFaker(
+          PrivateImpalaStorageAreaViewCdw(
+            databaseName = "domain_dp_name_0",
+            viewName = "domain_dp_name_0_cmp_name",
+            queryStatement = "", // empty SQL
+            tableSchema = None
+          ).asJson).build()
+      )
+      .build()
+
+    val locationValidator = stub[LocationValidator]
+
+    val validator =
+      ImpalaStorageAreaValidator.privateStorageAreaImpalaCdwValidator(locationValidator)
+    val actual = validator.validate(request) match {
+      case Right(value) => value.isInvalid
+      case Left(_)      => false
+    }
+    assert(actual)
   }
 
   test("test an output port descriptor fails as this is an storage area validator") {

@@ -13,10 +13,10 @@ import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.Column
 
 sealed trait ImpalaCdw {
   def databaseName: String
-  def tableName: String
 }
 
 sealed trait ImpalaTableCdw extends ImpalaCdw {
+  def tableName: String
   def format: ImpalaFormat
   def location: String
   def partitions: Option[Seq[String]]
@@ -48,6 +48,7 @@ object ImpalaCdw {
     case storageAreaCdw @ PrivateImpalaStorageAreaCdw(_, _, _, _, _, _, _) => storageAreaCdw.asJson
     case privateCdw @ PrivateImpalaTableCdw(_, _, _, _, _, _)              => privateCdw.asJson
     case privateViewCdw @ PrivateImpalaViewCdw(_, _, _)                    => privateViewCdw.asJson
+    case privateSAViewCdw @ PrivateImpalaStorageAreaViewCdw(_, _, _, _)    => privateSAViewCdw.asJson
 
   }
 
@@ -56,9 +57,9 @@ object ImpalaCdw {
       Decoder[PublicImpalaTableCdw].widen,
       Decoder[PrivateImpalaStorageAreaCdw].widen,
       Decoder[PrivateImpalaTableCdw].widen,
-      Decoder[PrivateImpalaViewCdw].widen
-    )
-      .reduceLeft(_ or _)
+      Decoder[PrivateImpalaViewCdw].widen,
+      Decoder[PrivateImpalaStorageAreaViewCdw].widen
+    ).reduceLeft(_ or _)
 
   implicit class ImpalaProvisionRequestOps(provisionRequest: ProvisionRequest[Json, Json]) {
     def getOutputPortRequest[COMP_SPEC](implicit
@@ -131,6 +132,13 @@ final case class PrivateImpalaStorageAreaCdw(
 
 final case class PrivateImpalaViewCdw(
     override val databaseName: String,
-    override val tableName: String,
+    tableName: String,
     override val viewName: String
+) extends ImpalaViewCdw
+
+final case class PrivateImpalaStorageAreaViewCdw(
+    override val databaseName: String,
+    override val viewName: String,
+    queryStatement: String,
+    tableSchema: Option[Seq[Column]] = None
 ) extends ImpalaViewCdw

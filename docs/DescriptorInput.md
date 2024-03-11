@@ -4,7 +4,7 @@ The Impala provisioner uses the `specific` field for receiving the information n
 
 | Field                      | Name                 | Description                                                                                                                                                                                                                                                                                                                                                                                                            | Required                                                                             |
 |----------------------------|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `dataContract.schema`      | Data contract schema | OpenMetadata Column schema defining the schema of the table or view to be created.                                                                                                                                                                                                                                                                                                                                     | Yes                                                                                  |
+| `dataContract.schema`      | Data contract schema | Only for Output Ports. OpenMetadata Column schema defining the schema of the table or view to be created.                                                                                                                                                                                                                                                                                                              | Yes                                                                                  |
 | `specific.databaseName`    | Database name        | Database to be created to handle the component tables or views. We recommend the Impala Database name to be equal to `$Domain_$DataProductName_$MajorVersion` and contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`). This allows to manage a single database for each data product, allowing for fine-grained authorization mechanisms. | Yes                                                                                  |
 | `specific.tableName`       | Table name           | Table name to be created, or when provisioning a view, the name of the table exposed by the view. We recommend Impala Table name to be equal to `$Domain_$DPName_$DPMajorVrs_$ComponentName` and contain only the characters `[a-zA-Z0-9_]`. All other characters (like spaces or dashes) must be replaced with underscores (`_`).                                                                                     | Yes                                                                                  |                                                                                      
 | `specific.format`          | Data file Format     | Format of the data files an external table exposes. Only required for table creation. Supported values are `CSV`, `PARQUET`, `TEXTFILE` and `AVRO` formats.                                                                                                                                                                                                                                                            | Only for External Tables                                                             |
@@ -208,7 +208,9 @@ Storage Areas create external tables on data that are only accessible within the
 
 ### CDP Private Cloud
 
-The Storage Area descriptor has a very similar shape to the Output Port, but the column schema is present on `specific.tableSchema` rather than `dataContract.schema`. Nonetheless, the way to write the schema is exactly the same.
+#### External Table
+
+The Storage Area descriptor for an External Table has a very similar shape to the Output Port, but the column schema is present on `specific.tableSchema` rather than `dataContract.schema`. Nonetheless, the way to write the schema is exactly the same.
 
 ```yaml
 id: urn:dmb:dp:platform:demo-dp:0
@@ -238,6 +240,35 @@ components:
 ```
 
 The extra table parameters functionality explained on the CDP Public section for Output Port External Tables applies as well for CDP Private Cloud Storage Areas with the same capabilities and considerations.
+
+#### View
+
+The View Storage Area has different capabilities than the View Output Port. To allow for flexibility on the creation of Impala data stacks, this view allows the user to provide a custom DML query statement in the form `SELECT ...`, allowing the user to define complex queries that don't map 1 to 1 to another existing output port or storage. The field for this is defined as follows:
+
+| Field                     | Name                        | Description                                                                                                                                                                 | Required |
+|---------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `specific.queryStatement` | Custom SQL SELECT Statement | DML Statement used at creation time of the view to define it. The table must be written using its fully qualified name, as these queries are executed at Impala root level. | Yes      |
+
+⚠ **Warning**: As of the current version, this SQL statement is not analysed, so it may be vulnerable to SQL injection techniques ⚠
+
+```yaml
+id: urn:dmb:dp:platform:demo-dp:0
+name: demo-dp
+domain: platform
+environment: dev
+version: 0.0.1
+dataProductOwner: dataProductOwner
+specific: {}
+components:
+- id: urn:dmb:cmp:platform:demo-dp:0:witboost_table_impala
+  name: witboost_table_impala
+  description: description
+  owners: []
+  specific: 
+    databaseName: platform_demo_dp_0
+    viewName: platform_demo_dp_0_witboost_table_impala_poc
+    queryStatement: "SELECT * FROM db.readsFromTableName WHERE country='UK'"
+```
 
 ## Limitations
 

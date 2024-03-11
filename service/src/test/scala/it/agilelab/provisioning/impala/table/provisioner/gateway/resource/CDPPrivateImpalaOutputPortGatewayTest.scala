@@ -428,7 +428,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaInt, None)),
-      readsFromTableName = "tableName"
+      readsFromSourceName = Some("tableName"),
+      querySourceStatement = None
     )
 
     val hostProvider = stub[ConfigHostProvider]
@@ -513,7 +514,8 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaInt, None)),
-      readsFromTableName = "tableName"
+      readsFromSourceName = Some("tableName"),
+      querySourceStatement = None
     )
 
     val hostProvider = stub[ConfigHostProvider]
