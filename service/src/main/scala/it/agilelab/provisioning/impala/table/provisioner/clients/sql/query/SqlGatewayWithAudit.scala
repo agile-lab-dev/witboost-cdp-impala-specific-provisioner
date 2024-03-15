@@ -30,6 +30,16 @@ class SqlGatewayWithAudit(sqlGateway: SqlGateway, audit: Audit) extends SqlGatew
     result
   }
 
+  override def getConnectionString(
+      connectionConfig: ConnectionConfig
+  ): Either[SqlGatewayError, String] = {
+    val action = show"GetConnectionString($connectionConfig)"
+    audit.info(INFO_MSG.format(action))
+    val result = sqlGateway.getConnectionString(connectionConfig)
+    auditWithinResult(result, action)
+    result
+  }
+
   private def ellipsize(s: String, limit: Int): String =
     if (s.length > limit) {
       s.substring(0, limit) + "..."
@@ -43,4 +53,5 @@ class SqlGatewayWithAudit(sqlGateway: SqlGateway, audit: Audit) extends SqlGatew
       case Right(_) => audit.info(show"$action completed successfully")
       case Left(l)  => audit.error(show"$action failed. Details: $l")
     }
+
 }

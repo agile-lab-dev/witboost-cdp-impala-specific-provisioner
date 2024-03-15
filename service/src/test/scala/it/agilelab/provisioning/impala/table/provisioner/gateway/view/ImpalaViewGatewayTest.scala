@@ -5,12 +5,12 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl.ImpalaD
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.ExecuteDDLErr
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
   DefaultSQLGateway,
-  SqlGateway,
-  SqlGatewayError
+  SqlGateway
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
   ImpalaDataType,
+  ImpalaEntityResource,
   ImpalaView
 }
 import org.scalamock.scalatest.MockFactory
@@ -20,6 +20,8 @@ import java.sql.SQLException
 
 class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
   test("create") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -28,6 +30,15 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       )
       .once()
       .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val view = ImpalaView(
+      database = "db",
+      name = "view",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("table"),
+      querySourceStatement = None
+    )
 
     assert(
       new ImpalaViewGateway(
@@ -36,19 +47,15 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ImpalaView(
-          database = "db",
-          name = "view",
-          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
-          querySourceStatement = None
-        ),
+        connectionConfig,
+        view,
         ifNotExists = false
-      ) == Right())
+      ) == Right(ImpalaEntityResource(view, "jdbc://")))
   }
 
   test("create if not exists") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -58,6 +65,16 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       .once()
       .returns(Right(1))
 
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val view = ImpalaView(
+      database = "db",
+      name = "view",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("table"),
+      querySourceStatement = None
+    )
+
     assert(
       new ImpalaViewGateway(
         "deployUser",
@@ -65,16 +82,10 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ImpalaView(
-          database = "db",
-          name = "view",
-          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
-          querySourceStatement = None
-        ),
+        connectionConfig,
+        view,
         ifNotExists = true
-      ) == Right())
+      ) == Right(ImpalaEntityResource(view, "jdbc://")))
   }
 
   test("create returns Left if Sql gateway failed") {
@@ -110,6 +121,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
   }
 
   test("drop") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -119,6 +131,16 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       .once()
       .returns(Right(1))
 
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val view = ImpalaView(
+      database = "db",
+      name = "view",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("table"),
+      querySourceStatement = None
+    )
+
     assert(
       new ImpalaViewGateway(
         "deployUser",
@@ -126,19 +148,14 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ImpalaView(
-          database = "db",
-          name = "view",
-          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
-          querySourceStatement = None
-        ),
+        connectionConfig,
+        view,
         ifExists = false
-      ) == Right())
+      ) == Right(ImpalaEntityResource(view, "jdbc://")))
   }
 
   test("drop if exists") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -148,6 +165,16 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       .once()
       .returns(Right(1))
 
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val view = ImpalaView(
+      database = "db",
+      name = "view",
+      schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      readsFromSourceName = Some("table"),
+      querySourceStatement = None
+    )
+
     assert(
       new ImpalaViewGateway(
         "deployUser",
@@ -155,16 +182,10 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ImpalaView(
-          database = "db",
-          name = "view",
-          schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
-          querySourceStatement = None
-        ),
+        connectionConfig,
+        view,
         ifExists = true
-      ) == Right())
+      ) == Right(ImpalaEntityResource(view, "jdbc://")))
   }
 
   test("drop returns Left if Sql gateway failed") {

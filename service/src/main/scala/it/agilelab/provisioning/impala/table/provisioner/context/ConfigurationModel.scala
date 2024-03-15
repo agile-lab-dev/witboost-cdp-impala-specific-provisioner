@@ -3,6 +3,7 @@ package it.agilelab.provisioning.impala.table.provisioner.context
 trait ConfigurationModel {
   val PROVISIONER: String = "provisioner"
   val PROVISION_CLOUD_TYPE: String = "provision-cloud"
+  val PROVISION_INFO: String = "provision-info"
 
   private val networking: String = "networking"
   private val httpServer: String = "httpServer"

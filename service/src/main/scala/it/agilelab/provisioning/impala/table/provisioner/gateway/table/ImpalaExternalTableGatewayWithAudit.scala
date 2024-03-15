@@ -4,7 +4,10 @@ import cats.implicits.showInterpolator
 import it.agilelab.provisioning.commons.audit.Audit
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ExternalTable
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource
+}
 
 class ImpalaExternalTableGatewayWithAudit(
     impalaExternalTableGateway: ExternalTableGateway,
@@ -17,7 +20,7 @@ class ImpalaExternalTableGatewayWithAudit(
       connectionConfigurations: ConnectionConfig,
       externalTable: ExternalTable,
       ifNotExists: Boolean
-  ): Either[SqlGatewayError, Unit] = {
+  ): Either[SqlGatewayError, ImpalaEntityResource] = {
     val action = s"CreateExternalTable($externalTable)"
     audit.info(INFO_MSG.format(action))
     val result =
@@ -30,7 +33,7 @@ class ImpalaExternalTableGatewayWithAudit(
       connectionConfigurations: ConnectionConfig,
       externalTable: ExternalTable,
       ifExists: Boolean
-  ): Either[SqlGatewayError, Unit] = {
+  ): Either[SqlGatewayError, ImpalaEntityResource] = {
     val action = s"DropExternalTable($externalTable)"
     audit.info(INFO_MSG.format(action))
     val result =

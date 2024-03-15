@@ -42,4 +42,9 @@ class DefaultSQLGateway(connectionProvider: ConnectionProvider)
         }.sum
       }.toEither.leftMap(e => ExecuteDDLErr(e))
     }
+
+  override def getConnectionString(
+      connectionConfig: ConnectionConfig
+  ): Either[SqlGatewayError, String] =
+    connectionProvider.getConnectionString(connectionConfig).leftMap(ConnectionErr)
 }

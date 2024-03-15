@@ -6,7 +6,10 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
   SqlGateway,
   SqlGatewayError
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaView
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaEntityResource,
+  ImpalaView
+}
 
 class ImpalaViewGateway(
     deployUser: String,
@@ -19,23 +22,27 @@ class ImpalaViewGateway(
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifNotExists: Boolean
-  ): Either[SqlGatewayError, Unit] =
-    // TODO - Validate again the query if existent before executing it
-    sqlQueryExecutor
-      .executeDDL(
-        connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
-        ddlProvider.createView(impalaView, ifNotExists)
-      )
-      .map(_ => ())
+  ): Either[SqlGatewayError, ImpalaEntityResource] =
+    for {
+      // TODO - Validate again the query if existent before executing it
+      _ <- sqlQueryExecutor
+        .executeDDL(
+          connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
+          ddlProvider.createView(impalaView, ifNotExists)
+        )
+      jdbc <- sqlQueryExecutor.getConnectionString(connectionConfigurations)
+    } yield ImpalaEntityResource(impalaView, jdbc)
 
   override def drop(
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifExists: Boolean
-  ): Either[SqlGatewayError, Unit] =
-    sqlQueryExecutor
-      .executeDDL(
-        connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
-        ddlProvider.dropView(impalaView, ifExists))
-      .map(_ => ())
+  ): Either[SqlGatewayError, ImpalaEntityResource] =
+    for {
+      _ <- sqlQueryExecutor
+        .executeDDL(
+          connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
+          ddlProvider.dropView(impalaView, ifExists))
+      jdbc <- sqlQueryExecutor.getConnectionString(connectionConfigurations)
+    } yield ImpalaEntityResource(impalaView, jdbc)
 }

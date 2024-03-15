@@ -7,7 +7,10 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
   SqlGateway,
   SqlGatewayError
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ExternalTable
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource
+}
 
 trait ExternalTableGateway {
 
@@ -20,7 +23,7 @@ trait ExternalTableGateway {
       connectionConfigurations: ConnectionConfig,
       externalTable: ExternalTable,
       ifNotExists: Boolean
-  ): Either[SqlGatewayError, Unit]
+  ): Either[SqlGatewayError, ImpalaEntityResource]
 
   /** Drops an external table
     * @param connectionConfigurations Connection configuration to build the JDBC connection
@@ -31,7 +34,7 @@ trait ExternalTableGateway {
       connectionConfigurations: ConnectionConfig,
       externalTable: ExternalTable,
       ifExists: Boolean
-  ): Either[SqlGatewayError, Unit]
+  ): Either[SqlGatewayError, ImpalaEntityResource]
 }
 
 object ExternalTableGateway {

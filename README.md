@@ -184,7 +184,11 @@ By default, the server binds to port 8093 on localhost. After it's up and runnin
 
 Most application configurations are handled with the Typesafe Config library. You can find the default settings in the `reference.conf` of each module. Customize them and use the `config.file` system property or the other options provided by Typesafe Config according to your needs. The provided docker image expects the config file mounted at path `/config/application.conf`.
 
-Especially for CDP Private Cloud, a set of required configuration fields must be modified, like Ranger and HDFS base URLs. For more information on the configuration and to understand how to set up the provisioner for a specific type of CDP Cloud, see [Configuring the Impala Specific Provisioner](docs/Configuration.md).
+Especially for CDP Private Cloud, a set of required configuration fields must be modified, like Ranger and HDFS base URLs. 
+
+Furthermore, you can specify via configuration a set of values called "publicInfo" and "privateInfo" to return valuable information to the user about the deployed resources by the provisioner at provision time.
+
+For more information on the configuration and to understand how to set up the provisioner for a specific type of CDP Cloud, see [Configuring the Impala Specific Provisioner](docs/Configuration.md).
 
 ### Helm chart configuration
 

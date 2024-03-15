@@ -9,6 +9,10 @@ trait ConnectionProvider {
 
   def get(connectionConfig: ConnectionConfig): Either[ConnectionProviderError, Connection]
 
+  def getConnectionString(
+      connectionConfig: ConnectionConfig
+  ): Either[ConnectionProviderError, String]
+
 }
 
 object ConnectionProvider {

@@ -1,8 +1,12 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.query
 
 import it.agilelab.provisioning.commons.audit.Audit
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionProviderError.ParseConnectionStringErr
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.UsernamePasswordConnectionConfig
-import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.ExecuteDDLErr
+import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.{
+  ConnectionErr,
+  ExecuteDDLErr
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -51,5 +55,42 @@ class SqlGatewayWithAuditTest extends AnyFunSuite with MockFactory {
 
     val actual = sqlClient.executeDDL(connectionConfig, sql)
     assert(actual == Left(error))
+  }
+
+  test("getConnectionString logs success info") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true)
+
+    inSequence(
+      (audit.info _).expects(
+        "Executing statement GetConnectionString(UsernamePasswordConnectionConfig(a, b, c, d, s, useSSL=true))"),
+      (audit.info _).expects(
+        "GetConnectionString(UsernamePasswordConnectionConfig(a, b, c, d, s, useSSL=true)) completed successfully")
+    )
+
+    (defaultSqlClient.getConnectionString _)
+      .when(connectionConfig)
+      .returns(Right("jdbc://"))
+
+    val actual = sqlClient.getConnectionString(connectionConfig)
+    assert(actual == Right("jdbc://"))
+  }
+
+  test("getConnectionString logs error info") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "d", "s", useSSL = true)
+    val error = ParseConnectionStringErr(connectionConfig, "jdbc://")
+    inSequence(
+      (audit.info _).expects(
+        "Executing statement GetConnectionString(UsernamePasswordConnectionConfig(a, b, c, d, s, useSSL=true))"),
+      (audit.error _).expects(
+        "GetConnectionString(UsernamePasswordConnectionConfig(a, b, c, d, s, useSSL=true)) failed. Details: ConnectionErr(ParseConnectionStringErr(UsernamePasswordConnectionConfig(a, b, c, d, s, useSSL=true), jdbc://))"
+      )
+    )
+
+    (defaultSqlClient.getConnectionString _)
+      .when(connectionConfig)
+      .returns(Left(ConnectionErr(error)))
+
+    val actual = sqlClient.getConnectionString(connectionConfig)
+    assert(actual == Left(ConnectionErr(error)))
   }
 }

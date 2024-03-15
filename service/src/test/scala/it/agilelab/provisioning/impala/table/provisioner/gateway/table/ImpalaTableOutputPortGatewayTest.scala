@@ -7,7 +7,8 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
-  ImpalaDataType
+  ImpalaDataType,
+  ImpalaEntityResource
 }
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -15,6 +16,8 @@ import org.scalatest.funsuite.AnyFunSuite
 class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
 
   test("create") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDLs _)
       .expects(
@@ -27,6 +30,21 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .once()
       .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _)
+      .expects(connectionConfig.setCredentials("<USER>", "<PASSWORD>"))
+      .returns(Right("jdbc://"))
+
+    val externalTable = ExternalTable(
+      "db",
+      "table",
+      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
+      "loc",
+      Parquet,
+      None,
+      Map.empty,
+      header = false
+    )
 
     assert(
       new ImpalaExternalTableGateway(
@@ -35,23 +53,15 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ExternalTable(
-          "db",
-          "table",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
-          "loc",
-          Parquet,
-          None,
-          Map.empty,
-          header = false
-        ),
+        connectionConfig,
+        externalTable,
         ifNotExists = false
-      ) == Right())
+      ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
   }
 
   test("create if not exists") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDLs _)
       .expects(
@@ -64,6 +74,21 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .once()
       .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _)
+      .expects(connectionConfig.setCredentials("<USER>", "<PASSWORD>"))
+      .returns(Right("jdbc://"))
+
+    val externalTable = ExternalTable(
+      "db",
+      "table",
+      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
+      "loc",
+      Parquet,
+      None,
+      Map.empty,
+      header = false
+    )
 
     assert(
       new ImpalaExternalTableGateway(
@@ -72,23 +97,15 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).create(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ExternalTable(
-          "db",
-          "table",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
-          "loc",
-          Parquet,
-          None,
-          Map.empty,
-          header = false
-        ),
+        connectionConfig,
+        externalTable,
         ifNotExists = true
-      ) == Right())
+      ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
   }
 
   test("drop") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -97,6 +114,19 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .once()
       .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val externalTable = ExternalTable(
+      "db",
+      "table",
+      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
+      "loc",
+      Parquet,
+      None,
+      Map.empty,
+      header = false
+    )
 
     assert(
       new ImpalaExternalTableGateway(
@@ -105,23 +135,15 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ExternalTable(
-          "db",
-          "table",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
-          "loc",
-          Parquet,
-          None,
-          Map.empty,
-          header = false
-        ),
+        connectionConfig,
+        externalTable,
         ifExists = false
-      ) == Right())
+      ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
   }
 
   test("drop if exists") {
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
     val sqlQueryExecutor = mock[DefaultSQLGateway]
     (sqlQueryExecutor.executeDDL _)
       .expects(
@@ -130,6 +152,19 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .once()
       .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val externalTable = ExternalTable(
+      "db",
+      "table",
+      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
+      "loc",
+      Parquet,
+      None,
+      Map.empty,
+      header = false
+    )
 
     assert(
       new ImpalaExternalTableGateway(
@@ -138,19 +173,9 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         new ImpalaDataDefinitionLanguageProvider(),
         sqlQueryExecutor
       ).drop(
-        UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true),
-        ExternalTable(
-          "db",
-          "table",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
-          "loc",
-          Parquet,
-          None,
-          Map.empty,
-          header = false
-        ),
+        connectionConfig,
+        externalTable,
         ifExists = true
-      ) == Right())
+      ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
   }
 }

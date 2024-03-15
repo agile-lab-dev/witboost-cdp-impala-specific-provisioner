@@ -3,7 +3,10 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.view
 import it.agilelab.provisioning.commons.audit.Audit
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.UsernamePasswordConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.ExecuteDDLErr
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaView
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaEntityResource,
+  ImpalaView
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -29,10 +32,13 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
 
-    (gatewayMock.create _).expects(connectionConfig, impalaView, *).returns(Right(()))
+    val entityResource = ImpalaEntityResource(impalaView, "jdbc://")
+
+    (gatewayMock.create _).expects(connectionConfig, impalaView, *).returns(Right(entityResource))
 
     assert(
-      gatewayWithAudit.create(connectionConfig, impalaView, ifNotExists = true) == Right(())
+      gatewayWithAudit.create(connectionConfig, impalaView, ifNotExists = true) == Right(
+        entityResource)
     )
   }
 
@@ -80,11 +86,12 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
     val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
+    val entityResource = ImpalaEntityResource(impalaView, "jdbc://")
 
-    (gatewayMock.drop _).expects(connectionConfig, impalaView, *).returns(Right(()))
+    (gatewayMock.drop _).expects(connectionConfig, impalaView, *).returns(Right(entityResource))
 
     assert(
-      gatewayWithAudit.drop(connectionConfig, impalaView, ifExists = true) == Right(())
+      gatewayWithAudit.drop(connectionConfig, impalaView, ifExists = true) == Right(entityResource)
     )
   }
 

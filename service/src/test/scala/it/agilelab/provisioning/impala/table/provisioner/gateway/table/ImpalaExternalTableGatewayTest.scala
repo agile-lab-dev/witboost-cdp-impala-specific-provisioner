@@ -4,7 +4,11 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl.ImpalaDataDefinitionLanguageProvider
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGateway
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.ExecuteDDLErr
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, ImpalaFormat }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource,
+  ImpalaFormat
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -49,9 +53,13 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         .returns("CREATE EXTERNAL TABLE ...")
     )
     (sqlGateway.executeDDLs _).expects(connectionConfig, *).returns(Right(1))
+    (sqlGateway.getConnectionString _)
+      .expects(connectionConfig.setCredentials("<USER>", "<PASSWORD>"))
+      .returns(Right("jdbc://"))
 
     assert(
-      tableGateway.create(connectionConfig, externalTable, ifNotExists = true) == Right(())
+      tableGateway.create(connectionConfig, externalTable, ifNotExists = true) == Right(
+        ImpalaEntityResource(externalTable, "jdbc://"))
     )
   }
 
@@ -132,9 +140,11 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
       .returns("DROP TABLE ...")
 
     (sqlGateway.executeDDL _).expects(connectionConfig, *).returns(Right(1))
+    (sqlGateway.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
 
     assert(
-      tableGateway.drop(connectionConfig, externalTable, ifExists = true) == Right(())
+      tableGateway.drop(connectionConfig, externalTable, ifExists = true) == Right(
+        ImpalaEntityResource(externalTable, "jdbc://"))
     )
   }
 

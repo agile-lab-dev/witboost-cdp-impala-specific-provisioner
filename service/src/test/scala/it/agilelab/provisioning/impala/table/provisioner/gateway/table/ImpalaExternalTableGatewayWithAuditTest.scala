@@ -5,7 +5,11 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.
   ConnectionConfig,
   UsernamePasswordConnectionConfig
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, ImpalaFormat }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource,
+  ImpalaFormat
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -31,10 +35,15 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
         Map.empty,
         header = false)
 
-    (gatewayMock.create _).expects(connectionConfig, externalTable, *).returns(Right(()))
+    val entityResource = ImpalaEntityResource(externalTable, "jdbc://")
+
+    (gatewayMock.create _)
+      .expects(connectionConfig, externalTable, *)
+      .returns(Right(entityResource))
 
     assert(
-      gatewayWithAudit.create(connectionConfig, externalTable, ifNotExists = true) == Right(())
+      gatewayWithAudit.create(connectionConfig, externalTable, ifNotExists = true) == Right(
+        entityResource)
     )
   }
 
@@ -57,12 +66,13 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
         None,
         Map.empty,
         header = false)
+    val entityResource = ImpalaEntityResource(externalTable, "jdbc://")
 
-    (gatewayMock.drop _).expects(connectionConfig, externalTable, *).returns(Right(()))
+    (gatewayMock.drop _).expects(connectionConfig, externalTable, *).returns(Right(entityResource))
 
     assert(
-      gatewayWithAudit.drop(connectionConfig, externalTable, ifExists = true) == Right(())
-    )
+      gatewayWithAudit.drop(connectionConfig, externalTable, ifExists = true) == Right(
+        entityResource))
   }
 
 }

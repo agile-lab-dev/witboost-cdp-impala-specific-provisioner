@@ -4,7 +4,10 @@ import cats.implicits.showInterpolator
 import it.agilelab.provisioning.commons.audit.Audit
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.ConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaView
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaEntityResource,
+  ImpalaView
+}
 
 class ImpalaViewGatewayWithAudit(
     impalaViewGateway: ViewGateway,
@@ -17,7 +20,7 @@ class ImpalaViewGatewayWithAudit(
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifNotExists: Boolean
-  ): Either[SqlGatewayError, Unit] = {
+  ): Either[SqlGatewayError, ImpalaEntityResource] = {
     val action = s"CreateImpalaView($impalaView)"
     audit.info(INFO_MSG.format(action))
     val result =
@@ -30,7 +33,7 @@ class ImpalaViewGatewayWithAudit(
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifExists: Boolean
-  ): Either[SqlGatewayError, Unit] = {
+  ): Either[SqlGatewayError, ImpalaEntityResource] = {
     val action = s"DropImpalaView($impalaView)"
     audit.info(INFO_MSG.format(action))
     val result =

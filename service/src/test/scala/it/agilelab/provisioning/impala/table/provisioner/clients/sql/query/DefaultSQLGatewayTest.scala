@@ -140,4 +140,27 @@ class DefaultSQLGatewayTest extends AnyFunSuite with MockFactory {
         .isLeft)
   }
 
+  test("get connection string returns Right") {
+    val connectionProvider = mock[ConnectionProvider]
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
+    (connectionProvider.getConnectionString _).expects(connectionConfig).returns(Right("jdbc://"))
+
+    val actual = connectionProvider.getConnectionString(connectionConfig)
+
+    assert(actual == Right("jdbc://"))
+  }
+
+  test("get connection string returns Left if string provider failed") {
+    val connectionProvider = mock[ConnectionProvider]
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+    val err = ParseConnectionStringErr(connectionConfig, "jdbc://")
+
+    (connectionProvider.getConnectionString _).expects(connectionConfig).returns(Left(err))
+
+    val actual = connectionProvider.getConnectionString(connectionConfig)
+
+    assert(actual == Left(err))
+  }
+
 }

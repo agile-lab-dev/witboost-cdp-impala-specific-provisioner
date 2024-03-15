@@ -15,11 +15,15 @@ class SQLConnectionProvider(
       connectionConfig: ConnectionConfig
   ): Either[ConnectionProviderError, Connection] =
     for {
-      jdbcConnectionString <- sqlConnectionStringProvider.get(connectionConfig)
+      jdbcConnectionString <- getConnectionString(connectionConfig)
       connection <-
         Try {
           Class.forName(driver)
           DriverManager.getConnection(jdbcConnectionString)
         }.toEither.leftMap(GetConnectionErr)
     } yield connection
+
+  override def getConnectionString(
+      connectionConfig: ConnectionConfig
+  ): Either[ConnectionProviderError, String] = sqlConnectionStringProvider.get(connectionConfig)
 }

@@ -11,23 +11,23 @@ import io.circe.Json
 import it.agilelab.provisioning.commons.principalsmapping.CdpIamPrincipals
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaCdw,
-  ImpalaEntityResource
+  ImpalaProvisionerResource
 }
 
 class ImpalaTableOutputPortGatewayWithAudit(
     componentGateway: ComponentGateway[
       Json,
       ImpalaCdw,
-      ImpalaEntityResource,
+      ImpalaProvisionerResource,
       CdpIamPrincipals
     ],
     audit: Audit
-) extends ComponentGateway[Json, ImpalaCdw, ImpalaEntityResource, CdpIamPrincipals] {
+) extends ComponentGateway[Json, ImpalaCdw, ImpalaProvisionerResource, CdpIamPrincipals] {
   private val INFO_MSG = "Executing %s"
 
   override def create(
       command: ProvisionCommand[Json, ImpalaCdw]
-  ): Either[ComponentGatewayError, ImpalaEntityResource] = {
+  ): Either[ComponentGatewayError, ImpalaProvisionerResource] = {
     val action = s"Create($command)"
     audit.info(INFO_MSG.format(action))
     val result = componentGateway.create(command)
@@ -37,7 +37,7 @@ class ImpalaTableOutputPortGatewayWithAudit(
 
   override def destroy(
       command: ProvisionCommand[Json, ImpalaCdw]
-  ): Either[ComponentGatewayError, ImpalaEntityResource] = {
+  ): Either[ComponentGatewayError, ImpalaProvisionerResource] = {
     val action = s"Destroy($command)"
     audit.info(INFO_MSG.format(action))
     val result = componentGateway.destroy(command)

@@ -33,18 +33,20 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
   it should "return a 200 with COMPLETED on a successful provision with info" in {
 
-    val resource: ImpalaEntityResource = ImpalaEntityResource(
-      ExternalTable(
-        "database",
-        "tableName",
-        Seq.empty,
-        Seq.empty,
-        "location",
-        ImpalaFormat.Csv,
-        None,
-        Map.empty,
-        header = false
-      ),
+    val resource: ImpalaProvisionerResource = ImpalaProvisionerResource(
+      ImpalaEntityResource(
+        ExternalTable(
+          "database",
+          "tableName",
+          Seq.empty,
+          Seq.empty,
+          "location",
+          ImpalaFormat.Csv,
+          None,
+          Map.empty,
+          header = false
+        ),
+        "jdbc://"),
       ImpalaCdpAcl.apply(Seq.empty, Seq.empty)
     )
 
@@ -53,7 +55,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
           decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] =
-        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaEntityResource](resource))))
+        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaProvisionerResource](resource))))
     }
     val handler = new SpecificProvisionerHandler(controllerMock)
     val response: IO[Response[IO]] = new Resource[IO]()
@@ -74,7 +76,8 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
             |   "impalaTable": { "type": "string", "label": "table", "value": "tableName" },
             |   "impalaDatabase": { "type": "string", "label": "database", "value": "database" },
             |   "impalaLocation": { "type": "string", "label": "location", "value": "location" },
-            |   "impalaFormat": { "type": "string", "label": "format", "value": "CSV" }
+            |   "impalaFormat": { "type": "string", "label": "format", "value": "CSV" },
+            |   "jdbcUrl": { "type": "string", "label": "JDBC Connection String", "value": "jdbc://" }
             | }
             |""".stripMargin)
             .toOption
@@ -89,13 +92,16 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
 
   it should "return a 200 with COMPLETED on a successful provision output port view with info" in {
 
-    val resource: ImpalaEntityResource = ImpalaEntityResource(
-      ImpalaView(
-        database = "database",
-        name = "viewName",
-        schema = Seq.empty,
-        readsFromSourceName = Some("fromTable"),
-        querySourceStatement = None
+    val resource: ImpalaProvisionerResource = ImpalaProvisionerResource(
+      ImpalaEntityResource(
+        ImpalaView(
+          database = "database",
+          name = "viewName",
+          schema = Seq.empty,
+          readsFromSourceName = Some("fromTable"),
+          querySourceStatement = None
+        ),
+        "jdbc://"
       ),
       ImpalaCdpAcl.apply(Seq.empty, Seq.empty)
     )
@@ -105,7 +111,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
           decoderPd: Decoder[ProvisioningDescriptor[Json]],
           decoderCmp: Decoder[Component[Json]]
       ): Either[ApiError, ApiResponse.ProvisioningStatus] =
-        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaEntityResource](resource))))
+        Right(ApiResponse.completed("a-fake-id", Some(toJson[ImpalaProvisionerResource](resource))))
     }
     val handler = new SpecificProvisionerHandler(controllerMock)
     val response: IO[Response[IO]] = new Resource[IO]()
@@ -124,7 +130,8 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
             .parse("""
                 | {
                 |   "impalaDatabase": { "type": "string", "label": "database", "value": "database" },
-                |   "impalaView": { "type": "string", "label": "view", "value": "viewName" }
+                |   "impalaView": { "type": "string", "label": "view", "value": "viewName" },
+                |   "jdbcUrl": { "type": "string", "label": "JDBC Connection String", "value": "jdbc://" }
                 | }
                 |""".stripMargin)
             .toOption

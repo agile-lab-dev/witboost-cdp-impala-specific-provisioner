@@ -16,6 +16,7 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ImpalaCdpAcl,
   ImpalaDataType,
   ImpalaEntityResource,
+  ImpalaProvisionerResource,
   PolicyAttachment,
   PrivateImpalaStorageAreaCdw,
   PrivateImpalaTableCdw
@@ -32,9 +33,10 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
 
-  val opGatewayMock = mock[ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals]]
+  val opGatewayMock =
+    mock[ComponentGateway[Json, Json, ImpalaProvisionerResource, CdpIamPrincipals]]
   val storageGatewayMock =
-    mock[ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals]]
+    mock[ComponentGateway[Json, Json, ImpalaProvisionerResource, CdpIamPrincipals]]
 
   val opRequest = ProvisionRequestFaker[Json, Json](Json.obj())
     .withComponent(
@@ -121,17 +123,20 @@ class ImpalaGatewayTest extends AnyFunSuite with MockFactory {
     )
     .build()
 
-  val tableResource = ImpalaEntityResource(
-    ExternalTable(
-      "databaseName",
-      "tableName",
-      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
-      "loc",
-      Csv,
-      None,
-      Map.empty,
-      header = false
+  val tableResource = ImpalaProvisionerResource(
+    ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false
+      ),
+      "jdbc://"
     ),
     ImpalaCdpAcl(
       Seq(

@@ -54,6 +54,19 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false),
+      "jdbc://")
+
     val hostProvider = stub[ConfigHostProvider]
     (hostProvider.getImpalaCoordinatorHost _)
       .when(*)
@@ -66,7 +79,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.create _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
@@ -104,17 +117,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.create(provisionCommand)
 
     val expected =
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq.empty,
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -174,6 +178,21 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false
+      ),
+      "jdbc://"
+    )
+
     val hostProvider = stub[ConfigHostProvider]
     (hostProvider.getRangerHost _)
       .when()
@@ -186,7 +205,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.create _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
@@ -225,18 +244,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false
-        ),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -280,6 +289,19 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false),
+      "jdbc://")
+
     val hostProvider = stub[ConfigHostProvider]
 
     (hostProvider.getRangerHost _)
@@ -293,7 +315,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.drop _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.unprovisionAccessControl _)
@@ -330,25 +352,15 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.destroy(provisionCommand)
 
     val expected = Right(
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq.empty,
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
             PolicyAttachment("456", "ttt"),
             PolicyAttachment("789", "loc")
           )
-        )
-      )
+        ))
     )
     assert(actual == expected)
   }
@@ -367,6 +379,15 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           .build()
       )
       .build()
+
+    val entityResource = ImpalaEntityResource(
+      ImpalaView(
+        "databaseName",
+        "viewName",
+        Seq.empty,
+        None,
+        Some("SELECT * FROM otherDb.otherTableName")),
+      "jdbc://")
 
     val hostProvider = stub[ConfigHostProvider]
     (hostProvider.getImpalaCoordinatorHost _)
@@ -402,7 +423,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
     (viewGateway.create _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
@@ -418,13 +439,8 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.create(provisionCommand)
 
     val expected =
-      ImpalaEntityResource(
-        ImpalaView(
-          "databaseName",
-          "viewName",
-          Seq.empty,
-          None,
-          Some("SELECT * FROM otherDb.otherTableName")),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -453,6 +469,15 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           .build()
       )
       .build()
+
+    val entityResource = ImpalaEntityResource(
+      ImpalaView(
+        "databaseName",
+        "viewName",
+        Seq.empty,
+        None,
+        Some("SELECT * FROM otherDb.otherTableName")),
+      "jdbc://")
 
     val hostProvider = stub[ConfigHostProvider]
 
@@ -488,7 +513,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
     (viewGateway.drop _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaTableStorageAreaGateway =
       new CDPPrivateImpalaTableStorageAreaGateway(
@@ -504,21 +529,15 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val actual = impalaTableStorageAreaGateway.destroy(provisionCommand)
 
     val expected =
-      ImpalaEntityResource(
-        ImpalaView(
-          "databaseName",
-          "viewName",
-          Seq.empty,
-          None,
-          Some("SELECT * FROM otherDb.otherTableName")),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
             PolicyAttachment("456", "ttt"),
             PolicyAttachment("789", "loc")
           )
-        )
-      )
+        ))
 
     actual match {
       case Right(value) => assert(value == expected)

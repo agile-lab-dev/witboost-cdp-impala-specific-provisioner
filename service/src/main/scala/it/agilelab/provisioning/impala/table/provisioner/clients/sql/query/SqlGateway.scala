@@ -12,6 +12,8 @@ trait SqlGateway {
       ddls: Seq[String]
   ): Either[SqlGatewayError, Int]
 
+  def getConnectionString(connectionConfig: ConnectionConfig): Either[SqlGatewayError, String]
+
 }
 
 object SqlGateway {

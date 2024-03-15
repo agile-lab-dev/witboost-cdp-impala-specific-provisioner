@@ -47,6 +47,19 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false),
+      "jdbc://")
+
     val environment = new Environment()
     environment.setCrn("cdpEnvCrn")
 
@@ -74,7 +87,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.create _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
@@ -109,17 +122,8 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq.empty,
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -184,6 +188,21 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false
+      ),
+      "jdbc://"
+    )
+
     val environment = new Environment()
     environment.setCrn("cdpEnvCrn")
 
@@ -211,7 +230,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.create _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.provisionAccessControl _)
@@ -247,18 +266,8 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.create(provisionCommand)
 
     val expected = Right(
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq(Field("part1", ImpalaDataType.ImpalaString, None)),
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false
-        ),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq(
             PolicyAttachment("123", "xy"),
@@ -289,6 +298,19 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
       )
       .build()
 
+    val entityResource = ImpalaEntityResource(
+      ExternalTable(
+        "databaseName",
+        "tableName",
+        Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+        Seq.empty,
+        "loc",
+        Csv,
+        None,
+        Map.empty,
+        header = false),
+      "jdbc://")
+
     val environment = new Environment()
     environment.setCrn("cdpEnvCrn")
 
@@ -316,7 +338,7 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val externalTableGateway = stub[ExternalTableGateway]
     (externalTableGateway.drop _)
       .when(*, *, *)
-      .returns(Right())
+      .returns(Right(entityResource))
 
     val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
     (impalaAccessControlGateway.unprovisionAccessControl _)
@@ -350,25 +372,15 @@ class ImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory {
     val actual = impalaTableOutputPortGateway.destroy(provisionCommand)
 
     val expected = Right(
-      ImpalaEntityResource(
-        ExternalTable(
-          "databaseName",
-          "tableName",
-          Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          Seq.empty,
-          "loc",
-          Csv,
-          None,
-          Map.empty,
-          header = false),
+      ImpalaProvisionerResource(
+        entityResource,
         ImpalaCdpAcl(
           Seq.empty[PolicyAttachment],
           Seq(
             PolicyAttachment("456", "ttt"),
             PolicyAttachment("789", "loc")
           )
-        )
-      )
+        ))
     )
     assert(actual == expected)
   }

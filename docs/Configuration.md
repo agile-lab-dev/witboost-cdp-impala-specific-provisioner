@@ -4,11 +4,12 @@ Most application configurations are handled with the Typesafe Config library. Yo
 
 ## Provisioner configuration
 
-| Configuration                                 | Description                                                                                              | Default   |
-|:----------------------------------------------|:---------------------------------------------------------------------------------------------------------|:----------|
-| `provisioner.networking.httpServer.interface` | Interface to bind the specific provisioner API layer                                                     | `0.0.0.0` |
-| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                                                          | `8093`    |
-| `provisioner.provision-cloud`                 | Type of CDP environment that sets the tasks done by the provisioner                                      | `public`  |
+| Configuration                                 | Description                                                         | Default                                                                                                                                                                                                                                                                          |
+|:----------------------------------------------|:--------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `provisioner.networking.httpServer.interface` | Interface to bind the specific provisioner API layer                | `0.0.0.0`                                                                                                                                                                                                                                                                        |
+| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                     | `8093`                                                                                                                                                                                                                                                                           |
+| `provisioner.provision-cloud`                 | Type of CDP environment that sets the tasks done by the provisioner | `public`                                                                                                                                                                                                                                                                         |
+| `provisioner.provision-info`                  | `{}`                                                                | Map of values corresponding to the public info to be returned by the provisioner as part of the deployment result. The schema should match with the one expected by the Witboost Marketplace. See the "Infrastructure Template" section of Witboost documentation for more info. |
 
 Example:
 
@@ -22,6 +23,19 @@ provisioner {
   }
   
   provision-cloud = public
+  provision-info {
+    "hueLink" {
+      type: "string"
+      label: "Field label"
+      value: "Showable clickable"
+      href: "http://hue.internal"
+    }
+    "otherInfo" {
+      type: "string"
+      label: "ValuableInfo"
+      value: "Showable value"
+    }
+  }
 }
 ```
 

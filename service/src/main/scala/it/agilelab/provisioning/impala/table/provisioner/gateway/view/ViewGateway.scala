@@ -7,7 +7,11 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
   SqlGateway,
   SqlGatewayError
 }
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, ImpalaView }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntityResource,
+  ImpalaView
+}
 import it.agilelab.provisioning.impala.table.provisioner.gateway.table.{
   ImpalaExternalTableGateway,
   ImpalaExternalTableGatewayWithAudit
@@ -24,7 +28,7 @@ trait ViewGateway {
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifNotExists: Boolean
-  ): Either[SqlGatewayError, Unit]
+  ): Either[SqlGatewayError, ImpalaEntityResource]
 
   /** Drops a view
     * @param connectionConfigurations Connection configuration to build the JDBC connection
@@ -35,7 +39,7 @@ trait ViewGateway {
       connectionConfigurations: ConnectionConfig,
       impalaView: ImpalaView,
       ifExists: Boolean
-  ): Either[SqlGatewayError, Unit]
+  ): Either[SqlGatewayError, ImpalaEntityResource]
 }
 
 object ViewGateway {

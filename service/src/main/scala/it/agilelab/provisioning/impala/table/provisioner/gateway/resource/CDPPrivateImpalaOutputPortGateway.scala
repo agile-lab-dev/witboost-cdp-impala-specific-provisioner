@@ -38,7 +38,7 @@ class CDPPrivateImpalaOutputPortGateway(
     viewGateway: ViewGateway,
     rangerGatewayProvider: RangerGatewayProvider,
     impalaAccessControlGateway: ImpalaAccessControlGateway
-) extends ComponentGateway[Json, Json, ImpalaEntityResource, CdpIamPrincipals] {
+) extends ComponentGateway[Json, Json, ImpalaProvisionerResource, CdpIamPrincipals] {
 
   /** Creates all the resources for the Output Port.
     *
@@ -48,29 +48,27 @@ class CDPPrivateImpalaOutputPortGateway(
     *
     * @param provisionCommand A Provision Command including the provisioning request containing the data product descriptor
     * @return Either a [[ComponentGatewayError]] if an error occurred while creating the output port,
-    *         or an [[ImpalaEntityResource]] that includes the information of the newly deployed Output Port.
+    *         or an [[ImpalaProvisionerResource]] that includes the information of the newly deployed Output Port.
     */
   override def create(
       provisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaEntityResource] =
+  ): Either[ComponentGatewayError, ImpalaProvisionerResource] =
     for {
       // Extract necessary information
       opRequest <- provisionCommand.provisionRequest
         .getOutputPortRequest[ImpalaCdw]
         .leftMap(e => ComponentGatewayError(show"$e"))
       // Upsert output port
-      impalaEntity <- {
-        val entity: Either[ComponentGatewayError, ImpalaEntity] = opRequest.specific match {
-          case table: PrivateImpalaTableCdw =>
-            createAndGetExternalTable(opRequest.dataContract.schema, table)
-          case view: PrivateImpalaViewCdw =>
-            createAndGetView(opRequest.dataContract.schema, view)
-          case other =>
-            Left(
-              ComponentGatewayError("Received wrongly formatted specific schema. " +
+      createdResource <- opRequest.specific match {
+        case table: PrivateImpalaTableCdw =>
+          createAndGetExternalTable(opRequest.dataContract.schema, table)
+        case view: PrivateImpalaViewCdw =>
+          createAndGetView(opRequest.dataContract.schema, view)
+        case other =>
+          Left(
+            ComponentGatewayError(
+              "Received wrongly formatted specific schema. " +
                 "The schema doesn't belong to an output port table or view for CDP Private Cloud."))
-        }
-        entity
       }
       // Upsert security and access
       rangerHost <- hostProvider.getRangerHost
@@ -84,15 +82,17 @@ class CDPPrivateImpalaOutputPortGateway(
           provisionCommand.provisionRequest.dataProduct.devGroup,
           opRequest.id),
         rangerClient,
-        impalaEntity,
+        createdResource.impalaEntity,
         "",
         provisionUserRole = true
       )
-    } yield ImpalaEntityResource(impalaEntity, ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
+    } yield ImpalaProvisionerResource(
+      createdResource,
+      ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
 
   override def destroy(
       unprovisionCommand: ProvisionCommand[Json, Json]
-  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
+  ): Either[ComponentGatewayError, ImpalaProvisionerResource] = for {
     // Extract necessary information
     opRequest <- unprovisionCommand.provisionRequest
       .getOutputPortRequest[ImpalaCdw]
@@ -104,19 +104,23 @@ class CDPPrivateImpalaOutputPortGateway(
       ComponentGatewayError(show"$confError")
     }
     // Upsert/delete output port
-    impalaEntity <- {
-      val entity: Either[ComponentGatewayError, ImpalaEntity] = opRequest.specific match {
+    entityResource <-
+      opRequest.specific match {
         case table: PrivateImpalaTableCdw =>
           if (dropOnUnprovision) {
             dropAndGetExternalTable(opRequest.dataContract.schema, table)
           } else {
-            ExternalTableMapper.map(opRequest.dataContract.schema, table)
+            ExternalTableMapper
+              .map(opRequest.dataContract.schema, table)
+              .map(ImpalaEntityResource(_, ""))
           }
         case view: PrivateImpalaViewCdw =>
           if (dropOnUnprovision) {
             dropAndGetView(opRequest.dataContract.schema, view)
           } else {
-            ImpalaViewMapper.map(opRequest.dataContract.schema, view)
+            ImpalaViewMapper
+              .map(opRequest.dataContract.schema, view)
+              .map(ImpalaEntityResource(_, ""))
           }
         case _ =>
           Left(
@@ -124,8 +128,6 @@ class CDPPrivateImpalaOutputPortGateway(
               "Received wrongly formatted specific schema. " +
                 "The schema doesn't belong to an output port table or view for CDP Private Cloud."))
       }
-      entity
-    }
 
     // Update security and access
     rangerHost <- hostProvider.getRangerHost
@@ -139,11 +141,13 @@ class CDPPrivateImpalaOutputPortGateway(
         unprovisionCommand.provisionRequest.dataProduct.devGroup,
         opRequest.id),
       rangerClient,
-      impalaEntity,
+      entityResource.impalaEntity,
       "",
       unprovisionUserRole = true
     )
-  } yield ImpalaEntityResource(impalaEntity, ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
+  } yield ImpalaProvisionerResource(
+    entityResource,
+    ImpalaCdpAcl(Seq.empty[PolicyAttachment], policies))
 
   override def updateAcl(
       provisionCommand: ProvisionCommand[Json, Json],
@@ -180,31 +184,23 @@ class CDPPrivateImpalaOutputPortGateway(
   private def createExternalTable(
       connectionConfig: ConnectionConfig,
       externalTable: ExternalTable
-  ): Either[ComponentGatewayError, Unit] =
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
     externalTableGateway
-      .create(
-        connectionConfig,
-        externalTable,
-        ifNotExists = true
-      )
+      .create(connectionConfig, externalTable, ifNotExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def dropExternalTable(
       connectionConfig: ConnectionConfig,
       externalTable: ExternalTable
-  ): Either[ComponentGatewayError, Unit] =
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
     externalTableGateway
-      .drop(
-        connectionConfig,
-        externalTable,
-        ifExists = true
-      )
+      .drop(connectionConfig, externalTable, ifExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
   private def createAndGetExternalTable(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
-  ): Either[ComponentGatewayError, ExternalTable] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -214,13 +210,13 @@ class CDPPrivateImpalaOutputPortGateway(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    _ <- createExternalTable(connectionConfig, externalTable)
-  } yield externalTable
+    createdResource <- createExternalTable(connectionConfig, externalTable)
+  } yield createdResource
 
   private def dropAndGetExternalTable(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
-  ): Either[ComponentGatewayError, ExternalTable] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -230,15 +226,15 @@ class CDPPrivateImpalaOutputPortGateway(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    _ <- dropExternalTable(connectionConfig, externalTable)
-  } yield externalTable
+    droppedResource <- dropExternalTable(connectionConfig, externalTable)
+  } yield droppedResource
 
   // View Output Port
 
   private def createView(
       connectionConfig: ConnectionConfig,
       impalaView: ImpalaView
-  ): Either[ComponentGatewayError, Unit] =
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
     viewGateway
       .create(
         connectionConfig,
@@ -250,7 +246,7 @@ class CDPPrivateImpalaOutputPortGateway(
   private def dropView(
       connectionConfig: ConnectionConfig,
       impalaView: ImpalaView
-  ): Either[ComponentGatewayError, Unit] =
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
     viewGateway
       .drop(
         connectionConfig,
@@ -262,7 +258,7 @@ class CDPPrivateImpalaOutputPortGateway(
   private def createAndGetView(
       schema: Seq[Column],
       impalaSpecific: PrivateImpalaViewCdw
-  ): Either[ComponentGatewayError, ImpalaView] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -272,13 +268,13 @@ class CDPPrivateImpalaOutputPortGateway(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    _ <- createView(connectionConfig, impalaView)
-  } yield impalaView
+    createdResource <- createView(connectionConfig, impalaView)
+  } yield createdResource
 
   private def dropAndGetView(
       schema: Seq[Column],
       impalaSpecific: PrivateImpalaViewCdw
-  ): Either[ComponentGatewayError, ImpalaView] = for {
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
@@ -288,7 +284,7 @@ class CDPPrivateImpalaOutputPortGateway(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    _ <- dropView(connectionConfig, impalaView)
-  } yield impalaView
+    droppedResource <- dropView(connectionConfig, impalaView)
+  } yield droppedResource
 
 }

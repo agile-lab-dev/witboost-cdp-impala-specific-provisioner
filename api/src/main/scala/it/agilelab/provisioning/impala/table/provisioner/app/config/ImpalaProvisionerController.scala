@@ -15,7 +15,7 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.cdp.{
 import it.agilelab.provisioning.impala.table.provisioner.context.CloudType.CloudType
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.ConfigurationError
 import it.agilelab.provisioning.impala.table.provisioner.context._
-import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaEntityResource
+import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaProvisionerResource
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.RangerGatewayProvider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.ImpalaAccessControlGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.{
@@ -85,16 +85,16 @@ object ImpalaProvisionerController {
       rangerGatewayProvider,
       aclGateway
     ),
-    storageAreaGateway = new PermissionlessComponentGateway[Json, Json, ImpalaEntityResource] {
-      val error: Either[ComponentGatewayError, ImpalaEntityResource] = Left(
+    storageAreaGateway = new PermissionlessComponentGateway[Json, Json, ImpalaProvisionerResource] {
+      val error: Either[ComponentGatewayError, ImpalaProvisionerResource] = Left(
         ComponentGatewayError(
           "The provisioner currently doesn't support storage areas on CDP Public Cloud"))
       override def create(
           provisionCommand: ProvisionCommand[Json, Json]
-      ): Either[ComponentGatewayError, ImpalaEntityResource] = error
+      ): Either[ComponentGatewayError, ImpalaProvisionerResource] = error
       override def destroy(
           provisionCommand: ProvisionCommand[Json, Json]
-      ): Either[ComponentGatewayError, ImpalaEntityResource] = error
+      ): Either[ComponentGatewayError, ImpalaProvisionerResource] = error
     }
   )
 
