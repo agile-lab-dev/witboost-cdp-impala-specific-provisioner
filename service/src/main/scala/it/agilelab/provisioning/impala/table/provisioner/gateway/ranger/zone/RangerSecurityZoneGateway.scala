@@ -39,21 +39,24 @@ class RangerSecurityZoneGateway(
       databaseName: String,
       folderUrl: Seq[String],
       isDestroy: Boolean = false
-  ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] = for {
-    zoneOpt <- rangerClient
-      .findSecurityZoneByName(securityZoneName)
-      .leftMap(e => UpsertSecurityZoneErr(e))
-    service <- getService(serviceType, clusterName)
-    zoneUpdated <- zoneOpt.fold(
-      createSecurityZone(
-        securityZoneName,
-        service.name,
-        databaseName,
-        if (isDestroy) Seq.empty[String] else folderUrl.map(u => safelyRemove(u, "/")),
-        auditUser,
-        auditGroup,
-        deployUser))(z => updateSC(z, service.name, databaseName, folderUrl, isDestroy))
-  } yield zoneUpdated
+  ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] =
+    RangerSecurityZoneGateway.synchronized {
+      for {
+        zoneOpt <- rangerClient
+          .findSecurityZoneByName(securityZoneName)
+          .leftMap(e => UpsertSecurityZoneErr(e))
+        service <- getService(serviceType, clusterName)
+        zoneUpdated <- zoneOpt.fold(
+          createSecurityZone(
+            securityZoneName,
+            service.name,
+            databaseName,
+            if (isDestroy) Seq.empty[String] else folderUrl.map(u => safelyRemove(u, "/")),
+            auditUser,
+            auditGroup,
+            deployUser))(z => updateSC(z, service.name, databaseName, folderUrl, isDestroy))
+      } yield zoneUpdated
+    }
 
   private def getService(
       serviceType: String,

@@ -29,7 +29,7 @@ dataProduct:
       name: Impala CDP Output Port
       fullyQualifiedName: null
       version: 0.0.0
-      infrastructureTemplateId: urn:dmb:itm:cdp-private-outputport-impala-provisioner:0
+      infrastructureTemplateId: urn:dmb:itm:cdp-private-impala-provisioner:0
       useCaseTemplateId: urn:dmb:utm:cdp-private-outputport-impala-template:0.0.0
       dependsOn: []
       platform: CDP Private

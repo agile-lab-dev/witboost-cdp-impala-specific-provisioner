@@ -4,11 +4,15 @@ trait ConfigurationModel {
   val PROVISIONER: String = "provisioner"
   val PROVISION_CLOUD_TYPE: String = "provision-cloud"
   val PROVISION_INFO: String = "provision-info"
+  val PROVISION_RETRY_CONFIG = "retry-config"
 
   private val networking: String = "networking"
   private val httpServer: String = "httpServer"
   private val interface: String = "interface"
   private val port: String = "port"
+
+  val maxRetries: String = "max-retries"
+  val exponentialBackoff: String = "exponential-backoff"
 
   val NETWORKING_HTTPSERVER_INTERFACE: String = s"$networking.$httpServer.$interface"
   val NETWORKING_HTTPSERVER_PORT: String = s"$networking.$httpServer.$port"

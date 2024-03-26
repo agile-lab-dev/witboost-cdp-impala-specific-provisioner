@@ -25,9 +25,10 @@ trait Dependencies {
     "org.http4s" %% "http4s-circe"
   ).map(_ % http4sVersion)
 
+  val catsRetryVersion = "3.1.0"
   lazy val catsDependencies: Seq[ModuleID] = Seq(
-    "org.typelevel" %% "cats-effect" % "3.4.8"
-  )
+    "org.typelevel" %% "cats-effect" % "3.4.8",
+    "com.github.cb372" %% "cats-retry" % catsRetryVersion)
 
   private val circeVersion = "0.14.5"
   lazy val circeDependencies: Seq[ModuleID] = Seq(

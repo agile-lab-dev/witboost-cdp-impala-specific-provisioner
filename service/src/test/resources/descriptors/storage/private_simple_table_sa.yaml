@@ -28,7 +28,7 @@ dataProduct:
       description: Attach the Storage Component to the Data Product
       name: Impala CDP Storage Area
       fullyQualifiedName: null
-      infrastructureTemplateId: urn:dmb:itm:cdp-private-storage-impala-provisioner:0
+      infrastructureTemplateId: urn:dmb:itm:cdp-private-impala-provisioner:0
       useCaseTemplateId: urn:dmb:utm:cdp-private-storage-impala-template:0.0.0
       dependsOn: [ ]
       platform: CDP Private

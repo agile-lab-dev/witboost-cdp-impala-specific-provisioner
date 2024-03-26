@@ -38,16 +38,18 @@ class RangerRoleGateway(val rangerClient: RangerClient) {
       case OwnerRoleType => RangerRoleGenerator.generateOwnerRoleName(rolePrefix)
       case UserRoleType  => RangerRoleGenerator.generateUserRoleName(rolePrefix)
     }
-    upsert(
-      RangerRoleGenerator.role(
-        roleName = roleName,
-        users = users,
-        ownerUsers = List(deployUser) ++ ownerUsers,
-        groups = groups,
-        ownerGroups = ownerGroups,
-        List.empty
+    RangerRoleGateway.synchronized {
+      upsert(
+        RangerRoleGenerator.role(
+          roleName = roleName,
+          users = users,
+          ownerUsers = List(deployUser) ++ ownerUsers,
+          groups = groups,
+          ownerGroups = ownerGroups,
+          List.empty
+        )
       )
-    )
+    }
   }
 
   /** Deletes the specified user role.

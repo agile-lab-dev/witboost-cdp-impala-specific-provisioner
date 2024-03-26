@@ -80,12 +80,11 @@ dataProduct:
         tableName: finance_salary_test_cdp_0_impala_cdp_output_port_development
         cdpEnvironment: cdp-env-data-eng
         cdwVirtualWarehouse: impala-test-vw
-        format: TEXTFILE
         location: s3a://cdp-env/path/to/data-folder/
         partitions: [ Country ]
+        format: TEXTFILE
         tableParams:
           header: true
           delimiter: "0x01"
           tblProperties:
             bucketing_version: "2"
-

@@ -4,12 +4,22 @@ Most application configurations are handled with the Typesafe Config library. Yo
 
 ## Provisioner configuration
 
-| Configuration                                 | Description                                                         | Default                                                                                                                                                                                                                                                                          |
-|:----------------------------------------------|:--------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `provisioner.networking.httpServer.interface` | Interface to bind the specific provisioner API layer                | `0.0.0.0`                                                                                                                                                                                                                                                                        |
-| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                     | `8093`                                                                                                                                                                                                                                                                           |
-| `provisioner.provision-cloud`                 | Type of CDP environment that sets the tasks done by the provisioner | `public`                                                                                                                                                                                                                                                                         |
-| `provisioner.provision-info`                  | `{}`                                                                | Map of values corresponding to the public info to be returned by the provisioner as part of the deployment result. The schema should match with the one expected by the Witboost Marketplace. See the "Infrastructure Template" section of Witboost documentation for more info. |
+| Configuration                                 | Description                                                                                                                                                                                                                                                                      | Default   |
+|:----------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------|
+| `provisioner.networking.httpServer.interface` | Interface to bind the specific provisioner API layer                                                                                                                                                                                                                             | `0.0.0.0` |
+| `provisioner.networking.httpServer.port`      | Port to bind the specific provisioner API layer                                                                                                                                                                                                                                  | `8093`    |
+| `provisioner.provision-cloud`                 | Type of CDP environment that sets the tasks done by the provisioner                                                                                                                                                                                                              | `public`  |
+| `provisioner.retry-config`                    | Configuration map for setting up exponential backoff strategy. If set, the provisioner will retry requests that otherwise would end up as a `500 Internal Server Error`                                                                                                          |           |
+| `provisioner.provision-info`                  | Map of values corresponding to the public info to be returned by the provisioner as part of the deployment result. The schema should match with the one expected by the Witboost Marketplace. See the "Infrastructure Template" section of Witboost documentation for more info. | `{}`      |
+
+### Request retry configuration
+
+The Impala Specific Provisioner is capable of retrying requests using an exponential backoff strategy. If set, whenever a request would end up returning `500 Internal Server Error`, the provisioner will instead retry it up to `provisioner.retry-config.max-retries` times. Among each retry, the delay time will be set as double the previous one, with initial value `provisioner.retry-config.exponential-backoff` (for instantaneous retries, set this value to 0). The request will be retried in its entirety, leveraging the idempotency of the provisioner, to ensure upright behaviour.
+
+| Configuration                      | Description                                                            | Default            |
+|:-----------------------------------|:-----------------------------------------------------------------------|:-------------------|
+| `retry-config.max-retries`         | The amount of times the provisioner will re-attempt a certain request  | `5`                |
+| `retry-config.exponential-backoff` | The delay between retries, doubling the previous time for each attempt | `500 milliseconds` | 
 
 Example:
 
@@ -22,7 +32,13 @@ provisioner {
     }
   }
   
-  provision-cloud = public
+  provision-cloud = private
+  
+  retry-config {
+    max-retries = 5
+    exponential-backoff = 500 milliseconds
+  }
+  
   provision-info {
     "hueLink" {
       type: "string"

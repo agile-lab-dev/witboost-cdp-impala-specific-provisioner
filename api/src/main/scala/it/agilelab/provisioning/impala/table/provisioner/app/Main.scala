@@ -1,6 +1,6 @@
 package it.agilelab.provisioning.impala.table.provisioner.app
 import cats.effect.{ ExitCode, IO, IOApp }
-import cats.implicits.showInterpolator
+import cats.implicits.{ showInterpolator, toBifunctorOps }
 import com.comcast.ip4s.{ Host, Port }
 import com.typesafe.scalalogging.StrictLogging
 import it.agilelab.provisioning.aws.s3.gateway.S3GatewayError.S3GatewayInitError
@@ -10,7 +10,8 @@ import it.agilelab.provisioning.commons.client.cdp.env.CdpEnvClientError.CdpEnvC
 import it.agilelab.provisioning.commons.config.{ Conf, ConfError }
 import it.agilelab.provisioning.impala.table.provisioner.app.config.{
   FrameworkDependencies,
-  ImpalaProvisionerController
+  ImpalaProvisionerController,
+  RetryPolicyBuilder
 }
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.context.ContextError.{
@@ -46,16 +47,22 @@ object Main extends IOApp with StrictLogging {
         IO.raiseError(error.throwable)
       case Right(value) => IO.pure(value)
     }
-    frameworkDependencies <- IO.pure(new FrameworkDependencies(provisionerController))
+    provisionerConfig = ApplicationConfiguration.provisionerConfig
+    frameworkDependencies <- IO.fromEither {
+      RetryPolicyBuilder
+        .applyFromConfig[IO](
+          provisionerConfig.getConfig(ApplicationConfiguration.PROVISION_RETRY_CONFIG))
+        .leftMap(err => err.error)
+        .map(retryPolicy => new FrameworkDependencies(provisionerController, retryPolicy))
+    }
     interface <- IO.fromOption(
       Host
-        .fromString(ApplicationConfiguration.provisionerConfig.getString(
-          ApplicationConfiguration.NETWORKING_HTTPSERVER_INTERFACE)))(
+        .fromString(
+          provisionerConfig.getString(ApplicationConfiguration.NETWORKING_HTTPSERVER_INTERFACE)))(
       new RuntimeException("Interface not valid"))
     port <- IO.fromOption(
       Port
-        .fromInt(ApplicationConfiguration.provisionerConfig.getInt(
-          ApplicationConfiguration.NETWORKING_HTTPSERVER_PORT)))(
+        .fromInt(provisionerConfig.getInt(ApplicationConfiguration.NETWORKING_HTTPSERVER_PORT)))(
       new RuntimeException("Port not valid"))
     server <- EmberServerBuilder
       .default[IO]
