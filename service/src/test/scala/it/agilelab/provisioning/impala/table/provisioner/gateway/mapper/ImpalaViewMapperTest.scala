@@ -10,6 +10,8 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaDataTy
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
   ImpalaDataType,
+  ImpalaEntityIdentifierCdw,
+  ImpalaEntityImpl,
   ImpalaView,
   PrivateImpalaStorageAreaViewCdw,
   PrivateImpalaViewCdw
@@ -53,7 +55,7 @@ class ImpalaViewMapperTest extends AnyFunSuite {
       ),
       specific = PrivateImpalaViewCdw(
         databaseName = "databaseName",
-        tableName = "tableName",
+        source = ImpalaEntityIdentifierCdw("databaseName", "tableName"),
         viewName = "viewName"
       )
     )
@@ -80,7 +82,7 @@ class ImpalaViewMapperTest extends AnyFunSuite {
             None
           )
         ),
-        readsFromSourceName = Some("tableName"),
+        readsFromSource = Some(ImpalaEntityImpl("databaseName", "tableName", Seq.empty)),
         querySourceStatement = None
       ))
 
@@ -104,7 +106,7 @@ class ImpalaViewMapperTest extends AnyFunSuite {
       ),
       specific = PrivateImpalaViewCdw(
         databaseName = "databaseName",
-        tableName = "tableName",
+        source = ImpalaEntityIdentifierCdw("databaseName", "tableName"),
         viewName = "viewName"
       )
     )
@@ -125,7 +127,7 @@ class ImpalaViewMapperTest extends AnyFunSuite {
     )
     val specific = PrivateImpalaViewCdw(
       databaseName = "databaseName",
-      tableName = "tableName",
+      source = ImpalaEntityIdentifierCdw("databaseName", "tableName"),
       viewName = "viewName"
     )
     assert(ImpalaViewMapper.isValidView(schema, specific).isEmpty)

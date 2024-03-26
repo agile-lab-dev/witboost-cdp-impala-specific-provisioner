@@ -201,13 +201,13 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   private def serializeSelectFromViewDDL(impalaView: ImpalaView): String =
     impalaView match {
       case ImpalaView(_, _, _, _, Some(sourceQueryStatement)) => sourceQueryStatement
-      case ImpalaView(database, _, schema, Some(sourceName), None) =>
+      case ImpalaView(_, _, schema, Some(impalaEntity), _) =>
         asString(
           " ",
           SELECT_PATTERN.format(
             asString(",", schema.map(_.name): _*)
           ),
-          FROM_PATTERN.format(asString(".", database, sourceName))
+          FROM_PATTERN.format(serializeName(impalaEntity))
         )
     }
 

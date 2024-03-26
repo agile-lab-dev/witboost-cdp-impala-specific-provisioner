@@ -430,7 +430,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
         OutputPortFaker(
           PrivateImpalaViewCdw(
             databaseName = "databaseName",
-            tableName = "tableName",
+            source = ImpalaEntityIdentifierCdw("originalDatabase", "originalTableName"),
             viewName = "viewName"
           ).asJson).build()
       )
@@ -440,7 +440,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaInt, None)),
-      readsFromSourceName = Some("tableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -518,7 +518,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
         OutputPortFaker(
           PrivateImpalaViewCdw(
             databaseName = "databaseName",
-            tableName = "tableName",
+            source = ImpalaEntityIdentifierCdw("originalDatabase", "originalTableName"),
             viewName = "viewName"
           ).asJson).build()
       )
@@ -528,7 +528,7 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaInt, None)),
-      readsFromSourceName = Some("tableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 

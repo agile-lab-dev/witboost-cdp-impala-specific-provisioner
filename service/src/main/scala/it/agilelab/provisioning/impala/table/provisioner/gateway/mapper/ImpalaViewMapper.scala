@@ -3,6 +3,8 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.mapper
 import cats.implicits.{ toBifunctorOps, toTraverseOps }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
+  ImpalaEntity,
+  ImpalaEntityImpl,
   ImpalaView,
   ImpalaViewCdw,
   PrivateImpalaStorageAreaViewCdw,
@@ -48,12 +50,17 @@ object ImpalaViewMapper extends ImpalaDataTypeSupport {
           .sequence
           .map(viewSchema =>
             impalaSpecific match {
-              case PrivateImpalaViewCdw(databaseName, tableName, viewName) =>
+              case PrivateImpalaViewCdw(databaseName, source, viewName) =>
                 ImpalaView(
                   database = databaseName,
                   name = viewName,
                   schema = viewSchema,
-                  readsFromSourceName = Some(tableName),
+                  readsFromSource = Some(
+                    ImpalaEntityImpl(
+                      database = source.databaseName,
+                      name = source.name,
+                      schema = Seq.empty
+                    )),
                   querySourceStatement = None
                 )
               case PrivateImpalaStorageAreaViewCdw(databaseName, viewName, queryStatement, _) =>
@@ -61,7 +68,7 @@ object ImpalaViewMapper extends ImpalaDataTypeSupport {
                   database = databaseName,
                   name = viewName,
                   schema = viewSchema,
-                  readsFromSourceName = None,
+                  readsFromSource = None,
                   querySourceStatement = Some(queryStatement)
                 )
             })

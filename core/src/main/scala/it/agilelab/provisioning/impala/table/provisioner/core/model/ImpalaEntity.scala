@@ -6,6 +6,12 @@ sealed trait ImpalaEntity {
   def schema: Seq[Field]
 }
 
+final case class ImpalaEntityImpl(
+    override val database: String,
+    override val name: String,
+    override val schema: Seq[Field]
+) extends ImpalaEntity
+
 /** Class representing an External Table, a logical entity that defines a table schema representing data files
   * are typically produced outside Impala and queried from their original locations
   * @param database Database name
@@ -36,14 +42,14 @@ final case class ExternalTable(
   * @param database Database name
   * @param name View name
   * @param schema Seq of [[Field]] representing the columns to be queried from the underlying table/view
-  * @param readsFromSourceName If present, name of the table or view from which this view queries data.
-  *                            Ignored when a query statement for the source is given in querySourceStatement instead
+  * @param readsFromSource If present, information about the table or view from which this view queries data.
+  *                        Ignored when a query statement for the source is given in querySourceStatement instead
   * @param querySourceStatement If present, SELECT statement to use as the source for the View
   */
 final case class ImpalaView(
     override val database: String,
     override val name: String,
     override val schema: Seq[Field],
-    readsFromSourceName: Option[String],
+    readsFromSource: Option[ImpalaEntity],
     querySourceStatement: Option[String]
 ) extends ImpalaEntity

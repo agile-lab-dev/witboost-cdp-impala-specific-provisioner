@@ -847,7 +847,7 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("tableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -993,7 +993,7 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       database = "databaseName",
       name = "viewName",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("tableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 

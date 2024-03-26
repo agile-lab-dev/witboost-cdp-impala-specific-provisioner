@@ -23,7 +23,7 @@ object NameValidator {
       component: OutputPort[COMP_SPEC]
   ): Boolean = component.specific match {
     case sp: ImpalaTableCdw       => getTableName(dataProduct, component).equals(sp.tableName)
-    case sp: PrivateImpalaViewCdw => getTableName(dataProduct, component).equals(sp.tableName)
+    case sp: PrivateImpalaViewCdw => getTableName(dataProduct, component).equals(sp.viewName)
     case _                        => true
   }
 

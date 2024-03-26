@@ -98,7 +98,7 @@ class ProvisionHandlerTest extends HandlerTestBase with ParserSupport {
           database = "database",
           name = "viewName",
           schema = Seq.empty,
-          readsFromSourceName = Some("fromTable"),
+          readsFromSource = Some(ImpalaEntityImpl("db", "fromTable", Seq.empty)),
           querySourceStatement = None
         ),
         "jdbc://"

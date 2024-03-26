@@ -10,6 +10,7 @@ import it.agilelab.provisioning.impala.table.provisioner.common.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.core.model.ImpalaFormat.Csv
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaEntityIdentifierCdw,
   PrivateImpalaStorageAreaCdw,
   PrivateImpalaTableCdw,
   PrivateImpalaViewCdw,
@@ -250,12 +251,11 @@ class ImpalaOutputPortValidatorTest extends AnyFunSuite with MockFactory {
   test("test a valid private op view descriptor") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
       .withComponent(
-        OutputPortFaker(
-          PrivateImpalaViewCdw(
-            databaseName = "domain_dp_name_0",
-            viewName = "domain_dp_name_0_cmp_name_view_poc",
-            tableName = "domain_dp_name_0_cmp_name_poc"
-          ).asJson)
+        OutputPortFaker(PrivateImpalaViewCdw(
+          databaseName = "domain_dp_name_0",
+          viewName = "domain_dp_name_0_cmp_name_view_poc",
+          source = ImpalaEntityIdentifierCdw("domain_dp_name_0", "domain_dp_name_0_cmp_name_poc")
+        ).asJson)
           .withName("cmp-name-view")
           .withId("urn:dmb:cmp:domain:dp-name:0:cmp-name-view")
           .build()

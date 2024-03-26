@@ -8,6 +8,7 @@ import it.agilelab.provisioning.api.generated.definitions.Info
 import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
+  ImpalaEntityImpl,
   ImpalaProvisionerResource,
   ImpalaView
 }
@@ -40,6 +41,7 @@ object ProvisioningInfoMapper {
           baseFields ++ Seq(
             "impalaView" -> InfoModel.makeStringInfoObject("view", name)
           )
+        case _ => baseFields
       }
 
       val jsonInfo = (fields ++

@@ -4,6 +4,7 @@ import it.agilelab.provisioning.commons.audit.Audit
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.connection.provider.UsernamePasswordConnectionConfig
 import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.SqlGatewayError.ExecuteDDLErr
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ImpalaEntityImpl,
   ImpalaEntityResource,
   ImpalaView
 }
@@ -23,14 +24,19 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
 
     inSequence(
       (audit.info _).expects(
-        "Executing CreateImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None))"),
+        "Executing CreateImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None))"),
       (audit.info _).expects(
-        "CreateImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None)) completed successfully")
+        "CreateImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None)) completed successfully")
     )
 
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
-    val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
+    val impalaView = ImpalaView(
+      "database",
+      "viewName",
+      Seq.empty,
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
+      None)
 
     val entityResource = ImpalaEntityResource(impalaView, "jdbc://")
 
@@ -49,16 +55,21 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
 
     inSequence(
       (audit.info _).expects(
-        "Executing CreateImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None))"),
+        "Executing CreateImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None))"),
       (audit.error _).expects(where { s: String =>
         s.startsWith(
-          "CreateImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None)) failed. Details: ExecuteDDLErr(")
+          "CreateImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None)) failed. Details: ExecuteDDLErr(")
       })
     )
 
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
-    val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
+    val impalaView = ImpalaView(
+      "database",
+      "viewName",
+      Seq.empty,
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
+      None)
 
     val error = new SQLException("Error")
     (gatewayMock.create _)
@@ -78,14 +89,19 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
 
     inSequence(
       (audit.info _).expects(
-        "Executing DropImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None))"),
+        "Executing DropImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None))"),
       (audit.info _).expects(
-        "DropImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None)) completed successfully")
+        "DropImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None)) completed successfully")
     )
 
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
-    val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
+    val impalaView = ImpalaView(
+      "database",
+      "viewName",
+      Seq.empty,
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
+      None)
     val entityResource = ImpalaEntityResource(impalaView, "jdbc://")
 
     (gatewayMock.drop _).expects(connectionConfig, impalaView, *).returns(Right(entityResource))
@@ -102,16 +118,21 @@ class ImpalaViewGatewayWithAuditTest extends AnyFunSuite with MockFactory {
 
     inSequence(
       (audit.info _).expects(
-        "Executing DropImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None))"),
+        "Executing DropImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None))"),
       (audit.error _).expects(where { s: String =>
         s.startsWith(
-          "DropImpalaView(ImpalaView(database,viewName,List(),Some(tableName),None)) failed. Details: ExecuteDDLErr(")
+          "DropImpalaView(ImpalaView(database,viewName,List(),Some(ImpalaEntityImpl(db,table,List())),None)) failed. Details: ExecuteDDLErr(")
       })
     )
 
     val connectionConfig =
       UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
-    val impalaView = ImpalaView("database", "viewName", Seq.empty, Some("tableName"), None)
+    val impalaView = ImpalaView(
+      "database",
+      "viewName",
+      Seq.empty,
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
+      None)
 
     val error = new SQLException("Error")
     (gatewayMock.drop _)

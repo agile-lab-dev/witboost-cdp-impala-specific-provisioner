@@ -10,6 +10,7 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
   ImpalaDataType,
+  ImpalaEntityImpl,
   ImpalaView
 }
 import org.scalatest.funsuite.AnyFunSuite
@@ -289,13 +290,13 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("originalTableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = true)
     val expected =
-      "CREATE VIEW IF NOT EXISTS database.viewName AS SELECT id,name FROM database.originalTableName"
+      "CREATE VIEW IF NOT EXISTS database.viewName AS SELECT id,name FROM originalDatabase.originalTableName"
 
     assert(actual == expected)
   }
@@ -307,13 +308,13 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("originalTableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
     val actual = impalaDataDefinitionLanguageProvider.createView(view, ifNotExists = false)
     val expected =
-      "CREATE VIEW database.viewName AS SELECT id,name FROM database.originalTableName"
+      "CREATE VIEW database.viewName AS SELECT id,name FROM originalDatabase.originalTableName"
 
     assert(actual == expected)
   }
@@ -325,7 +326,7 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("originalTableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -342,7 +343,7 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       schema = Seq(
         Field("id", ImpalaDataType.ImpalaInt, None),
         Field("name", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("originalTableName"),
+      readsFromSource = Some(ImpalaEntityImpl("originalDatabase", "originalTableName", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -361,7 +362,7 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       database = "database",
       name = "viewName",
       schema = Seq.empty,
-      readsFromSourceName = None,
+      readsFromSource = None,
       querySourceStatement = Some(sql)
     )
 
@@ -379,7 +380,7 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
       database = "database",
       name = "viewName",
       schema = Seq.empty,
-      readsFromSourceName = None,
+      readsFromSource = None,
       querySourceStatement = Some(sql)
     )
 

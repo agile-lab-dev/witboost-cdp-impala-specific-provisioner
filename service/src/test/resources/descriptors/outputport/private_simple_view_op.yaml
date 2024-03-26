@@ -109,5 +109,7 @@ dataProduct:
       semanticLinking: [ ]
       specific:
         databaseName: finance_e2e_test_cdp_0
-        tableName: finance_salary_test_cdp_0_impala_cdp_storage_area
         viewName: finance_e2e_test_cdp_0_impala_cdp_output_port_view
+        source:
+          databaseName: finance_e2e_test_cdp_0
+          name: finance_salary_test_cdp_0_impala_cdp_storage_area

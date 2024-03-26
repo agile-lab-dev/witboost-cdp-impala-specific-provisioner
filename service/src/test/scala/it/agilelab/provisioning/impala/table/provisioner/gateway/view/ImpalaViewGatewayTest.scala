@@ -10,6 +10,7 @@ import it.agilelab.provisioning.impala.table.provisioner.clients.sql.query.{
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   Field,
   ImpalaDataType,
+  ImpalaEntityImpl,
   ImpalaEntityResource,
   ImpalaView
 }
@@ -23,10 +24,10 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
     val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
 
     val sqlQueryExecutor = mock[DefaultSQLGateway]
-    (sqlQueryExecutor.executeDDL _)
+    (sqlQueryExecutor.executeDDLs _)
       .expects(
         UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
-        "CREATE VIEW db.view AS SELECT id FROM db.table"
+        Seq("CREATE DATABASE db", "CREATE VIEW db.view AS SELECT id FROM db.table")
       )
       .once()
       .returns(Right(1))
@@ -36,7 +37,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       database = "db",
       name = "view",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("table"),
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -57,10 +58,12 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
     val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
 
     val sqlQueryExecutor = mock[DefaultSQLGateway]
-    (sqlQueryExecutor.executeDDL _)
+    (sqlQueryExecutor.executeDDLs _)
       .expects(
         UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
-        "CREATE VIEW IF NOT EXISTS db.view AS SELECT id FROM db.table"
+        Seq(
+          "CREATE DATABASE IF NOT EXISTS db",
+          "CREATE VIEW IF NOT EXISTS db.view AS SELECT id FROM db.table")
       )
       .once()
       .returns(Right(1))
@@ -71,7 +74,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       database = "db",
       name = "view",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("table"),
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -93,10 +96,12 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
     val error = new SQLException("error")
 
     val sqlQueryExecutor = mock[SqlGateway]
-    (sqlQueryExecutor.executeDDL _)
+    (sqlQueryExecutor.executeDDLs _)
       .expects(
         UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
-        "CREATE VIEW IF NOT EXISTS db.view AS SELECT id FROM db.table"
+        Seq(
+          "CREATE DATABASE IF NOT EXISTS db",
+          "CREATE VIEW IF NOT EXISTS db.view AS SELECT id FROM db.table")
       )
       .once()
       .returns(Left(ExecuteDDLErr(error)))
@@ -113,7 +118,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
           database = "db",
           name = "view",
           schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
+          readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
           querySourceStatement = None
         ),
         ifNotExists = true
@@ -137,7 +142,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       database = "db",
       name = "view",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("table"),
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -171,7 +176,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
       database = "db",
       name = "view",
       schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-      readsFromSourceName = Some("table"),
+      readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
       querySourceStatement = None
     )
 
@@ -213,7 +218,7 @@ class ImpalaViewGatewayTest extends AnyFunSuite with MockFactory {
           database = "db",
           name = "view",
           schema = Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
-          readsFromSourceName = Some("table"),
+          readsFromSource = Some(ImpalaEntityImpl("db", "table", Seq.empty)),
           querySourceStatement = None
         ),
         ifExists = true

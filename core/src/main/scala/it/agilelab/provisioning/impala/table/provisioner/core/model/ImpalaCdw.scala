@@ -130,9 +130,14 @@ final case class PrivateImpalaStorageAreaCdw(
     tableSchema: Seq[Column]
 ) extends ImpalaTableCdw
 
+final case class ImpalaEntityIdentifierCdw(
+    databaseName: String,
+    name: String
+)
+
 final case class PrivateImpalaViewCdw(
     override val databaseName: String,
-    tableName: String,
+    source: ImpalaEntityIdentifierCdw,
     override val viewName: String
 ) extends ImpalaViewCdw
 

@@ -26,9 +26,12 @@ class ImpalaViewGateway(
     for {
       // TODO - Validate again the query if existent before executing it
       _ <- sqlQueryExecutor
-        .executeDDL(
+        .executeDDLs(
           connectionConfigurations.setCredentials(user = deployUser, password = deployPassword),
-          ddlProvider.createView(impalaView, ifNotExists)
+          Seq(
+            ddlProvider.createDataBase(impalaView.database, ifNotExists),
+            ddlProvider.createView(impalaView, ifNotExists)
+          )
         )
       jdbc <- sqlQueryExecutor.getConnectionString(connectionConfigurations)
     } yield ImpalaEntityResource(impalaView, jdbc)

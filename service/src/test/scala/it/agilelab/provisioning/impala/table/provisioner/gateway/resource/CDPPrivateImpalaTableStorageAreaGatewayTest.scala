@@ -554,7 +554,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           PrivateImpalaViewCdw(
             databaseName = "databaseName",
             viewName = "viewName",
-            tableName = "tableNameNonSupported").asJson)
+            source = ImpalaEntityIdentifierCdw("db", "tableName")).asJson)
           .build()
       )
       .build()
@@ -596,7 +596,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
           PrivateImpalaViewCdw(
             databaseName = "databaseName",
             viewName = "viewName",
-            tableName = "tableNameNonSupported").asJson)
+            source = ImpalaEntityIdentifierCdw("db", "tableNameNonSupported")).asJson)
           .build()
       )
       .build()
