@@ -25,7 +25,9 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE db.table (id INT) PARTITIONED BY (p1 INT) " +
-            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')"
+            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')",
+          "INVALIDATE METADATA db.table",
+          "ALTER TABLE db.table RECOVER PARTITIONS"
         )
       )
       .once()
@@ -69,7 +71,9 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE IF NOT EXISTS db.table (id INT) PARTITIONED BY (p1 INT) " +
-            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')"
+            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')",
+          "INVALIDATE METADATA db.table",
+          "ALTER TABLE db.table RECOVER PARTITIONS"
         )
       )
       .once()

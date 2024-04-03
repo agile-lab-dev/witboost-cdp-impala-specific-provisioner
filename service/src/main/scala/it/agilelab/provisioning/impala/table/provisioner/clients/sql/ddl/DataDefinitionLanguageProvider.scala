@@ -1,6 +1,10 @@
 package it.agilelab.provisioning.impala.table.provisioner.clients.sql.ddl
 
-import it.agilelab.provisioning.impala.table.provisioner.core.model.{ ExternalTable, ImpalaView }
+import it.agilelab.provisioning.impala.table.provisioner.core.model.{
+  ExternalTable,
+  ImpalaEntity,
+  ImpalaView
+}
 
 trait DataDefinitionLanguageProvider {
 
@@ -13,5 +17,7 @@ trait DataDefinitionLanguageProvider {
   def dropExternalTable(externalTable: ExternalTable, ifExists: Boolean): String
 
   def dropView(impalaView: ImpalaView, ifExists: Boolean): String
+
+  def refreshStatements(impalaEntity: ImpalaEntity): Seq[String]
 
 }

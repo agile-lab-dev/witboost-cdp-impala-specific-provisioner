@@ -390,4 +390,28 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
     assert(actual == expected)
   }
 
+  // refresh statements
+
+  test("table refresh statements") {
+    val table = ExternalTable(
+      database = "database",
+      name = "tableName",
+      schema = Seq.empty,
+      partitions = Seq.empty,
+      location = "/",
+      format = Csv,
+      delimiter = None,
+      tblProperties = Map.empty,
+      header = false
+    )
+
+    val expected = Seq(
+      "INVALIDATE METADATA database.tableName",
+      "ALTER TABLE database.tableName RECOVER PARTITIONS"
+    )
+    val actual = impalaDataDefinitionLanguageProvider.refreshStatements(table)
+
+    assert(actual == expected)
+  }
+
 }

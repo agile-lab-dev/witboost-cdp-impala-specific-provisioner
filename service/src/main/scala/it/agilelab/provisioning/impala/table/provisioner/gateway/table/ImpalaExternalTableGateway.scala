@@ -39,7 +39,7 @@ class ImpalaExternalTableGateway(
           Seq(
             ddlProvider.createDataBase(externalTable.database, ifNotExists = true),
             ddlProvider.createExternalTable(externalTable, ifNotExists)
-          )
+          ) ++ ddlProvider.refreshStatements(externalTable)
         )
       jdbc <- sqlQueryExecutor.getConnectionString(
         // Used to avoid returning sensitive credentials data

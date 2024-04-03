@@ -50,7 +50,10 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         .returns("CREATE DATABASE ..."),
       (mockDDLProvider.createExternalTable _)
         .expects(*, *)
-        .returns("CREATE EXTERNAL TABLE ...")
+        .returns("CREATE EXTERNAL TABLE ..."),
+      (mockDDLProvider.refreshStatements _)
+        .expects(*)
+        .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
     )
     (sqlGateway.executeDDLs _).expects(connectionConfig, *).returns(Right(1))
     (sqlGateway.getConnectionString _)
@@ -98,7 +101,10 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         .returns("CREATE DATABASE ..."),
       (mockDDLProvider.createExternalTable _)
         .expects(*, *)
-        .returns("CREATE EXTERNAL TABLE ...")
+        .returns("CREATE EXTERNAL TABLE ..."),
+      (mockDDLProvider.refreshStatements _)
+        .expects(*)
+        .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
     )
     (sqlGateway.executeDDLs _)
       .expects(connectionConfig, *)

@@ -36,6 +36,9 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
   private val SELECT_PATTERN = "SELECT %s"
   private val FROM_PATTERN = "FROM %s"
 
+  private val INVALIDATE_METADATA_PATTERN = "INVALIDATE METADATA %s"
+  private val RECOVER_PARTITIONS_PATTERN = "ALTER TABLE %s RECOVER PARTITIONS"
+
   private val defaultTblProperties: Seq[(String, String)] = Seq(("impala.disableHmsSync", "false"))
   private val headerTblProperty: (String, String) = "skip.header.line.count" -> "1"
 
@@ -75,6 +78,11 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
       serializeDropViewDDL(ifExists),
       serializeName(impalaView)
     )
+
+  override def refreshStatements(impalaEntity: ImpalaEntity): Seq[String] = Seq(
+    INVALIDATE_METADATA_PATTERN.format(serializeName(impalaEntity)),
+    RECOVER_PARTITIONS_PATTERN.format(serializeName(impalaEntity))
+  )
 
   private def createDefaultExternalTable(externalTable: ExternalTable, ifNotExists: Boolean) =
     CREATE_TABLE_PATTERN.format(
