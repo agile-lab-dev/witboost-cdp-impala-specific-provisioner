@@ -6,7 +6,6 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   Field,
   ImpalaEntity,
-  ImpalaFormat,
   ImpalaView
 }
 
@@ -79,10 +78,17 @@ class ImpalaDataDefinitionLanguageProvider extends DataDefinitionLanguageProvide
       serializeName(impalaView)
     )
 
-  override def refreshStatements(impalaEntity: ImpalaEntity): Seq[String] = Seq(
-    INVALIDATE_METADATA_PATTERN.format(serializeName(impalaEntity)),
-    RECOVER_PARTITIONS_PATTERN.format(serializeName(impalaEntity))
-  )
+  override def refreshStatements(impalaEntity: ImpalaEntity): Seq[String] = {
+    val baseStatements = Seq(
+      INVALIDATE_METADATA_PATTERN.format(serializeName(impalaEntity))
+    )
+    impalaEntity match {
+      case ExternalTable(_, _, _, partitions, _, _, _, _, _) if partitions.nonEmpty =>
+        baseStatements :+ RECOVER_PARTITIONS_PATTERN.format(serializeName(impalaEntity))
+      case _ =>
+        baseStatements
+    }
+  }
 
   private def createDefaultExternalTable(externalTable: ExternalTable, ifNotExists: Boolean) =
     CREATE_TABLE_PATTERN.format(

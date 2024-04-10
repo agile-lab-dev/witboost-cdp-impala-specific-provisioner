@@ -392,12 +392,33 @@ class ImpalaDataDefinitionLanguageProviderTest extends AnyFunSuite {
 
   // refresh statements
 
-  test("table refresh statements") {
+  test("non partitioned table refresh statements") {
     val table = ExternalTable(
       database = "database",
       name = "tableName",
-      schema = Seq.empty,
+      schema = Seq(Field("country", ImpalaDataType.ImpalaString, None)),
       partitions = Seq.empty,
+      location = "/",
+      format = Csv,
+      delimiter = None,
+      tblProperties = Map.empty,
+      header = false
+    )
+
+    val expected = Seq(
+      "INVALIDATE METADATA database.tableName"
+    )
+    val actual = impalaDataDefinitionLanguageProvider.refreshStatements(table)
+
+    assert(actual == expected)
+  }
+
+  test("partitioned table refresh statements") {
+    val table = ExternalTable(
+      database = "database",
+      name = "tableName",
+      schema = Seq(Field("country", ImpalaDataType.ImpalaString, None)),
+      partitions = Seq(Field("country", ImpalaDataType.ImpalaString, None)),
       location = "/",
       format = Csv,
       delimiter = None,
