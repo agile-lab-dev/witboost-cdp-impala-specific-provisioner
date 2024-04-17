@@ -83,7 +83,25 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
 
     val rangerRoleGateway = stub[RangerRoleGateway]
     (rangerRoleGateway.upsertRole _)
-      .when("domain_dp-name_0", OwnerRoleType, *, *, *, *, *)
+      .when(
+        "domain_dp-name_0",
+        OwnerRoleType,
+        *,
+        List(
+          "impala"
+        ),
+        List(
+          "test-audit-group"
+        ),
+        List(
+          "dataProductOwner",
+          "test-non-admin-user"
+        ),
+        List(
+          "devGroup",
+          "test-non-admin-group"
+        )
+      )
       .returns(
         Right(
           RangerRole(
@@ -91,10 +109,16 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
             isEnabled = true,
             name = "domain_dp_name_0_owner",
             description = "",
-            groups = Seq(RoleMember("devGroup", isAdmin = false)),
+            groups = Seq(
+              RoleMember("devGroup", isAdmin = false),
+              RoleMember("test-audit-group", isAdmin = true),
+              RoleMember("test-non-admin-group", isAdmin = false)),
             users = Seq(
               RoleMember("srvRole", isAdmin = true),
-              RoleMember("dataProductOwner", isAdmin = false)),
+              RoleMember("impala", isAdmin = true),
+              RoleMember("test-non-admin-user", isAdmin = false),
+              RoleMember("dataProductOwner", isAdmin = false)
+            ),
             roles = Seq.empty
           )
         )
@@ -123,8 +147,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",
@@ -297,8 +321,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",
@@ -619,7 +643,25 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
 
     val rangerRoleGateway = stub[RangerRoleGateway]
     (rangerRoleGateway.upsertRole _)
-      .when("domain_dp-name_0", OwnerRoleType, *, *, *, *, *)
+      .when(
+        "domain_dp-name_0",
+        OwnerRoleType,
+        *,
+        List(
+          "impala"
+        ),
+        List(
+          "test-audit-group"
+        ),
+        List(
+          "dataProductOwner",
+          "test-non-admin-user"
+        ),
+        List(
+          "devGroup",
+          "test-non-admin-group"
+        )
+      )
       .returns(
         Right(
           RangerRole(
@@ -627,10 +669,16 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
             isEnabled = true,
             name = "domain_dp_name_0_owner",
             description = "",
-            groups = Seq(RoleMember("devGroup", isAdmin = false)),
+            groups = Seq(
+              RoleMember("devGroup", isAdmin = false),
+              RoleMember("test-audit-group", isAdmin = true),
+              RoleMember("test-non-admin-group", isAdmin = false)),
             users = Seq(
               RoleMember("srvRole", isAdmin = true),
-              RoleMember("dataProductOwner", isAdmin = false)),
+              RoleMember("impala", isAdmin = true),
+              RoleMember("test-non-admin-user", isAdmin = false),
+              RoleMember("dataProductOwner", isAdmin = false)
+            ),
             roles = Seq.empty
           )
         )
@@ -641,8 +689,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",
@@ -755,8 +803,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",
@@ -870,7 +918,25 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
 
     val rangerRoleGateway = stub[RangerRoleGateway]
     (rangerRoleGateway.upsertRole _)
-      .when("domain_dp-name_0", OwnerRoleType, *, *, *, *, *)
+      .when(
+        "domain_dp-name_0",
+        OwnerRoleType,
+        *,
+        List(
+          "impala"
+        ),
+        List(
+          "test-audit-group"
+        ),
+        List(
+          "dataProductOwner",
+          "test-non-admin-user"
+        ),
+        List(
+          "devGroup",
+          "test-non-admin-group"
+        )
+      )
       .returns(
         Right(
           RangerRole(
@@ -878,10 +944,16 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
             isEnabled = true,
             name = "domain_dp_name_0_owner",
             description = "",
-            groups = Seq(RoleMember("devGroup", isAdmin = false)),
+            groups = Seq(
+              RoleMember("devGroup", isAdmin = false),
+              RoleMember("test-audit-group", isAdmin = true),
+              RoleMember("test-non-admin-group", isAdmin = false)),
             users = Seq(
               RoleMember("srvRole", isAdmin = true),
-              RoleMember("dataProductOwner", isAdmin = false)),
+              RoleMember("impala", isAdmin = true),
+              RoleMember("test-non-admin-user", isAdmin = false),
+              RoleMember("dataProductOwner", isAdmin = false)
+            ),
             roles = Seq.empty
           )
         )
@@ -910,8 +982,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",
@@ -1018,8 +1090,8 @@ class ImpalaAccessControlGatewayTest extends AnyFunSuite with MockFactory {
       .when(
         "srvRole",
         "domain_dp_name_0",
-        "dataProductOwner",
-        Some("devGroup"),
+        List("dataProductOwner"),
+        List("devGroup"),
         "hive",
         "dlName",
         "databaseName",

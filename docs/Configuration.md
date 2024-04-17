@@ -194,12 +194,16 @@ hdfs {
 
 Ranger configuration is used to define the authentication method to access the platform. On CDP Private Cloud environment it also requires to define the base URL to access, while on CDP Public Cloud this is automatically discovered. This configuration gives the possibility to define different credentials for deploying and for accessing Ranger by overriding the username and password fields.
 
-| Configuration      | Description                                                                                                                                                                                                                                      | Default                        |
-|:-------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------|
-| `ranger.auth-type` | Authentication type to be used. Allowed values are `simple \| kerberos`                                                                                                                                                                          | `simple`                       |
-| `ranger.username`  | Username to be used on authentication. On `kerberos` authentication, it corresponds to the principal. Override if it's necessary to define different credentials than the ones defined on `CDP_DEPLOY_ROLE_USER` env variable.                   | `${?CDP_DEPLOY_ROLE_USER}`     |
-| `ranger.password`  | Password to be used on authentication. On `kerberos` authentication, it corresponds to the path to the keytab file. Override if it's necessary to define different credentials than the ones defined on `CDP_DEPLOY_ROLE_PASSWORD` env variable. | `${?CDP_DEPLOY_ROLE_PASSWORD}` |
-| `ranger.base-url`  | Base URL in the form `http[s]://<HOST>:<PORT>/` to contact Ranger. Required only when `provision-cloud = private`.                                                                                                                               |                                |
+| Configuration                          | Description                                                                                                                                                                                                                                      | Default                        |
+|:---------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------|
+| `ranger.auth-type`                     | Authentication type to be used. Allowed values are `simple \| kerberos`                                                                                                                                                                          | `simple`                       |
+| `ranger.username`                      | Username to be used on authentication. On `kerberos` authentication, it corresponds to the principal. Override if it's necessary to define different credentials than the ones defined on `CDP_DEPLOY_ROLE_USER` env variable.                   | `${?CDP_DEPLOY_ROLE_USER}`     |
+| `ranger.password`                      | Password to be used on authentication. On `kerberos` authentication, it corresponds to the path to the keytab file. Override if it's necessary to define different credentials than the ones defined on `CDP_DEPLOY_ROLE_PASSWORD` env variable. | `${?CDP_DEPLOY_ROLE_PASSWORD}` |
+| `ranger.base-url`                      | Base URL in the form `http[s]://<HOST>:<PORT>/` to contact Ranger. Required only when `provision-cloud = private`.                                                                                                                               |                                |
+| `ranger.users`                         | List of objects representing Ranger users. It contains two fields: `name` representing the user's name, and `is-admin` used when `ranger.add-entities-to-role` is `true` to set said user as part of the role's admins or not.                   | []                             |
+| `ranger.groups`                        | List of objects representing Ranger groups. It has the same schema as `ranger.role-users`.                                                                                                                                                       | []                             |
+| `ranger.add-entities-to-role`          | Whether to add `ranger.users` and `ranger.groups` as part of the components' owner role members                                                                                                                                                  | false                          |
+| `ranger.add-entities-to-security-zone` | Whether to add `ranger.users` and `ranger.groups` as part of the components' security zone auditors. Only entities where `is-admin: true` will be added as part of the security zone auditors                                                    | false                          |
 
 Example:
 
@@ -209,6 +213,17 @@ ranger {
     base-url = "https://ranger.endpoint/ranger/"
     username = "admin"
     password = "path/to/file.keytab"
+    
+    users [
+        {
+            name: impala
+            is-admin: true
+        }
+    ]
+    groups []
+
+    add-entities-to-role = true
+    add-entities-to-security-zone = false
 }
 ```
 

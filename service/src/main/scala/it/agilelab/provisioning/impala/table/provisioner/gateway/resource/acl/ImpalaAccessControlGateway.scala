@@ -3,16 +3,22 @@ package it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl
 import cats.implicits.{ showInterpolator, toBifunctorOps }
 import it.agilelab.provisioning.commons.client.ranger.RangerClient
 import it.agilelab.provisioning.commons.client.ranger.model.RangerRole
+import it.agilelab.provisioning.commons.config.ConfError.ConfKeyNotFoundErr
 import it.agilelab.provisioning.commons.principalsmapping.{
   CdpIamGroup,
   CdpIamPrincipals,
   CdpIamUser,
   PrincipalsMapper
 }
+import it.agilelab.provisioning.impala.table.provisioner.context.ApplicationConfiguration
 import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   ExternalTable,
   ImpalaEntity,
   PolicyAttachment
+}
+import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.{
+  RangerUserConfig,
+  UserConfig
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider.{
   RangerGateway,
@@ -25,6 +31,11 @@ import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.role.{
 }
 import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.zone.RangerSecurityZoneGenerator
 import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
+import pureconfig.ConfigSource
+import pureconfig.generic.auto.exportReader
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.Try
 
 class ImpalaAccessControlGateway(
     serviceRole: String,
@@ -64,12 +75,22 @@ class ImpalaAccessControlGateway(
             identifiers.dataProductMajorVersion))
       owners <- getOwnerPrincipals(accessControlInfo.dataProductOwner, accessControlInfo.devGroup)
       gtwys  <- getRangerGateways(rangerClient)
+      rangerUserConfig <- ConfigSource
+        .fromConfig(ApplicationConfiguration.rangerConfig)
+        .load[RangerUserConfig]
+        .leftMap(e => ComponentGatewayError(e.prettyPrint()))
+      configUsers = rangerUserConfig.users.partition(_.isAdmin)
+      configGroups = rangerUserConfig.groups.partition(_.isAdmin)
       securityZone <- gtwys.securityZoneGateway
         .upsertSecurityZone(
           serviceRole,
           szName,
-          owners._1.workloadUsername,
-          Some(owners._2.groupName),
+          owners._1.workloadUsername +: (if (rangerUserConfig.addEntitiesToSecurityZone)
+                                           configUsers._1.map(_.name)
+                                         else List()),
+          owners._2.groupName +: (if (rangerUserConfig.addEntitiesToSecurityZone)
+                                    configGroups._1.map(_.name)
+                                  else List()),
           "hive",
           clusterName,
           impalaEntity.database,
@@ -79,16 +100,23 @@ class ImpalaAccessControlGateway(
           }
         )
         .leftMap(e => ComponentGatewayError(show"$e"))
+      // After partition: configUsers/configGroups = (admin, nonAdmin)
       ownerRole <- gtwys.roleGateway
         .upsertRole(
           rolePrefix =
             s"${identifiers.domain}_${identifiers.dataProductName}_${identifiers.dataProductMajorVersion}",
           OwnerRoleType,
           serviceRole,
-          ownerUsers = List.empty,
-          ownerGroups = List.empty,
-          users = List(owners._1.workloadUsername, "impala"),
-          groups = List(owners._2.groupName)
+          ownerUsers =
+            if (rangerUserConfig.addEntitiesToRole) configUsers._1.map(_.name) else List(),
+          ownerGroups =
+            if (rangerUserConfig.addEntitiesToRole) configGroups._1.map(_.name) else List(),
+          users = owners._1.workloadUsername +: (if (rangerUserConfig.addEntitiesToRole)
+                                                   configUsers._2.map(_.name)
+                                                 else List()),
+          groups = owners._2.groupName +: (if (rangerUserConfig.addEntitiesToRole)
+                                             configGroups._2.map(_.name)
+                                           else List())
         )
         .leftMap(e => ComponentGatewayError(show"$e"))
       userRole <-
@@ -135,7 +163,7 @@ class ImpalaAccessControlGateway(
     * @param rangerClient      Ranger Client to be used for contacting Ranger
     * @param impalaEntity     Impala entity to which access will be managed
     * @param clusterName       Cluster name used to update Security Zones on Ranger. On CDP Public it refers to the Datalake name
-    * @param unprovisionUserRole Whether to unprovision or not a user role (useful for storageareas) TODO Improve this so Storagearea use a specific gateway
+    * @param unprovisionUserRole Whether to unprovision or not a user role (useful for storageareas)
     * @return Either a [[ComponentGatewayError]] if an error occurs, or a sequence of [[PolicyAttachment]] with the unprovisioned access policies
     */
 
@@ -155,12 +183,22 @@ class ImpalaAccessControlGateway(
           identifiers.dataProductMajorVersion))
     owners <- getOwnerPrincipals(accessControlInfo.dataProductOwner, accessControlInfo.devGroup)
     gtwys  <- getRangerGateways(rangerClient)
+    rangerUserConfig <- ConfigSource
+      .fromConfig(ApplicationConfiguration.rangerConfig)
+      .load[RangerUserConfig]
+      .leftMap(e => ComponentGatewayError(e.prettyPrint()))
+    configUsers = rangerUserConfig.users.partition(_.isAdmin)
+    configGroups = rangerUserConfig.groups.partition(_.isAdmin)
     securityZone <- gtwys.securityZoneGateway
       .upsertSecurityZone(
         serviceRole,
         szName,
-        owners._1.workloadUsername,
-        Some(owners._2.groupName),
+        owners._1.workloadUsername +: (if (rangerUserConfig.addEntitiesToSecurityZone)
+                                         configUsers._1.map(_.name)
+                                       else List()),
+        owners._2.groupName +: (if (rangerUserConfig.addEntitiesToSecurityZone)
+                                  configGroups._1.map(_.name)
+                                else List()),
         "hive",
         clusterName,
         impalaEntity.database,
@@ -275,7 +313,7 @@ class ImpalaAccessControlGateway(
     }
   } yield (ownerUser, ownerGroup)
 
-  final case class ComponentInfo(
+  private final case class ComponentInfo(
       domain: String,
       dataProductName: String,
       dataProductMajorVersion: String,

@@ -20,8 +20,8 @@ class RangerSecurityZoneGateway(
     *
     * @param deployUser Deploy user to act as an admin user of the security zone
     * @param securityZoneName Security Zone name
-    * @param auditUser User to be added as part of the audits of the Security Zone
-    * @param auditGroup Group to be added as part of the audit groups of the Security Zone
+    * @param auditUsers List of users to be added as part of the audits of the Security Zone
+    * @param auditGroups List of groups to be added as part of the audit groups of the Security Zone
     * @param serviceType The service type related to the security zone
     * @param clusterName Cluster name
     * @param databaseName Database name
@@ -32,8 +32,8 @@ class RangerSecurityZoneGateway(
   def upsertSecurityZone(
       deployUser: String,
       securityZoneName: String,
-      auditUser: String,
-      auditGroup: Option[String],
+      auditUsers: Seq[String],
+      auditGroups: Seq[String],
       serviceType: String,
       clusterName: String,
       databaseName: String,
@@ -52,8 +52,8 @@ class RangerSecurityZoneGateway(
             service.name,
             databaseName,
             if (isDestroy) Seq.empty[String] else folderUrl.map(u => safelyRemove(u, "/")),
-            auditUser,
-            auditGroup,
+            auditUsers,
+            auditGroups,
             deployUser))(z => updateSC(z, service.name, databaseName, folderUrl, isDestroy))
       } yield zoneUpdated
     }
@@ -75,8 +75,8 @@ class RangerSecurityZoneGateway(
       serviceName: String,
       databaseName: String,
       folderUrl: Seq[String],
-      auditUser: String,
-      auditGroup: Option[String],
+      auditUsers: Seq[String],
+      auditGroups: Seq[String],
       deployUser: String
   ): Either[RangerSecurityZoneGatewayError, RangerSecurityZone] =
     rangerClient
@@ -90,8 +90,8 @@ class RangerSecurityZoneGateway(
           urlResources = folderUrl.map(u => s"$u/*"),
           adminUsers = Seq(deployUser),
           adminUserGroups = Seq.empty,
-          auditUsers = Seq(deployUser, auditUser),
-          auditUserGroups = auditGroup.toList
+          auditUsers = deployUser +: auditUsers,
+          auditUserGroups = auditGroups
         ))
       .leftMap(e => UpsertSecurityZoneErr(e))
 
