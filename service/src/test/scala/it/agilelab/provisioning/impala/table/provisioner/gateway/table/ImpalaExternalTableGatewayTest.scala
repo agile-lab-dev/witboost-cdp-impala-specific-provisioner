@@ -50,10 +50,7 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         .returns("CREATE DATABASE ..."),
       (mockDDLProvider.createExternalTable _)
         .expects(*, *)
-        .returns("CREATE EXTERNAL TABLE ..."),
-      (mockDDLProvider.refreshStatements _)
-        .expects(*)
-        .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
+        .returns("CREATE EXTERNAL TABLE ...")
     )
     (sqlGateway.executeDDLs _).expects(connectionConfig, *).returns(Right(1))
     (sqlGateway.getConnectionString _)
@@ -101,16 +98,96 @@ class ImpalaExternalTableGatewayTest extends AnyFunSuite with MockFactory {
         .returns("CREATE DATABASE ..."),
       (mockDDLProvider.createExternalTable _)
         .expects(*, *)
-        .returns("CREATE EXTERNAL TABLE ..."),
-      (mockDDLProvider.refreshStatements _)
-        .expects(*)
-        .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
+        .returns("CREATE EXTERNAL TABLE ...")
     )
     (sqlGateway.executeDDLs _)
       .expects(connectionConfig, *)
       .returns(Left(error))
 
     assert(tableGateway.create(connectionConfig, externalTable, ifNotExists = true) == Left(error))
+  }
+
+  test("refresh") {
+
+    val sqlGateway: SqlGateway = mock[SqlGateway]
+    val mockDDLProvider: ImpalaDataDefinitionLanguageProvider =
+      mock[ImpalaDataDefinitionLanguageProvider]
+
+    val tableGateway =
+      new ImpalaExternalTableGateway("deployUser", "deployPassword", mockDDLProvider, sqlGateway)
+
+    val connectionConfig =
+      UsernamePasswordConnectionConfig(
+        "host",
+        "port",
+        "schema",
+        "deployUser",
+        "deployPassword",
+        useSSL = true)
+    val externalTable =
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
+
+    (mockDDLProvider.refreshStatements _)
+      .expects(*)
+      .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
+
+    (sqlGateway.executeDDLs _).expects(connectionConfig, *).returns(Right(1))
+    (sqlGateway.getConnectionString _)
+      .expects(connectionConfig.setCredentials("<USER>", "<PASSWORD>"))
+      .returns(Right("jdbc://"))
+
+    assert(
+      tableGateway.refresh(connectionConfig, externalTable) == Right(
+        ImpalaEntityResource(externalTable, "jdbc://"))
+    )
+  }
+
+  test("refresh returns Left() if sql execution failed") {
+    val sqlGateway: SqlGateway = mock[SqlGateway]
+    val mockDDLProvider: ImpalaDataDefinitionLanguageProvider =
+      mock[ImpalaDataDefinitionLanguageProvider]
+
+    val tableGateway =
+      new ImpalaExternalTableGateway("deployUser", "deployPassword", mockDDLProvider, sqlGateway)
+
+    val connectionConfig =
+      UsernamePasswordConnectionConfig(
+        "host",
+        "port",
+        "schema",
+        "deployUser",
+        "deployPassword",
+        useSSL = true)
+    val externalTable =
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
+
+    val error = ExecuteDDLErr(new SQLException("Error!"))
+    (mockDDLProvider.refreshStatements _)
+      .expects(*)
+      .returns(Seq("INVALIDATE METADATA ...", "ALTER TABLE ... RECOVER PARTITIONS"))
+    (sqlGateway.executeDDLs _)
+      .expects(connectionConfig, *)
+      .returns(Left(error))
+
+    assert(tableGateway.refresh(connectionConfig, externalTable) == Left(error))
   }
 
   test("drop") {

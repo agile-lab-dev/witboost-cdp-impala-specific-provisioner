@@ -23,7 +23,7 @@ import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funsuite.AnyFunSuite
 
-class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockFactory {
+class CDPPrivateImpalaStorageAreaGatewayTest extends AnyFunSuite with MockFactory {
 
   test("provision simple storage area table") {
     val request = ProvisionRequestFaker[Json, Json](Json.obj())
@@ -76,22 +76,30 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       .when()
       .returns(Right("http://rangerHost/ranger/"))
 
-    val externalTableGateway = stub[ExternalTableGateway]
-    (externalTableGateway.create _)
-      .when(*, *, *)
-      .returns(Right(entityResource))
+    val externalTableGateway = mock[ExternalTableGateway]
+    val impalaAccessControlGateway = mock[ImpalaAccessControlGateway]
 
-    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
-    (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *, false)
-      .returns(
-        Right(
-          Seq(
-            PolicyAttachment("123", "xy"),
-            PolicyAttachment("456", "ttt"),
-            PolicyAttachment("789", "loc")
-          ))
-      )
+    // Provision storage, then access control and only at the end refresh
+    inSequence {
+      (externalTableGateway.create _)
+        .expects(*, *, *)
+        .returns(Right(entityResource))
+
+      (impalaAccessControlGateway.provisionAccessControl _)
+        .expects(*, *, *, *, false)
+        .returns(
+          Right(
+            Seq(
+              PolicyAttachment("123", "xy"),
+              PolicyAttachment("456", "ttt"),
+              PolicyAttachment("789", "loc")
+            ))
+        )
+
+      (externalTableGateway.refresh _)
+        .expects(*, *)
+        .returns(Right(entityResource))
+    }
 
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val rangerClient = stub[RangerClient]
@@ -104,7 +112,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -202,22 +210,30 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       .when(*)
       .returns(Right("impalaHost"))
 
-    val externalTableGateway = stub[ExternalTableGateway]
-    (externalTableGateway.create _)
-      .when(*, *, *)
-      .returns(Right(entityResource))
+    val externalTableGateway = mock[ExternalTableGateway]
+    val impalaAccessControlGateway = mock[ImpalaAccessControlGateway]
 
-    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
-    (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *, false)
-      .returns(
-        Right(
-          Seq(
-            PolicyAttachment("123", "xy"),
-            PolicyAttachment("456", "ttt"),
-            PolicyAttachment("789", "loc")
-          ))
-      )
+    // Provision storage, then access control and only at the end refresh
+    inSequence {
+      (externalTableGateway.create _)
+        .expects(*, *, *)
+        .returns(Right(entityResource))
+
+      (impalaAccessControlGateway.provisionAccessControl _)
+        .expects(*, *, *, *, false)
+        .returns(
+          Right(
+            Seq(
+              PolicyAttachment("123", "xy"),
+              PolicyAttachment("456", "ttt"),
+              PolicyAttachment("789", "loc")
+            ))
+        )
+
+      (externalTableGateway.refresh _)
+        .expects(*, *)
+        .returns(Right(entityResource))
+    }
 
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val rangerClient = stub[RangerClient]
@@ -230,7 +246,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -339,7 +355,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -426,7 +442,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       .returns(Right(entityResource))
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -516,7 +532,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
       .returns(Right(entityResource))
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -566,7 +582,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -608,7 +624,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,
@@ -657,7 +673,7 @@ class CDPPrivateImpalaTableStorageAreaGatewayTest extends AnyFunSuite with MockF
     val viewGateway = stub[ViewGateway]
 
     val impalaTableStorageAreaGateway =
-      new CDPPrivateImpalaTableStorageAreaGateway(
+      new CDPPrivateImpalaStorageAreaGateway(
         "srvRole",
         hostProvider,
         externalTableGateway,

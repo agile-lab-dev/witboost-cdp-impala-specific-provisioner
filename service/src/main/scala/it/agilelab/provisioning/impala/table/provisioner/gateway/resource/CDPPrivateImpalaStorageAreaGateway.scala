@@ -32,7 +32,7 @@ import it.agilelab.provisioning.mesh.self.service.core.model.ProvisionCommand
 
 import scala.util.Try
 
-class CDPPrivateImpalaTableStorageAreaGateway(
+class CDPPrivateImpalaStorageAreaGateway(
     serviceRole: String,
     hostProvider: ConfigHostProvider,
     externalTableGateway: ExternalTableGateway,
@@ -86,6 +86,11 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       "",
       provisionUserRole = false
     )
+    _ <- storageAreaRequest.specific match {
+      case table: PrivateImpalaStorageAreaCdw =>
+        refreshAndGetExternalTable(table.tableSchema, table)
+      case _ => Right(())
+    }
   } yield ImpalaProvisionerResource(
     createdResource,
     ImpalaCdpAcl(policies, List.empty[PolicyAttachment]))
@@ -157,6 +162,14 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       .create(connectionConfig, externalTable, ifNotExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
+  private def refreshExternalTable(
+      connectionConfig: ConnectionConfig,
+      externalTable: ExternalTable
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
+    externalTableGateway
+      .refresh(connectionConfig, externalTable)
+      .leftMap(e => ComponentGatewayError(show"$e"))
+
   private def dropExternalTable(
       connectionConfig: ConnectionConfig,
       externalTable: ExternalTable
@@ -169,32 +182,27 @@ class CDPPrivateImpalaTableStorageAreaGateway(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    createdResource <- createExternalTable(connectionConfig, externalTable)
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- createExternalTable(connectionConfig, externalTable)
+  } yield createdResource
+
+  private def refreshAndGetExternalTable(
+      schema: Seq[Column],
+      impalaSpecific: ImpalaTableCdw
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- refreshExternalTable(connectionConfig, externalTable)
   } yield createdResource
 
   private def dropAndGetExternalTable(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    droppedResource <- dropExternalTable(connectionConfig, externalTable)
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    droppedResource  <- dropExternalTable(connectionConfig, externalTable)
   } yield droppedResource
 
   // View Storage Area
@@ -226,37 +234,34 @@ class CDPPrivateImpalaTableStorageAreaGateway(
   private def createAndGetView(
       impalaSpecific: PrivateImpalaStorageAreaViewCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
     // SA Views don't receive a schema, but a query, so if not provided, schema is empty
     impalaView <- ImpalaViewMapper.map(
       impalaSpecific.tableSchema.getOrElse(List.empty),
       impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    createdResource <- createView(connectionConfig, impalaView)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- createView(connectionConfig, impalaView)
   } yield createdResource
 
   private def dropAndGetView(
       impalaSpecific: PrivateImpalaStorageAreaViewCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
     // SA Views don't receive a schema, but a query, so if not provided, schema is empty
     impalaView <- ImpalaViewMapper.map(
       impalaSpecific.tableSchema.getOrElse(List.empty),
       impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    droppedResource  <- dropView(connectionConfig, impalaView)
+  } yield droppedResource
+
+  def getConnectionConfig(): Either[ComponentGatewayError, ConnectionConfig] = for {
+    impalaHost <- hostProvider
+      .getImpalaCoordinatorHost()
+      .leftMap(e => ComponentGatewayError(show"$e"))
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    droppedResource <- dropView(connectionConfig, impalaView)
-  } yield droppedResource
+  } yield connectionConfig
 
 }

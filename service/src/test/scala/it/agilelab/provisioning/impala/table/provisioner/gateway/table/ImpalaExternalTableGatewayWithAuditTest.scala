@@ -47,6 +47,37 @@ class ImpalaExternalTableGatewayWithAuditTest extends AnyFunSuite with MockFacto
     )
   }
 
+  test("refresh with audit") {
+    val gatewayMock = mock[ExternalTableGateway]
+    val gatewayWithAudit = new ImpalaExternalTableGatewayWithAudit(
+      gatewayMock,
+      Audit.default("ImpalaExternalTableGateway"))
+
+    val connectionConfig =
+      UsernamePasswordConnectionConfig("host", "port", "schema", "user", "password", useSSL = true)
+    val externalTable =
+      ExternalTable(
+        "database",
+        "tableName",
+        Seq.empty,
+        Seq.empty,
+        "location",
+        ImpalaFormat.Csv,
+        None,
+        Map.empty,
+        header = false)
+
+    val entityResource = ImpalaEntityResource(externalTable, "jdbc://")
+
+    (gatewayMock.refresh _)
+      .expects(connectionConfig, externalTable)
+      .returns(Right(entityResource))
+
+    assert(
+      gatewayWithAudit.refresh(connectionConfig, externalTable) == Right(entityResource)
+    )
+  }
+
   test("drop with audit") {
     val gatewayMock = mock[ExternalTableGateway]
     val gatewayWithAudit = new ImpalaExternalTableGatewayWithAudit(

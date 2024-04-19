@@ -25,6 +25,16 @@ trait ExternalTableGateway {
       ifNotExists: Boolean
   ): Either[SqlGatewayError, ImpalaEntityResource]
 
+  /** Refreshes an external table. The external table must exist and the user must have permissions
+    * to refresh the table and access to the external location
+    * @param connectionConfigurations Connection configuration to build the JDBC connection
+    * @param externalTable External table information
+    */
+  def refresh(
+      connectionConfigurations: ConnectionConfig,
+      externalTable: ExternalTable
+  ): Either[SqlGatewayError, ImpalaEntityResource]
+
   /** Drops an external table
     * @param connectionConfigurations Connection configuration to build the JDBC connection
     * @param externalTable External table information

@@ -20,7 +20,7 @@ import it.agilelab.provisioning.impala.table.provisioner.gateway.ranger.provider
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.acl.ImpalaAccessControlGateway
 import it.agilelab.provisioning.impala.table.provisioner.gateway.resource.{
   CDPPrivateImpalaOutputPortGateway,
-  CDPPrivateImpalaTableStorageAreaGateway,
+  CDPPrivateImpalaStorageAreaGateway,
   ImpalaGateway,
   ImpalaTableOutputPortGateway
 }
@@ -121,7 +121,7 @@ object ImpalaProvisionerController {
       rangerGatewayProvider,
       aclGateway
     ),
-    storageAreaGateway = new CDPPrivateImpalaTableStorageAreaGateway(
+    storageAreaGateway = new CDPPrivateImpalaStorageAreaGateway(
       ctx.deployRoleUser,
       hostProvider,
       tableGateway,

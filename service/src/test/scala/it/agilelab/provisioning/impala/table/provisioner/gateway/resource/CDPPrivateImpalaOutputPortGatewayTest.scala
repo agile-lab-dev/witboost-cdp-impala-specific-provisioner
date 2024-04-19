@@ -68,22 +68,30 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       .when()
       .returns(Right("http://rangerHost/ranger/"))
 
-    val externalTableGateway = stub[ExternalTableGateway]
-    (externalTableGateway.create _)
-      .when(*, *, *)
-      .returns(Right(entityResource))
+    val externalTableGateway = mock[ExternalTableGateway]
+    val impalaAccessControlGateway = mock[ImpalaAccessControlGateway]
 
-    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
-    (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *, true)
-      .returns(
-        Right(
-          Seq(
-            PolicyAttachment("123", "xy"),
-            PolicyAttachment("456", "ttt"),
-            PolicyAttachment("789", "loc")
-          ))
-      )
+    // Provision output port, then access control and only at the end refresh
+    inSequence {
+      (externalTableGateway.create _)
+        .expects(*, *, *)
+        .returns(Right(entityResource))
+
+      (impalaAccessControlGateway.provisionAccessControl _)
+        .expects(*, *, *, *, true)
+        .returns(
+          Right(
+            Seq(
+              PolicyAttachment("123", "xy"),
+              PolicyAttachment("456", "ttt"),
+              PolicyAttachment("789", "loc")
+            ))
+        )
+
+      (externalTableGateway.refresh _)
+        .expects(*, *)
+        .returns(Right(entityResource))
+    }
 
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val rangerClient = stub[RangerClient]
@@ -195,22 +203,30 @@ class CDPPrivateImpalaOutputPortGatewayTest extends AnyFunSuite with MockFactory
       .when(*)
       .returns(Right("impalaHost"))
 
-    val externalTableGateway = stub[ExternalTableGateway]
-    (externalTableGateway.create _)
-      .when(*, *, *)
-      .returns(Right(entityResource))
+    val externalTableGateway = mock[ExternalTableGateway]
+    val impalaAccessControlGateway = mock[ImpalaAccessControlGateway]
 
-    val impalaAccessControlGateway = stub[ImpalaAccessControlGateway]
-    (impalaAccessControlGateway.provisionAccessControl _)
-      .when(*, *, *, *, true)
-      .returns(
-        Right(
-          Seq(
-            PolicyAttachment("123", "xy"),
-            PolicyAttachment("456", "ttt"),
-            PolicyAttachment("789", "loc")
-          ))
-      )
+    // Provision output port, then access control and only at the end refresh
+    inSequence {
+      (externalTableGateway.create _)
+        .expects(*, *, *)
+        .returns(Right(entityResource))
+
+      (impalaAccessControlGateway.provisionAccessControl _)
+        .expects(*, *, *, *, true)
+        .returns(
+          Right(
+            Seq(
+              PolicyAttachment("123", "xy"),
+              PolicyAttachment("456", "ttt"),
+              PolicyAttachment("789", "loc")
+            ))
+        )
+
+      (externalTableGateway.refresh _)
+        .expects(*, *)
+        .returns(Right(entityResource))
+    }
 
     val rangerGatewayProvider = stub[RangerGatewayProvider]
     val rangerClient = stub[RangerClient]

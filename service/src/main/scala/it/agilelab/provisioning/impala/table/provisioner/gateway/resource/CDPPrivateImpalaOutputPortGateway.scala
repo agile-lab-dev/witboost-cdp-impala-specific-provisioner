@@ -86,6 +86,12 @@ class CDPPrivateImpalaOutputPortGateway(
         "",
         provisionUserRole = true
       )
+      // Refresh output port
+      _ <- opRequest.specific match {
+        case table: PrivateImpalaTableCdw =>
+          refreshAndGetExternalTable(opRequest.dataContract.schema, table)
+        case _ => Right(())
+      }
     } yield ImpalaProvisionerResource(
       createdResource,
       ImpalaCdpAcl(policies, Seq.empty[PolicyAttachment]))
@@ -189,6 +195,14 @@ class CDPPrivateImpalaOutputPortGateway(
       .create(connectionConfig, externalTable, ifNotExists = true)
       .leftMap(e => ComponentGatewayError(show"$e"))
 
+  private def refreshExternalTable(
+      connectionConfig: ConnectionConfig,
+      externalTable: ExternalTable
+  ): Either[ComponentGatewayError, ImpalaEntityResource] =
+    externalTableGateway
+      .refresh(connectionConfig, externalTable)
+      .leftMap(e => ComponentGatewayError(show"$e"))
+
   private def dropExternalTable(
       connectionConfig: ConnectionConfig,
       externalTable: ExternalTable
@@ -201,32 +215,27 @@ class CDPPrivateImpalaOutputPortGateway(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    createdResource <- createExternalTable(connectionConfig, externalTable)
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- createExternalTable(connectionConfig, externalTable)
+  } yield createdResource
+
+  private def refreshAndGetExternalTable(
+      schema: Seq[Column],
+      impalaSpecific: ImpalaTableCdw
+  ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- refreshExternalTable(connectionConfig, externalTable)
   } yield createdResource
 
   private def dropAndGetExternalTable(
       schema: Seq[Column],
       impalaSpecific: ImpalaTableCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    externalTable <- ExternalTableMapper.map(schema, impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    droppedResource <- dropExternalTable(connectionConfig, externalTable)
+    externalTable    <- ExternalTableMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    droppedResource  <- dropExternalTable(connectionConfig, externalTable)
   } yield droppedResource
 
   // View Output Port
@@ -259,32 +268,29 @@ class CDPPrivateImpalaOutputPortGateway(
       schema: Seq[Column],
       impalaSpecific: PrivateImpalaViewCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
-    impalaHost <- hostProvider
-      .getImpalaCoordinatorHost()
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    impalaView <- ImpalaViewMapper.map(schema, impalaSpecific)
-    connectionConfig <- ConnectionConfig
-      .getFromConfig(
-        ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
-        impalaHost)
-      .leftMap(e => ComponentGatewayError(show"$e"))
-    createdResource <- createView(connectionConfig, impalaView)
+    impalaView       <- ImpalaViewMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    createdResource  <- createView(connectionConfig, impalaView)
   } yield createdResource
 
   private def dropAndGetView(
       schema: Seq[Column],
       impalaSpecific: PrivateImpalaViewCdw
   ): Either[ComponentGatewayError, ImpalaEntityResource] = for {
+    impalaView       <- ImpalaViewMapper.map(schema, impalaSpecific)
+    connectionConfig <- getConnectionConfig()
+    droppedResource  <- dropView(connectionConfig, impalaView)
+  } yield droppedResource
+
+  private def getConnectionConfig(): Either[ComponentGatewayError, ConnectionConfig] = for {
     impalaHost <- hostProvider
       .getImpalaCoordinatorHost()
       .leftMap(e => ComponentGatewayError(show"$e"))
-    impalaView <- ImpalaViewMapper.map(schema, impalaSpecific)
     connectionConfig <- ConnectionConfig
       .getFromConfig(
         ApplicationConfiguration.impalaConfig.getConfig(ApplicationConfiguration.JDBC_CONFIG),
         impalaHost)
       .leftMap(e => ComponentGatewayError(show"$e"))
-    droppedResource <- dropView(connectionConfig, impalaView)
-  } yield droppedResource
+  } yield connectionConfig
 
 }

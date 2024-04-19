@@ -25,9 +25,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE db.table (id INT) PARTITIONED BY (p1 INT) " +
-            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')",
-          "INVALIDATE METADATA db.table",
-          "ALTER TABLE db.table RECOVER PARTITIONS"
+            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')"
         )
       )
       .once()
@@ -71,9 +69,7 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         Seq(
           "CREATE DATABASE IF NOT EXISTS db",
           "CREATE EXTERNAL TABLE IF NOT EXISTS db.table (id INT) PARTITIONED BY (p1 INT) " +
-            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')",
-          "INVALIDATE METADATA db.table",
-          "ALTER TABLE db.table RECOVER PARTITIONS"
+            "STORED AS PARQUET LOCATION 'loc' TBLPROPERTIES ('impala.disableHmsSync'='false')"
         )
       )
       .once()
@@ -105,6 +101,50 @@ class ImpalaTableOutputPortGatewayTest extends AnyFunSuite with MockFactory {
         externalTable,
         ifNotExists = true
       ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
+  }
+
+  test("refresh") {
+
+    val connectionConfig = UsernamePasswordConnectionConfig("a", "b", "c", "", "", useSSL = true)
+
+    val sqlQueryExecutor = mock[DefaultSQLGateway]
+    (sqlQueryExecutor.executeDDLs _)
+      .expects(
+        UsernamePasswordConnectionConfig("a", "b", "c", "deployUser", "deployPwd", useSSL = true),
+        Seq(
+          "INVALIDATE METADATA db.table",
+          "ALTER TABLE db.table RECOVER PARTITIONS"
+        )
+      )
+      .once()
+      .returns(Right(1))
+    (sqlQueryExecutor.getConnectionString _)
+      .expects(connectionConfig.setCredentials("<USER>", "<PASSWORD>"))
+      .returns(Right("jdbc://"))
+
+    val externalTable = ExternalTable(
+      "db",
+      "table",
+      Seq(Field("id", ImpalaDataType.ImpalaInt, None)),
+      Seq(Field("p1", ImpalaDataType.ImpalaInt, None)),
+      "loc",
+      Parquet,
+      None,
+      Map.empty,
+      header = false
+    )
+
+    assert(
+      new ImpalaExternalTableGateway(
+        "deployUser",
+        "deployPwd",
+        new ImpalaDataDefinitionLanguageProvider(),
+        sqlQueryExecutor
+      ).refresh(
+        connectionConfig,
+        externalTable
+      ) == Right(ImpalaEntityResource(externalTable, "jdbc://")))
+
   }
 
   test("drop") {

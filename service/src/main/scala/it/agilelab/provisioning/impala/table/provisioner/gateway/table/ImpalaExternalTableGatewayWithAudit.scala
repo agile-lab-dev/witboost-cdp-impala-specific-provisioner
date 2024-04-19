@@ -29,6 +29,18 @@ class ImpalaExternalTableGatewayWithAudit(
     result
   }
 
+  override def refresh(
+      connectionConfigurations: ConnectionConfig,
+      externalTable: ExternalTable
+  ): Either[SqlGatewayError, ImpalaEntityResource] = {
+    val action = s"RefreshExternalTable($externalTable)"
+    audit.info(INFO_MSG.format(action))
+    val result =
+      impalaExternalTableGateway.refresh(connectionConfigurations, externalTable)
+    auditWithinResult(result, action)
+    result
+  }
+
   override def drop(
       connectionConfigurations: ConnectionConfig,
       externalTable: ExternalTable,
