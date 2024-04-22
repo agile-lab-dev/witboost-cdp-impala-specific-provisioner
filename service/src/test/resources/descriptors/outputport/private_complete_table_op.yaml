@@ -42,6 +42,17 @@ dataProduct:
         schema:
           - name: Age
             dataType: DOUBLE
+            tags:
+              - tagFQN: PII
+                description: Personal information
+                source: Glossary
+                labelType: Manual
+                state: Confirmed
+              - tagFQN: otherTagName
+                source: Tag
+                labelType: Automated
+                state: Suggested
+                href: http://example.com
           - name: Gender
             dataType: STRING
           - name: Education_Level

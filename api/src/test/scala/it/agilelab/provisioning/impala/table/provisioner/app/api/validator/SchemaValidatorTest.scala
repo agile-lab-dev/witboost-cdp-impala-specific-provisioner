@@ -1,9 +1,12 @@
 package it.agilelab.provisioning.impala.table.provisioner.app.api.validator
 
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.TagLabelType.Manual
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.TagState.Confirmed
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{
   Column,
   ColumnConstraint,
-  ColumnDataType
+  ColumnDataType,
+  Tag
 }
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -58,7 +61,10 @@ class SchemaValidatorTest extends AnyFunSuite {
     assert(
       SchemaValidator.validateColumnNames(
         Seq(
-          getC("validINT1", ColumnDataType.INT),
+          getC(
+            "validINT1",
+            ColumnDataType.INT,
+            tags = Some(Seq(Tag("PII", None, "Glossary", Manual, Confirmed, None)))),
           getC("validINT2", ColumnDataType.INT)
         )))
   }
@@ -126,7 +132,7 @@ class SchemaValidatorTest extends AnyFunSuite {
       dtd: Option[String] = None,
       desc: Option[String] = None,
       fqdn: Option[String] = None,
-      tags: Option[Seq[String]] = None,
+      tags: Option[Seq[Tag]] = None,
       constraint: Option[ColumnConstraint] = None,
       op: Option[Int] = None,
       js: Option[String] = None,

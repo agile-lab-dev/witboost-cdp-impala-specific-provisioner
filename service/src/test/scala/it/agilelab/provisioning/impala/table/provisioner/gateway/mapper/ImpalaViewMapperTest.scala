@@ -17,10 +17,13 @@ import it.agilelab.provisioning.impala.table.provisioner.core.model.{
   PrivateImpalaViewCdw
 }
 import it.agilelab.provisioning.mesh.self.service.api.model.Component.{ DataContract, OutputPort }
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.TagLabelType.Manual
+import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.TagState.Confirmed
 import it.agilelab.provisioning.mesh.self.service.api.model.openmetadata.{
   Column,
   ColumnConstraint,
-  ColumnDataType
+  ColumnDataType,
+  Tag
 }
 import it.agilelab.provisioning.mesh.self.service.core.gateway.ComponentGatewayError
 import org.scalatest.funsuite.AnyFunSuite
@@ -36,7 +39,10 @@ class ImpalaViewMapperTest extends AnyFunSuite {
       version = "version",
       dataContract = DataContract(
         schema = Seq(
-          getC("name", ColumnDataType.STRING),
+          getC(
+            "name",
+            ColumnDataType.STRING,
+            tags = Some(Seq(Tag("PII", None, "Glossary", Manual, Confirmed, None)))),
           getC("surname", ColumnDataType.STRING),
           getC("age", ColumnDataType.INT),
           getC("sex", ColumnDataType.CHAR, dl = Some(1)),
@@ -164,7 +170,7 @@ class ImpalaViewMapperTest extends AnyFunSuite {
       dtd: Option[String] = None,
       desc: Option[String] = None,
       fqdn: Option[String] = None,
-      tags: Option[Seq[String]] = None,
+      tags: Option[Seq[Tag]] = None,
       constraint: Option[ColumnConstraint] = None,
       op: Option[Int] = None,
       js: Option[String] = None,
