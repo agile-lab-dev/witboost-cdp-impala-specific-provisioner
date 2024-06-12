@@ -48,6 +48,8 @@ spec:
             items:
               - key: cdp-private-impala-custom-ca
                 path: custom_root_ca.crt
+        {{- end }}
+        {{- if or .Values.kerberos.enabled .Values.customRootCA.enabled }}
         - name: shared-volume
           emptyDir: {}
         {{- end }}
