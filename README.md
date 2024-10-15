@@ -79,15 +79,7 @@ We produce two different artifacts on the CI/CD for this repository
 - Java >=11
 - sbt
 
-This project depends on a private library scala-mesh-commons which you should have access to at compile time. Currently, the library is hosted as a package in a Gitlab Maven Package Registry.
-
-To pull these libraries, we need to set up authentication to the Package Registry (see [Gitlab docs](https://docs.gitlab.com/ee/user/packages/maven_repository/?tab=sbt)). We've set authentication based on environment variables that sbt uses to authenticate. Please export the following environment variables before importing the project:
-
-```shell
-export GITLAB_ARTIFACT_HOST=https://gitlab.com/api/v4/projects/51107980/packages/maven
-export GITLAB_ARTIFACT_USER=<Gitlab Username>
-export GITLAB_ARTIFACT_TOKEN=<Gitlab Personal Access Token>
-```
+This project also depends on Witboost library [scala-mesh-commons](https://github.com/agile-lab-dev/witboost-scala-mesh-commons), published Open-Source on Maven Central.
 
 **Generating sources:** this project uses OpenAPI as standard API specification and the [sbt-guardrail](https://github.com/guardrail-dev/sbt-guardrail) plugin to generate server code from the [specification](./api/src/main/openapi/interface-specification.yml).
 

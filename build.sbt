@@ -71,7 +71,7 @@ lazy val root = (project in file("."))
     mainClass in Compile := Some("it.agilelab.provisioning.impala.table.provisioner.app.Main"),
     artifactorySettings,
     dockerBuildOptions ++= Seq("--network=host"),
-    dockerBaseImage := "registry.gitlab.com/agilefactory/witboost.mesh/provisioning/cdp/cicd/scala-sbt",
+    dockerBaseImage := "openjdk:11-buster",
     dockerUpdateLatest := true,
     daemonUser := "daemon",
     Docker / version := (ThisBuild / version).value,

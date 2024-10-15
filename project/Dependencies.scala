@@ -1,21 +1,22 @@
 import sbt._
 
 trait Dependencies {
-  lazy val scalaCommonsVrs = "0.0.0-SNAPSHOT-ca365fe93c.wit-2146-parsing-col"
+  lazy val scalaCommonsVrs = "1.0.0"
   lazy val scalaTestVrs = "3.1.0"
   lazy val scalaMockVrs = "4.4.0"
 
-  lazy val scalaS3Gat = "it.agilelab.provisioning" %% "scala-mesh-aws-s3" % scalaCommonsVrs
-  lazy val scalaCdpDl = "it.agilelab.provisioning" %% "scala-mesh-cdp-dl" % scalaCommonsVrs
-  lazy val scalaCdpEnv = "it.agilelab.provisioning" %% "scala-mesh-cdp-env" % scalaCommonsVrs
-  lazy val scalaCdpDw = "it.agilelab.provisioning" %% "scala-mesh-cdp-dw" % scalaCommonsVrs
-  lazy val ranger = "it.agilelab.provisioning" %% "scala-mesh-ranger" % scalaCommonsVrs
-  lazy val scalaMeshRep = "it.agilelab.provisioning" %% "scala-mesh-repository" % scalaCommonsVrs
-  lazy val scalaMeshSelf = "it.agilelab.provisioning" %% "scala-mesh-self-service" % scalaCommonsVrs
+  lazy val scalaS3Gat = "com.witboost.provisioning" %% "scala-mesh-aws-s3" % scalaCommonsVrs
+  lazy val scalaCdpDl = "com.witboost.provisioning" %% "scala-mesh-cdp-dl" % scalaCommonsVrs
+  lazy val scalaCdpEnv = "com.witboost.provisioning" %% "scala-mesh-cdp-env" % scalaCommonsVrs
+  lazy val scalaCdpDw = "com.witboost.provisioning" %% "scala-mesh-cdp-dw" % scalaCommonsVrs
+  lazy val ranger = "com.witboost.provisioning" %% "scala-mesh-ranger" % scalaCommonsVrs
+  lazy val scalaMeshRep = "com.witboost.provisioning" %% "scala-mesh-repository" % scalaCommonsVrs
+  lazy val scalaMeshSelf =
+    "com.witboost.provisioning" %% "scala-mesh-self-service" % scalaCommonsVrs
   lazy val scalaMeshSelfLambda =
-    "it.agilelab.provisioning" %% "scala-mesh-self-service-lambda" % scalaCommonsVrs
+    "com.witboost.provisioning" %% "scala-mesh-self-service-lambda" % scalaCommonsVrs
   lazy val scalaMeshPrincipalsMappingSamples =
-    "it.agilelab.provisioning" %% "scala-mesh-principals-mapping-samples" % scalaCommonsVrs
+    "com.witboost.provisioning" %% "scala-mesh-principals-mapping-samples" % scalaCommonsVrs
 
   private val http4sVersion = "0.23.18"
   lazy val http4sDependencies: Seq[ModuleID] = Seq(

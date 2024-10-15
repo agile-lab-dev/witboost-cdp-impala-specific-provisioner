@@ -29,21 +29,8 @@ object Settings {
   )
 
   lazy val artifactorySettings = Seq(
-    csrConfiguration ~=
-      (configuration =>
-        configuration.addRepositoryAuthentication(
-          "gitlab",
-          Authentication(
-            sys.env.getOrElse("GITLAB_ARTIFACT_USER", "GITLAB_ARTIFACT_USER"),
-            sys.env.getOrElse("GITLAB_ARTIFACT_TOKEN", "GITLAB_ARTIFACT_TOKEN")
-          )
-        )),
-    updateClassifiers / csrConfiguration := csrConfiguration.value,
-    updateSbtClassifiers / csrConfiguration := csrConfiguration.value,
     resolvers ++= Seq(
-      ExternalResolvers.gitlabScalaMeshCommonsResolver,
       ExternalResolvers.clouderaResolver
     )
   )
-
 }

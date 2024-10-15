@@ -24,12 +24,6 @@ cache:
     - "sbt-cache/sbtboot"
     - "sbt-cache/target"
 
-default:
-  before_script:
-    - export GITLAB_ARTIFACT_HOST="https://gitlab.com/api/v4/projects/51107980/packages/maven"
-    - export GITLAB_ARTIFACT_USER="gitlab-ci-token"
-    - export GITLAB_ARTIFACT_TOKEN=${CI_JOB_TOKEN}
-
 setup:
   stage: setup
   extends: .witboost.helm.base-job
